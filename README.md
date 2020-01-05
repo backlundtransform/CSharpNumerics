@@ -1,4 +1,4 @@
-# CharpNumerics
+# CSharpNumerics
 Simple numeric package
 
 To derivate a function use:
