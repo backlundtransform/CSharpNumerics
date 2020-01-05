@@ -25,7 +25,7 @@ namespace NumericsTests
             var lowerlimit = 0;
             var upperlimit = 5;
             var result = func.Integrate(lowerlimit, upperlimit);
-            Assert.IsTrue(Math.Round(result) == Math.Round(g * Math.Pow(upperlimit, 2) / 2));
+            Assert.IsTrue(Math.Round(result) == Math.Round(g * Math.Pow(upperlimit, 2) / 2) - Math.Round(g * Math.Pow(lowerlimit, 2) / 2));
         }
         [TestMethod]
         public void TestDerivateExponential()
@@ -62,7 +62,7 @@ namespace NumericsTests
             var lowerlimit = 0;
             var upperlimit = Math.PI/5;
             var result = func.Integrate(lowerlimit, upperlimit);
-            Assert.IsTrue(Math.Round(result) == Math.Round(Math.Sin(upperlimit)));
+            Assert.IsTrue(Math.Round(result) == Math.Round(Math.Sin(upperlimit)- Math.Sin(lowerlimit)));
         }
 
 
