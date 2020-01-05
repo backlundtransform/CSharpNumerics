@@ -1,5 +1,5 @@
 # CharpNumerics
-numeric package
+Simple numeric package
 
 To derivate a function use:
 
