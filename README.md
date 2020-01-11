@@ -2,7 +2,7 @@
 Simple numeric package
 
 
-## Calculus
+## Numeric Extensions
 
 To derivate a function use:
 
@@ -13,9 +13,9 @@ To integrate a function use:
 `Integrate(this Func<double, double> func, double lowerlimit, double upperlimit)`
 
 
-## Complex numbers
+## The complex object
 
-To work with Complex number use this struct: 
+To work with Complex numbers use this struct: 
 
 `ComplexNumber(double re, double im)`
 
@@ -32,11 +32,11 @@ Power of complex number
       `var i = new ComplexNumber(3, 2);
         i.Pow(2);`
         
-output  5+12*i
+output:  5+12*i
 
 Calculate Imaginary exponents
 
   `var i = new ComplexNumber(0, Math.PI);
     i.Exponential()`
 
-output  -1
+output:  -1
