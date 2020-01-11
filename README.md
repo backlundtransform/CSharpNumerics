@@ -21,17 +21,17 @@ To work with Complex numbers use this struct:
 
 E.g Arithmetics
 
-  `var a = new ComplexNumber(3, 2);
+  `var a = new ComplexNumber(3, 2);`
   
-   var b = new ComplexNumber(5, 3);
+   `var b = new ComplexNumber(5, 3);`
    
-   var sum= a + b;
+   `var sum= a + b;`
    
-   var difference =a-b;
+   `var difference =a-b;`
    
-   var product =a*b;
+   `var product =a*b;`
    
-   var quotient= a / b;`
+   `var quotient= a / b;`
    
 Power of complex number
       `var i = new ComplexNumber(3, 2);
