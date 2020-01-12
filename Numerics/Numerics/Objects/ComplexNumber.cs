@@ -19,6 +19,7 @@ namespace Numerics
         public override string ToString() => $"{RealPart}+{ImaginaryPart}*i";
         public double GetArgument() => Math.Atan2(ImaginaryPart, RealPart);
         public double GetMagnitude() => Math.Sqrt(Math.Pow(RealPart, 2) + Math.Pow(ImaginaryPart, 2));
+        public ComplexNumber GetConjugate() =>new ComplexNumber(RealPart, ImaginaryPart);
 
         public void Exponential()
         {
@@ -36,10 +37,24 @@ namespace Numerics
 
         }
 
-        public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b) => new ComplexNumber(a.RealPart+b.RealPart, a.ImaginaryPart + b.ImaginaryPart);
-        public static ComplexNumber operator -(ComplexNumber a, ComplexNumber b) => new ComplexNumber(a.RealPart - b.RealPart, a.ImaginaryPart - b.ImaginaryPart);
-        public static ComplexNumber operator *(ComplexNumber a, ComplexNumber b) => new ComplexNumber((a.RealPart *b.RealPart- a.ImaginaryPart * b.ImaginaryPart), (a.RealPart * b.ImaginaryPart + a.ImaginaryPart * b.RealPart));
-        public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b) => new ComplexNumber((a.RealPart * b.RealPart + a.ImaginaryPart * b.ImaginaryPart)/(Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2)), (a.ImaginaryPart * b.RealPart- a.RealPart * b.ImaginaryPart) / (Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2)));
+        public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b) {
+            return new ComplexNumber(a.RealPart + b.RealPart, a.ImaginaryPart + b.ImaginaryPart);
+        }
+        public static ComplexNumber operator -(ComplexNumber a, ComplexNumber b)
+        {
+            return new ComplexNumber(a.RealPart - b.RealPart, a.ImaginaryPart - b.ImaginaryPart);
+        }
+        public static ComplexNumber operator *(ComplexNumber a, ComplexNumber b) {
+            return new ComplexNumber((a.RealPart * b.RealPart - a.ImaginaryPart * b.ImaginaryPart),
+                (a.RealPart * b.ImaginaryPart + a.ImaginaryPart * b.RealPart));
+        }
+        public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b) {
+            var denominator = Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2);
 
+           return new ComplexNumber((a.RealPart * b.RealPart + a.ImaginaryPart * b.ImaginaryPart) / denominator,
+               (a.ImaginaryPart * b.RealPart - a.RealPart * b.ImaginaryPart) / denominator);
+
+
+        }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics;
 
 
+
 namespace NumericsTests
 {
     
@@ -18,6 +19,17 @@ namespace NumericsTests
             var result = func.Derivate(t);
             Assert.IsTrue(Math.Round(result) == Math.Round(g * t));
         }
+        [TestMethod]
+        public void TestDerivatePartial()
+        {
+            Func<double[], double> func = (double[] variables) =>Math.Pow(variables[0], 2) + variables[1] * variables[0] + Math.Pow(variables[1], 2);
+            var result = func.PartialDerivate(new double[] {1,1}, 0);
+            Assert.IsTrue(Math.Round(result) == 3);
+        }
+
+
+
+
         [TestMethod]
         public void TestIntegrateExponentiation()
         {
