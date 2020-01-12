@@ -9,7 +9,6 @@ namespace Numerics
         public double RealPart;
         public double ImaginaryPart;
      
-
         public ComplexNumber(double re, double im)
         {
             RealPart = re;
@@ -34,27 +33,26 @@ namespace Numerics
             var arg = GetArgument();
             RealPart = Math.Pow(mag, power) * Math.Cos(power * arg);
             ImaginaryPart = Math.Pow(mag, power) * Math.Sin(power * arg);
-
         }
 
-        public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b) {
+        public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b)
+        {
             return new ComplexNumber(a.RealPart + b.RealPart, a.ImaginaryPart + b.ImaginaryPart);
         }
         public static ComplexNumber operator -(ComplexNumber a, ComplexNumber b)
         {
             return new ComplexNumber(a.RealPart - b.RealPart, a.ImaginaryPart - b.ImaginaryPart);
         }
-        public static ComplexNumber operator *(ComplexNumber a, ComplexNumber b) {
+        public static ComplexNumber operator *(ComplexNumber a, ComplexNumber b)
+        {
             return new ComplexNumber((a.RealPart * b.RealPart - a.ImaginaryPart * b.ImaginaryPart),
                 (a.RealPart * b.ImaginaryPart + a.ImaginaryPart * b.RealPart));
         }
-        public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b) {
-            var denominator = Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2);
-
+        public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b)
+        {
+           var denominator = Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2);
            return new ComplexNumber((a.RealPart * b.RealPart + a.ImaginaryPart * b.ImaginaryPart) / denominator,
                (a.ImaginaryPart * b.RealPart - a.RealPart * b.ImaginaryPart) / denominator);
-
-
         }
     }
 }

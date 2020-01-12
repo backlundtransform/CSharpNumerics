@@ -27,9 +27,6 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(result) == 3);
         }
 
-
-
-
         [TestMethod]
         public void TestIntegrateExponentiation()
         {
