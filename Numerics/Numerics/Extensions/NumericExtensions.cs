@@ -15,7 +15,6 @@ namespace Numerics
             variables[index] += h;
             return (func(variables) - func(variablescopy)) / h;
 
-
         }
 
         public static double Integrate(this Func<double, double> func, double lowerlimit, double upperlimit)
