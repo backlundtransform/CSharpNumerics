@@ -75,6 +75,7 @@ Following extension method could be used:
   `Projection(this Vector a, Vector b)`
 
 4. Reflection between two vectors
+
    `Reflection(this Vector a, Vector b)`
 
  
