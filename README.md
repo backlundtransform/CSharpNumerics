@@ -38,8 +38,8 @@ E.g Arithmetics
    `var quotient= a / b;`
    
 Power of complex number
-      `var i = new ComplexNumber(3, 2);
-        i.Pow(2);`
+   
+   `var i = new ComplexNumber(3, 2); i.Pow(2);`
         
 output:  5+12*i
 
@@ -62,7 +62,7 @@ or from two points
 
 Following extension method could be used:
 
-1. Skalar product
+1. Scalar product
 
   `Dot(this Vector a, Vector b)`
 
@@ -76,7 +76,7 @@ Following extension method could be used:
 
 4. Reflection between two vectors
 
-   `Reflection(this Vector a, Vector b)`
+  `Reflection(this Vector a, Vector b)`
 
  Using Sperical Coordinates
 
