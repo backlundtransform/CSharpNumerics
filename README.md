@@ -82,7 +82,7 @@ Following extension method could be used:
 
    `var v=Vector.FromSphericalCoordinates(radius, inclination, azimuth)`
 
-or covert to sperical form cartesian
+or covert to sperical from cartesian
 
    `v.ToSphericalCoordinates()`
 
