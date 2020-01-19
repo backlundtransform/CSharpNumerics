@@ -49,3 +49,40 @@ Calculate Imaginary exponents
     i.Exponential()`
 
 output:  -1
+
+## The vector object
+
+To work with Vectors use this struct:
+
+  `Vector(double x, double y, double z)`
+
+or from two points
+
+  `Vector((double,double, double) p1, (double, double, double) p2)`
+
+Following extension method could be used:
+
+1. Skalar product
+
+  `Dot(this Vector a, Vector b)`
+
+2. Vector product
+
+ `Cross(this Vector a, Vector b)`
+
+3. Projection between two vectors
+
+  `Projection(this Vector a, Vector b)`
+
+4. Reflection between two vectors
+   `Reflection(this Vector a, Vector b)`
+
+ 
+
+   
+	
+
+
+
+
+
