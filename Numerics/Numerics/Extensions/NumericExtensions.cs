@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Numerics
+﻿namespace System
 {
     public static class NumericExtensions
     {

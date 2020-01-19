@@ -27,6 +27,14 @@ namespace NumericsTests
         }
 
         [TestMethod]
+        public void TestFromPolar()
+        {
+            var i =  ComplexNumber.FromPolarCoordinates(2, Math.PI);
+     
+            Assert.IsTrue(Math.Round(i.RealPart) == -2);
+        }
+
+        [TestMethod]
         public void TestComplexToString()
         {
             var i = new ComplexNumber(3, 2);
