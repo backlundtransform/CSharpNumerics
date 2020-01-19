@@ -38,6 +38,7 @@ E.g Arithmetics
    `var quotient= a / b;`
    
 Power of complex number
+      
       `var i = new ComplexNumber(3, 2);
         i.Pow(2);`
         
@@ -76,7 +77,7 @@ Following extension method could be used:
 
 4. Reflection between two vectors
 
-   `Reflection(this Vector a, Vector b)`
+  `Reflection(this Vector a, Vector b)`
 
  
 
