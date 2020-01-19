@@ -62,7 +62,7 @@ or from two points
 
 Following extension method could be used:
 
-1. Skalar product
+1. Scalar product
 
   `Dot(this Vector a, Vector b)`
 
