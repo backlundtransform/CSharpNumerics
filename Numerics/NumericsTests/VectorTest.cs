@@ -126,5 +126,15 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(v3.Z, 4) == Math.Round(v4.Z, 4));
         }
 
+        [TestMethod]
+        public void TestSphericalCoordinates()
+        {
+            var v = new Vector(2, 4, 2);
+            var v2 = Vector.FromSphericalCoordinates(v.GetMagnitude(), v.GetInclination(), v.GetAzimuth());
+            Assert.IsTrue(Math.Round(v2.X) == Math.Round(v.X));
+            Assert.IsTrue(Math.Round(v2.Y) == Math.Round(v.Y));
+            Assert.IsTrue(Math.Round(v2.Z) == Math.Round(v.Z));
+        }
+
     }
 }

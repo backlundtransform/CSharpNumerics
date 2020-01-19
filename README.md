@@ -78,7 +78,13 @@ Following extension method could be used:
 
    `Reflection(this Vector a, Vector b)`
 
- 
+ Using Sperical Coordinates
+
+   `Vector.FromSphericalCoordinates(radius, inclination, azimuth)`
+
+Metods to get radius, inclination, azimuth
+
+   `GetMagnitude(),GetAzimuth(),GetUnitVector()`
 
    
 	
