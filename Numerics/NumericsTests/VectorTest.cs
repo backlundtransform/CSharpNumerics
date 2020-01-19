@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Numerics;
+using Numerics.Objects;
 using System;
 
 namespace NumericsTests
@@ -130,10 +130,13 @@ namespace NumericsTests
         public void TestSphericalCoordinates()
         {
             var v = new Vector(2, 4, 2);
-            var v2 = Vector.FromSphericalCoordinates(v.GetMagnitude(), v.GetInclination(), v.GetAzimuth());
-            Assert.IsTrue(Math.Round(v2.X) == Math.Round(v.X));
-            Assert.IsTrue(Math.Round(v2.Y) == Math.Round(v.Y));
-            Assert.IsTrue(Math.Round(v2.Z) == Math.Round(v.Z));
+            var v2 = v.ToSphericalCoordinates();
+            var v3 = Vector.FromSphericalCoordinates(v2.X, v2.Y, v2.Z);
+          
+            Assert.IsTrue(Math.Round(v3.X) == Math.Round(v.X));
+            Assert.IsTrue(Math.Round(v3.Y) == Math.Round(v.Y));
+            Assert.IsTrue(Math.Round(v3.Z) == Math.Round(v.Z));
+
         }
 
     }

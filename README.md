@@ -52,7 +52,7 @@ output:  -1
 
 ## The vector object
 
-To work with Vectors use this struct:
+To work with vectors use this struct:
 
   `Vector(double x, double y, double z)`
 
@@ -80,16 +80,39 @@ Following extension method could be used:
 
  Using Sperical Coordinates
 
-   `Vector.FromSphericalCoordinates(radius, inclination, azimuth)`
+   `var v=Vector.FromSphericalCoordinates(radius, inclination, azimuth)`
+
+or covert to sperical form cartesian
+
+   `v.ToSphericalCoordinates()`
 
 Metods to get radius, inclination, azimuth
 
-   `GetMagnitude(),GetAzimuth(),GetUnitVector()`
+   `GetMagnitude(), GetInclination(),GetAzimuth()`
 
    
-	
 
+## The matrix object	
 
+To work with matrix use this struct:
+
+  `Matrix(double[,] values)`
+
+E.g 
+
+  `var matrix = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });`
+
+Get Transpose
+
+`var transposematrix = matrix.Transpose()`
+
+output values 
+
+`matrix.Values`
+
+or Identity matrix
+
+ `matrix.Identity`
 
 
 

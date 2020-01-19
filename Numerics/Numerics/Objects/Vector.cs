@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Numerics
+namespace Numerics.Objects
 {
     public struct Vector
     {
@@ -29,6 +29,7 @@ namespace Numerics
         public double GetInclination() => Math.Acos(Z/GetMagnitude());
 
         public double GetAzimuth() => Math.Atan2(Y, X);
+
 
         public Vector GetUnitVector() => (1 / GetMagnitude()) * new Vector(X, Y, Z);
 

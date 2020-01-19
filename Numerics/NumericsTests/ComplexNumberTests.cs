@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Numerics;
+using Numerics.Objects;
 using System;
 
 namespace NumericsTests

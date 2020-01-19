@@ -69,10 +69,7 @@ namespace NumericsTests
             var upperlimit = Math.PI/5;
             var result = func.Integrate(lowerlimit, upperlimit);
             Assert.IsTrue(Math.Round(result) == Math.Round(Math.Sin(upperlimit)- Math.Sin(lowerlimit)));
-        }
-
-
-      
+        } 
 
     }
 }
