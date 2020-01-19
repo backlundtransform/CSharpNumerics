@@ -38,9 +38,8 @@ E.g Arithmetics
    `var quotient= a / b;`
    
 Power of complex number
-      
-      `var i = new ComplexNumber(3, 2);
-        i.Pow(2);`
+   
+   `var i = new ComplexNumber(3, 2); i.Pow(2);`
         
 output:  5+12*i
 
