@@ -153,6 +153,6 @@ Or
 
    `var b = new Vector(2, 1, 3);`
 
-    `var product =a*b;`
+   `var product =a*b;`
 
 
