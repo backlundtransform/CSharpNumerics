@@ -5,59 +5,58 @@ namespace Numerics.Objects
    
     public class ComplexNumber
     {
-        public double RealPart;
+        public double realPart;
 
-        public double ImaginaryPart;
+        public double imaginaryPart;
 
         public ComplexNumber(double re, double im)
         {
-            RealPart = re;
-            ImaginaryPart = im;
+            realPart = re;
+            imaginaryPart = im;
         }
 
-        public override string ToString() => $"{RealPart}+{ImaginaryPart}*i";
+        public override string ToString() => $"{realPart}+{imaginaryPart}*i";
 
-        public double GetArgument() => Math.Atan2(ImaginaryPart, RealPart);
+        public double GetArgument() => Math.Atan2(imaginaryPart,realPart);
 
-        public double GetMagnitude() => Math.Sqrt(Math.Pow(RealPart, 2) + Math.Pow(ImaginaryPart, 2));
+        public double GetMagnitude() => Math.Sqrt(Math.Pow(realPart, 2) + Math.Pow(imaginaryPart, 2));
 
-        public ComplexNumber GetConjugate() => new ComplexNumber(RealPart, ImaginaryPart);
+        public ComplexNumber GetConjugate() => new ComplexNumber(realPart, imaginaryPart);
 
         public void Exponential()
         {
-            var im = ImaginaryPart;
-            RealPart = Math.Pow(Math.E, RealPart) * Math.Cos(ImaginaryPart);
-            ImaginaryPart = Math.Sin(ImaginaryPart);
+            realPart = Math.Pow(Math.E, realPart) * Math.Cos(imaginaryPart);
+            imaginaryPart = Math.Sin(imaginaryPart);
         }
 
         public void Pow(int power)
         {
             var mag = GetMagnitude();
             var arg = GetArgument();
-            RealPart = Math.Pow(mag, power) * Math.Cos(power * arg);
-            ImaginaryPart = Math.Pow(mag, power) * Math.Sin(power * arg);
+            realPart = Math.Pow(mag, power) * Math.Cos(power * arg);
+            imaginaryPart = Math.Pow(mag, power) * Math.Sin(power * arg);
         }
 
         public static ComplexNumber FromPolarCoordinates(double r, double theta) => new ComplexNumber(r * Math.Cos(theta), r * Math.Sin(theta));
 
         public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b)
         {
-            return new ComplexNumber(a.RealPart + b.RealPart, a.ImaginaryPart + b.ImaginaryPart);
+            return new ComplexNumber(a.realPart + b.realPart, a.imaginaryPart + b.imaginaryPart);
         }
         public static ComplexNumber operator -(ComplexNumber a, ComplexNumber b)
         {
-            return new ComplexNumber(a.RealPart - b.RealPart, a.ImaginaryPart - b.ImaginaryPart);
+            return new ComplexNumber(a.realPart - b.realPart, a.imaginaryPart - b.imaginaryPart);
         }
         public static ComplexNumber operator *(ComplexNumber a, ComplexNumber b)
         {
-            return new ComplexNumber((a.RealPart * b.RealPart - a.ImaginaryPart * b.ImaginaryPart),
-                (a.RealPart * b.ImaginaryPart + a.ImaginaryPart * b.RealPart));
+            return new ComplexNumber((a.realPart * b.realPart - a.imaginaryPart * b.imaginaryPart),
+                (a.realPart * b.imaginaryPart + a.imaginaryPart * b.realPart));
         }
         public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b)
         {
-            var denominator = Math.Pow(b.RealPart, 2) + Math.Pow(b.ImaginaryPart, 2);
-            return new ComplexNumber((a.RealPart * b.RealPart + a.ImaginaryPart * b.ImaginaryPart) / denominator,
-                (a.ImaginaryPart * b.RealPart - a.RealPart * b.ImaginaryPart) / denominator);
+            var denominator = Math.Pow(b.realPart, 2) + Math.Pow(b.imaginaryPart, 2);
+            return new ComplexNumber((a.realPart * b.realPart + a.imaginaryPart * b.imaginaryPart) / denominator,
+                (a.imaginaryPart * b.realPart - a.realPart * b.imaginaryPart) / denominator);
         }
     }
 }

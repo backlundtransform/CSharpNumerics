@@ -60,23 +60,23 @@ or from two points
 
   `Vector((double,double, double) p1, (double, double, double) p2)`
 
-Following extension method could be used:
+Following methods could be used:
 
 1. Scalar product
 
-  `Dot(this Vector a, Vector b)`
+  `Dot(Vector b)`
 
 2. Vector product
 
- `Cross(this Vector a, Vector b)`
+ `Cross(Vector b)`
 
 3. Projection between two vectors
 
-  `Projection(this Vector a, Vector b)`
+  `Projection(Vector b)`
 
 4. Reflection between two vectors
 
-  `Reflection(this Vector a, Vector b)`
+  `Reflection(Vector b)`
 
  Using Sperical Coordinates
 
@@ -104,15 +104,48 @@ E.g
 
 Get Transpose
 
-`var transposematrix = matrix.Transpose()`
+`var transposematrix = matrix.Transpose();`
+
+Get Inverse
+
+`var inv = matrix.Inverse();`
+
+Get Adjugate
+
+`var adj = matrix.Adjugate();`
+
+Get Determinant
+
+` var det = matrix.Determinant()`
 
 output values 
 
-`matrix.Values`
+`matrix.values`
 
 or Identity matrix
 
- `matrix.Identity`
+ `matrix.identity`
 
+E.g Arithmetics
+
+  `var a = new Matrix(new double[,] { { 5, 7, 2 }, { -2, 9, 4 } });`
+  
+  `var b = new Matrix(new double[,] {{ 1, 3, 7 }, { 5, 2, 9} });`
+   
+   `var sum= a + b;`
+   
+   `var difference =a-b;`
+   
+   `var product =a*b;`
+   
+Or
+
+  `var b = 3`
+  `var product =b*a;`
+  `var quotient= a / b;`
+
+Or  
+    `var b = new Vector(2, 1, 3);`
+    `var product =a*b;`
 
 

@@ -13,8 +13,8 @@ namespace NumericsTests
         {
             var i = new ComplexNumber(3, 2);
             i.Pow(2);
-            Assert.IsTrue(Math.Round(i.RealPart) == 5);
-            Assert.IsTrue(Math.Round(i.ImaginaryPart) == 12);
+            Assert.IsTrue(Math.Round(i.realPart) == 5);
+            Assert.IsTrue(Math.Round(i.imaginaryPart) == 12);
         }
 
         [TestMethod]
@@ -22,7 +22,7 @@ namespace NumericsTests
         {
             var i = new ComplexNumber(0, Math.PI);
             i.Exponential();
-            Assert.IsTrue(Math.Round(i.RealPart) == -1);
+            Assert.IsTrue(Math.Round(i.realPart) == -1);
 
         }
 
@@ -31,7 +31,7 @@ namespace NumericsTests
         {
             var i =  ComplexNumber.FromPolarCoordinates(2, Math.PI);
      
-            Assert.IsTrue(Math.Round(i.RealPart) == -2);
+            Assert.IsTrue(Math.Round(i.realPart) == -2);
         }
 
         [TestMethod]
@@ -49,8 +49,8 @@ namespace NumericsTests
             var a = new ComplexNumber(3, 2);
             var b = new ComplexNumber(5, 3);
             var result = a + b;
-            Assert.IsTrue(result.RealPart == 8);
-            Assert.IsTrue(result.ImaginaryPart == 5);
+            Assert.IsTrue(result.realPart == 8);
+            Assert.IsTrue(result.imaginaryPart == 5);
         }
 
         [TestMethod]
@@ -59,8 +59,8 @@ namespace NumericsTests
             var a = new ComplexNumber(3, 2);
             var b = new ComplexNumber(5, 3);
             var result = a - b;
-            Assert.IsTrue(result.RealPart == -2);
-            Assert.IsTrue(result.ImaginaryPart == -1);
+            Assert.IsTrue(result.realPart == -2);
+            Assert.IsTrue(result.imaginaryPart == -1);
 
         }
 
@@ -70,8 +70,8 @@ namespace NumericsTests
             var a = new ComplexNumber(3, 2);
             var b = new ComplexNumber(5, 3);
             var result = a * b;
-            Assert.IsTrue(result.RealPart == 9);
-            Assert.IsTrue(result.ImaginaryPart == 19);
+            Assert.IsTrue(result.realPart == 9);
+            Assert.IsTrue(result.imaginaryPart == 19);
 
         }
         [TestMethod]
@@ -80,8 +80,8 @@ namespace NumericsTests
             var a = new ComplexNumber(3, 2);
             var b = new ComplexNumber(5, 3);
             var result = a / b;
-            Assert.IsTrue(Math.Round(result.RealPart, 2) == 0.62);
-            Assert.IsTrue(Math.Round(result.ImaginaryPart, 2) == 0.03);
+            Assert.IsTrue(Math.Round(result.realPart, 2) == 0.62);
+            Assert.IsTrue(Math.Round(result.imaginaryPart, 2) == 0.03);
 
         }
     }

@@ -12,9 +12,9 @@ namespace NumericsTests
         {
             var v = new Vector(2,6,1);
             v = 2 * v;
-            Assert.IsTrue(v.X == 4);
-            Assert.IsTrue(v.Y == 12);
-            Assert.IsTrue(v.Z == 2);
+            Assert.IsTrue(v.x == 4);
+            Assert.IsTrue(v.y == 12);
+            Assert.IsTrue(v.z == 2);
           
         }
 
@@ -32,9 +32,9 @@ namespace NumericsTests
         {
             var v = new Vector(2, 2, 1);
             var v2 =v.GetUnitVector();
-            Assert.IsTrue(v2.X == (double)2 /3);
-            Assert.IsTrue(v2.Y == (double)2 /3);
-            Assert.IsTrue(v2.Z == (double)1 /3);
+            Assert.IsTrue(v2.x == (double)2 /3);
+            Assert.IsTrue(v2.y == (double)2 /3);
+            Assert.IsTrue(v2.z == (double)1 /3);
             Assert.IsTrue(v2.GetMagnitude() == 1);
 
         }
@@ -46,9 +46,9 @@ namespace NumericsTests
             var v = new Vector(2, 3, 0);
             var v2 = new Vector(3, 1, 0);
             var v3 = v+v2;
-            Assert.IsTrue(v3.X ==5);
-            Assert.IsTrue(v3.Y ==4);
-            Assert.IsTrue(v3.Z ==0);
+            Assert.IsTrue(v3.x ==5);
+            Assert.IsTrue(v3.y ==4);
+            Assert.IsTrue(v3.z ==0);
         }
 
         [TestMethod]
@@ -57,9 +57,9 @@ namespace NumericsTests
             var v = new Vector(2, 3, 0);
             var v2 = new Vector(3, 1, 0);
             var v3 = v-v2;
-            Assert.IsTrue(v3.X ==-1);
-            Assert.IsTrue(v3.Y == 2);
-            Assert.IsTrue(v3.Z == 0);
+            Assert.IsTrue(v3.x ==-1);
+            Assert.IsTrue(v3.y == 2);
+            Assert.IsTrue(v3.z == 0);
         }
 
         [TestMethod]
@@ -78,18 +78,18 @@ namespace NumericsTests
             var v = new Vector(1, 3, 2);
             var v2 = new Vector(-2, 1, 0);
             var v3 = v.Cross(v2);
-            Assert.IsTrue(v3.X == -2);
-            Assert.IsTrue(v3.Y == -4);
-            Assert.IsTrue(v3.Z == 7);
+            Assert.IsTrue(v3.x == -2);
+            Assert.IsTrue(v3.y == -4);
+            Assert.IsTrue(v3.z == 7);
         }
 
         [TestMethod]
         public void TestPoints()
         {
             var v = new Vector((5,4,0),(3,7,0)); 
-            Assert.IsTrue(v.X == -2);
-            Assert.IsTrue(v.Y == 3);
-            Assert.IsTrue(v.Z == 0);
+            Assert.IsTrue(v.x == -2);
+            Assert.IsTrue(v.y == 3);
+            Assert.IsTrue(v.z == 0);
         }
 
         [TestMethod]
@@ -109,9 +109,9 @@ namespace NumericsTests
             var b = new Vector(3, 2, -1);
             var v3 = a.Projection(b);
             var v4 = (-7.0 / 33.0)*a;
-            Assert.IsTrue(Math.Round(v3.X,4) == Math.Round(v4.X,4));
-            Assert.IsTrue(Math.Round(v3.Y, 4) == Math.Round(v4.Y,4));
-            Assert.IsTrue(Math.Round(v3.Z,4) == Math.Round(v4.Z,4));
+            Assert.IsTrue(Math.Round(v3.x,4) == Math.Round(v4.x,4));
+            Assert.IsTrue(Math.Round(v3.y, 4) == Math.Round(v4.y,4));
+            Assert.IsTrue(Math.Round(v3.z,4) == Math.Round(v4.z,4));
         }
 
         [TestMethod]
@@ -121,9 +121,9 @@ namespace NumericsTests
             var v2= new Vector(-6, 2, 4);
             var v3 =v2.Reflection(v);
             var v4 = (-1.0 / 7.0) * new Vector(20, 26, 10);
-            Assert.IsTrue(Math.Round(v3.X, 4) == Math.Round(v4.X, 4));
-            Assert.IsTrue(Math.Round(v3.Y, 4) == Math.Round(v4.Y, 4));
-            Assert.IsTrue(Math.Round(v3.Z, 4) == Math.Round(v4.Z, 4));
+            Assert.IsTrue(Math.Round(v3.x, 4) == Math.Round(v4.x, 4));
+            Assert.IsTrue(Math.Round(v3.y, 4) == Math.Round(v4.y, 4));
+            Assert.IsTrue(Math.Round(v3.z, 4) == Math.Round(v4.z, 4));
         }
 
         [TestMethod]
@@ -131,11 +131,11 @@ namespace NumericsTests
         {
             var v = new Vector(2, 4, 2);
             var v2 = v.ToSphericalCoordinates();
-            var v3 = Vector.FromSphericalCoordinates(v2.X, v2.Y, v2.Z);
+            var v3 = Vector.FromSphericalCoordinates(v2.x, v2.y, v2.z);
           
-            Assert.IsTrue(Math.Round(v3.X) == Math.Round(v.X));
-            Assert.IsTrue(Math.Round(v3.Y) == Math.Round(v.Y));
-            Assert.IsTrue(Math.Round(v3.Z) == Math.Round(v.Z));
+            Assert.IsTrue(Math.Round(v3.x) == Math.Round(v.x));
+            Assert.IsTrue(Math.Round(v3.y) == Math.Round(v.y));
+            Assert.IsTrue(Math.Round(v3.z) == Math.Round(v.z));
 
         }
 
