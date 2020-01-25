@@ -141,11 +141,17 @@ E.g Arithmetics
 Or
 
   `var b = 3`
+
   `var product =b*a;`
+
   `var quotient= a / b;`
 
+
 Or  
+   `var a = new Matrix(new double[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });`
+
     `var b = new Vector(2, 1, 3);`
+
     `var product =a*b;`
 
 
