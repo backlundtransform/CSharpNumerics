@@ -92,13 +92,13 @@ Metods to get radius, inclination, azimuth
 
 E.g 
 
-    `var a = new Vector(5, 3, 0);`
+  `var a = new Vector(5, 3, 0);`
 
-     `var b = new Vector(2, 6, 0);`
+   `var b = new Vector(2, 6, 0);`
 
-     `var skalar = a.Dot(b);`
+   `var skalar = a.Dot(b);`
 
-     `var vector = a.Cross(b);`
+   `var vector = a.Cross(b);`
 
 
 E.g Arithmetics
