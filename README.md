@@ -148,6 +148,7 @@ Or
 
 
 Or  
+
    `var a = new Matrix(new double[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });`
 
     `var b = new Vector(2, 1, 3);`
