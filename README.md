@@ -90,7 +90,28 @@ Metods to get radius, inclination, azimuth
 
    `GetMagnitude(), GetInclination(),GetAzimuth()`
 
+E.g 
+
+    `var a = new Vector(5, 3, 0);`
+
+     `var b = new Vector(2, 6, 0);`
+
+     `var skalar = a.Dot(b);`
+
+     `var vector = a.Cross(b);`
+
+
+E.g Arithmetics
+
+  `var a = new Vector(2, 2, 0);`
+  
+   `var b = new Vector(2, 2, 0);`
    
+   `var sum= a + b;`
+   
+   `var difference =a-b;`
+
+   `var product =3*b;`
 
 ## The matrix object	
 
