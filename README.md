@@ -186,6 +186,16 @@ Calculate for one point
 
   `var v=func.Gradient((1, -2, 0))`
 
+Calculate for range
+
+ `var grad = func.Gradient(-4, -4, -4, 1, 8);`
+
+Where the parameters are minimum value of x,y,z the step size, and the length. The range in this example is -4=x=4,-4=y=4,-4=z=4. 
+Will return new Dictionary<Vector, Vector> where the key is the point and value is the calculated function value in the point.
+Save the data to csv 
+
+  `grad.Save(@"${path}\${file}.csv");`
+
 ### Divergence
 
 Calculate for one point
@@ -213,4 +223,24 @@ Calculate for one point
  `var field = new VectorField(fx, fy, fz);`
 
  `var v = field.Curl((1, 4, 2));`
+
+Calculate for range. It is done in same way as for gradient E.g save both the vector field and curl to file:
+
+  `double fx(Vector p) => p.y;`
+
+  `double fy(Vector p) => -p.x;`
+
+   `double fz(Vector p) => 0;`
+
+   `var w = new VectorField(fx, fy, fz);`
+    
+   `var data= w.EvaluateRange(-4,-4,4,1,8);`
+            
+   `var curl = w.Curl(-4, -4, 4, 1, 8);`
+
+  `data.Save(@"${path}\${file}.csv");`
+
+  `data.Save(@"${path}\${file}.csv");`
+            
+
 

@@ -35,12 +35,12 @@ namespace System
 
             return (func(delta) - func(variables)) / h;
         }
-        public static IEnumerable<Vector> Gradient(this Func<Vector, double> func, double xMin, double yMin, double zMin, double stepSize, double maxSteps)
+        public static IDictionary<Vector, Vector> Gradient(this Func<Vector, double> func, double xMin, double yMin, double zMin, double stepSize, double maxSteps)
         {
-            var vectorField = new List<Vector>();
+            var vectorField = new Dictionary<Vector, Vector>();
             for (var i = 0.0; i < maxSteps; i += stepSize)
             {
-                vectorField.Add(func.Gradient((xMin + i, yMin + i, zMin + i)));
+                vectorField.Add(new Vector((xMin + i, yMin + i, zMin + i)),func.Gradient((xMin + i, yMin + i, zMin + i)));
             }
             return vectorField;
 

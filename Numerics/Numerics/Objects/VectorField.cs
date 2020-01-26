@@ -19,24 +19,24 @@ namespace Numerics.Objects
             fz = w;
     
         }
-        public IEnumerable<Vector> Curl(double xMin, double yMin, double zMin, double stepSize, double maxSteps)
+        public IDictionary<Vector, Vector> Curl(double xMin, double yMin, double zMin, double stepSize, double maxSteps)
         {
-            var vectorField = new List<Vector>();
+            var vectorField = new Dictionary<Vector, Vector>();
             for (var i = 0.0; i < maxSteps; i += stepSize)
             {
-                vectorField.Add(Curl((xMin + i, yMin + i, zMin + i)));
+                vectorField.Add(new Vector(xMin + i, yMin + i, zMin + i),Curl((xMin + i, yMin + i, zMin + i)));
             }
             return vectorField;
 
         }
 
-        public IEnumerable<Vector> EvaluateRange(double xMin, double yMin, double zMin, double stepSize, double maxSteps)
+        public IDictionary<Vector, Vector> EvaluateRange(double xMin, double yMin, double zMin, double stepSize, double maxSteps)
         {
-            var vectorField = new List<Vector>();
+            var vectorField = new Dictionary<Vector, Vector>();
             for (var i = 0.0; i < maxSteps; i+=stepSize)
             {
                     var parameters = new Vector(xMin + i, yMin + i, zMin + i);
-                    vectorField.Add(new Vector(fx(parameters), fy(parameters), fz(parameters)));            
+                    vectorField.Add(parameters,new Vector(fx(parameters), fy(parameters), fz(parameters)));            
             }
             return vectorField;
         }
