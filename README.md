@@ -8,7 +8,7 @@ To derivate a function use:
 
 `Derivate(this Func<double, double> func, double variablevalue)`
 
-If several variables use;
+If several variables use:
 
 `Derivate(this Func<double[], double> func, double[] variables, int index)`
 
@@ -178,7 +178,7 @@ Or
 
 ## The vectorfield object
 
-#Gradient
+### Gradient
 
 Calculate for one point
 
@@ -186,7 +186,7 @@ Calculate for one point
 
   `var v=func.Gradient((1, -2, 0))`
 
-#Divergence
+### Divergence
 
 Calculate for one point
 
@@ -200,7 +200,7 @@ Calculate for one point
 
  `var div = field.Divergence((1, 2, 2))`
 
-#Curl
+### Curl
 
 Calculate for one point
            
