@@ -52,11 +52,12 @@ namespace NumericsTests
             double fy(Vector p) => -p.x;
             double fz(Vector p) => 0;
             var w = new VectorField(fx, fy, fz);
-            w.EvaluateRange(-4,-4,0,0.1,8);
-            w.field.Save(@"\data.csv");
-            w.curl.Save(@"\curl.csv");
+            var data= w.EvaluateRange(-4,-4,0,0.1,8);
+            var curl = w.Curl(-4, -4, 0, 0.1, 8);
+            data.Save(@"\data.csv");
+            curl.Save(@"\curl.csv");
 
-            foreach(var vector in w.curl)
+            foreach (var vector in curl)
             {
                 Assert.IsTrue(Math.Round(vector.z) == -2);
 
