@@ -33,6 +33,15 @@ namespace NumericsTests
             var result = func.Integrate(lowerlimit, upperlimit);
             Assert.IsTrue(Math.Round(result) == Math.Round(g * Math.Pow(upperlimit, 2) / 2) - Math.Round(g * Math.Pow(lowerlimit, 2) / 2));
         }
+
+        [TestMethod]
+        public void TestDerivateLinear()
+        {
+            Func<double, double> func = (double variable) => g * variable;
+            var t = 5;
+            var result = func.Derivate(t);
+            Assert.IsTrue(Math.Round(result, 2) == Math.Round(g, 2));
+        }
         [TestMethod]
         public void TestDerivateExponential()
         {

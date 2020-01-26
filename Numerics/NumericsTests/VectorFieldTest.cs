@@ -1,6 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using System;
+using System.Text;
+using System.IO;
+using Numerics;
 
 namespace NumericsTests
 {
@@ -41,6 +44,26 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(v.y) == 4);
             Assert.IsTrue(Math.Round(v.z) == 12);
         }
+
+        [TestMethod]
+        public void TestPlot()
+        {
+            double fx(Vector p) => p.y;
+            double fy(Vector p) => -p.x;
+            double fz(Vector p) => 0;
+            var w = new VectorField(fx, fy, fz);
+            w.EvaluateRange(-4,-4,0,0.1,8);
+            w.field.Save(@"\data.csv");
+            w.curl.Save(@"\curl.csv");
+
+            foreach(var vector in w.curl)
+            {
+                Assert.IsTrue(Math.Round(vector.z) == -2);
+
+            }
+
+        }
+
 
     }
 }
