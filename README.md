@@ -10,7 +10,7 @@ To derivate a function use:
 
 If several variables use;
 
-`PartialDerivate(this Func<double[], double> func, double[] variables, int index)`
+`Derivate(this Func<double[], double> func, double[] variables, int index)`
 
 To integrate a function use:
 
@@ -176,4 +176,41 @@ Or
 
    `var product =a*b;`
 
+## The vectorfield object
+
+#Gradient
+
+Calculate for one point
+
+  `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
+
+  `var v=func.Gradient((1, -2, 0))`
+
+#Divergence
+
+Calculate for one point
+
+ `double fx(Vector p) => Math.Sin(p.x * p.y);`
+
+ `double fy(Vector p) => Math.Cos(p.x * p.y);`
+
+ `double fz(Vector p) => Math.Pow(Math.E, p.z);`
+
+ `var field = new VectorField(fx, fy, fz);`
+
+ `var div = field.Divergence((1, 2, 2))`
+
+#Curl
+
+Calculate for one point
+           
+ `double fx(Vector p) => 4*p.z;`
+
+ `double fy(Vector p) => p.y *Math.Pow(p.x,3);`
+
+ `double fz(Vector p) => p.z * Math.Pow(p.y,2);`
+
+ `var field = new VectorField(fx, fy, fz);`
+
+ `var v = field.Curl((1, 4, 2));`
 

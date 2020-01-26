@@ -20,7 +20,7 @@ namespace NumericsTests
         public void TestDerivatePartial()
         {
             Func<double[], double> func = (double[] variables) =>Math.Pow(variables[0], 2) + variables[1] * variables[0] + Math.Pow(variables[1], 2);
-            var result = func.PartialDerivate(new double[] {1,1}, 0);
+            var result = func.Derivate(new double[] {1,1}, 0);
             Assert.IsTrue(Math.Round(result) == 3);
         }
 

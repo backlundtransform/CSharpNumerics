@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Numerics
+﻿namespace Numerics
 {
   public enum Cartesian
     {

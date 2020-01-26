@@ -75,7 +75,7 @@ namespace NumericsTests
             var matrix = new Matrix(new double[,] { { 1, 5, 2 }, { 0, 3, 7 }, { 2, -1, 4 } });
             var inv = matrix.Inverse();
 
-            Assert.IsTrue(Math.Round(inv.values[0, 0],2) == Math.Round((double)19/77,2));
+            Assert.IsTrue(Math.Round(inv.values[0, 0], 2) == Math.Round((double)19 / 77, 2));
             Assert.IsTrue(Math.Round(inv.values[0, 1], 2) == Math.Round((double)-2 / 7, 2));
             Assert.IsTrue(Math.Round(inv.values[0, 2], 2) == Math.Round((double)29 / 77, 2));
 
@@ -94,7 +94,7 @@ namespace NumericsTests
         public void TestMatrixAddition()
         {
             var a = new Matrix(new double[,] { { 5, 7, 2 }, { -2, 9, 4 } });
-            var b = new Matrix(new double[,] {{ 1, 3, 7 }, { 5, 2, 9} });
+            var b = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
             var result = a + b;
 
             Assert.IsTrue(result.values[0, 0] == 6);
@@ -127,24 +127,24 @@ namespace NumericsTests
         [TestMethod]
         public void TestMatrixMultiplier()
         {
-            var a = new Matrix(new double[,] { { 4,0 }, { -1, 5 } });
+            var a = new Matrix(new double[,] { { 4, 0 }, { -1, 5 } });
             var b = 3;
-            var result =b*a;
+            var result = b * a;
 
             Assert.IsTrue(result.values[0, 0] == 12);
-            Assert.IsTrue(result.values[0, 1] ==0);
-         
+            Assert.IsTrue(result.values[0, 1] == 0);
+
 
             Assert.IsTrue(result.values[1, 0] == -3);
             Assert.IsTrue(result.values[1, 1] == 15);
-          
+
         }
 
         [TestMethod]
         public void TestMatrixMultiplication()
         {
             var a = new Matrix(new double[,] { { 2, -1 }, { 3, 0 }, { 0, 4 } });
-            var b = new Matrix(new double[,] { { 5, 1,-3 }, { -1, 0,1 } }); 
+            var b = new Matrix(new double[,] { { 5, 1, -3 }, { -1, 0, 1 } });
             var result = a * b;
 
             Assert.IsTrue(result.values[0, 0] == 11);
@@ -153,7 +153,7 @@ namespace NumericsTests
 
             Assert.IsTrue(result.values[1, 0] == 15);
             Assert.IsTrue(result.values[1, 1] == 3);
-            Assert.IsTrue(result.values[1, 2] ==-9);
+            Assert.IsTrue(result.values[1, 2] == -9);
 
             Assert.IsTrue(result.values[2, 0] == -4);
             Assert.IsTrue(result.values[2, 1] == 0);
@@ -163,11 +163,11 @@ namespace NumericsTests
         [TestMethod]
         public void TestMatrixVectorMultiplication()
         {
-            var a = new Matrix(new double[,] { { 1,2,3 }, { 4,5,6}, { 7,8,9 } });
+            var a = new Matrix(new double[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
             var b = new Vector(2, 1, 3);
             var result = a * b;
 
-            Assert.IsTrue(result.x== 13);
+            Assert.IsTrue(result.x == 13);
             Assert.IsTrue(result.y == 31);
             Assert.IsTrue(result.z == 49);
 

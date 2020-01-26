@@ -24,6 +24,13 @@ namespace Numerics.Objects
             y = p2.Item2 - p1.Item2;
             z = p2.Item3 - p1.Item3;
         }
+
+        public Vector((double x, double y, double z) coords)
+        {
+            x = coords.x;
+            y = coords.y;
+            z = coords.z;
+        }
         public double GetMagnitude() => Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2) + Math.Pow(z, 2));
 
         public double GetInclination() => Math.Acos(z/GetMagnitude());
