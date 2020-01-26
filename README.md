@@ -190,8 +190,8 @@ Calculate for range
 
  `var grad = func.Gradient(-4, -4, -4, 1, 8);`
 
-Where the parameters are minimum value of x,y,z the step size, and the length. The range in this example is -4=x=4,-4=y=4,-4=z=4. 
-Will return new Dictionary<Vector, Vector> where the key is the point and value is the calculated function value in the point.
+Where the parameters are minimum value of x,y,z the step size, and the length. The range in this example is -4<=x<=4,-4<=y<=4,-4<=z<=4. 
+This method will return new Dictionary<Vector, Vector> where the key is the point and value is the calculated function value for that point.
 Save the data to csv 
 
   `grad.Save(@"${path}\${file}.csv");`
