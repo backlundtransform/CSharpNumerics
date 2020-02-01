@@ -255,6 +255,8 @@ Calculate for range. It is done in same way as for gradient E.g save both the ve
 
 ### Laplacian
 
+Calculate for one point
+
   `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
 
   `var v=func.Laplacian((1, -2, 0))`
