@@ -173,5 +173,25 @@ namespace NumericsTests
 
 
         }
+
+
+        [TestMethod]
+        public void TestPascalMatrix()
+        {
+            var pascalMatrix = new Matrix(new double[6, 6]).Pascal();
+            Assert.IsTrue(pascalMatrix.values[1, 1] == 1);
+            Assert.IsTrue(pascalMatrix.values[2, 1] ==2);
+            Assert.IsTrue(pascalMatrix.values[3, 1] == 3);
+            Assert.IsTrue(pascalMatrix.values[3, 2] == 3);
+            Assert.IsTrue(pascalMatrix.values[4, 1] == 4);
+            Assert.IsTrue(pascalMatrix.values[4, 2] == 6);
+            Assert.IsTrue(pascalMatrix.values[5, 1] == 5);
+            Assert.IsTrue(pascalMatrix.values[5, 2] == 10);
+
+        }
+
+
+
+   
     }
 }

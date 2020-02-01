@@ -45,6 +45,16 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(v.z) == 12);
         }
 
+
+        [TestMethod]
+        public void TestLaplacian()
+        {
+            Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);
+            var v = func.Laplacian((1, -2, 0));
+            Assert.IsTrue(Math.Round(v) == 2*-8+3*2*-2);
+    
+        }
+
         [TestMethod]
         public void TestPlot()
         {

@@ -16,6 +16,46 @@ namespace NumericsTests
             var result = func.Derivate(t);
             Assert.IsTrue(Math.Round(result) == Math.Round(g * t));
         }
+
+
+
+        [TestMethod]
+        public void TestSecondDerivateExponentiation()
+        {
+            Func<double, double> func = (double variable) => g * Math.Pow(variable, 2) / 2;
+            var t = 5;
+            var result = func.Derivate(t,2);
+            Assert.IsTrue(Math.Round(result) == Math.Round(g));
+        }
+
+        [TestMethod]
+        public void TestThirdDerivateExponentiation()
+        {
+            Func<double, double> func = (double variable) => g * Math.Pow(variable, 3) / 6;
+            var t = 5;
+            var result = func.Derivate(t,3);
+            Assert.IsTrue(Math.Round(result) == Math.Round(g));
+        }
+
+        [TestMethod]
+        public void TestFourthDerivateExponentiation()
+        {
+            Func<double, double> func = (double variable) => g * Math.Pow(variable, 4) / 24;
+            var t = 5;
+            var result = func.Derivate(t, 4);
+            Assert.IsTrue(Math.Round(result) == Math.Round(g));
+        }
+
+        [TestMethod]
+        public void TestFifthDerivateExponentiation()
+        {
+            Func<double, double> func = (double variable) => g * Math.Pow(variable, 5) / 120;
+            var t = 5;
+            var result = func.Derivate(t, 5);
+            Assert.IsTrue(Math.Round(result) == Math.Round(g));
+        }
+
+
         [TestMethod]
         public void TestDerivatePartial()
         {

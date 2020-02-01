@@ -6,11 +6,17 @@ Simple numeric package
 
 To derivate a function use:
 
-`Derivate(this Func<double, double> func, double variablevalue)`
+`Derivate(this Func<double, double> func, double variablevalue, int order=1)`
+
+Calculate higher order derivative by setting the order parameter 
 
 If several variables use:
 
-`Derivate(this Func<double[], double> func, double[] variables, int index)`
+`Derivate(this Func<double[], double> func, double[] variables, int index, int order=1)`
+
+Or use the vector (x,y,z)  
+
+`Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
 
 To integrate a function use:
 
@@ -131,6 +137,11 @@ Get Inverse
 
 `var inv = matrix.Inverse();`
 
+
+Get Pascal matrix
+
+`var pascalMatrix = new Matrix(new double[6, 6]).Pascal()`
+
 Get Adjugate
 
 `var adj = matrix.Adjugate();`
@@ -241,6 +252,13 @@ Calculate for range. It is done in same way as for gradient E.g save both the ve
   `data.Save(@"${path}\${file}.csv");`
 
   `data.Save(@"${path}\${file}.csv");`
+
+### Laplacian
+
+  `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
+
+  `var v=func.Laplacian((1, -2, 0))`
+ 
             
 
 

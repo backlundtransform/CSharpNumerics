@@ -67,6 +67,43 @@ namespace Numerics.Objects
             return new Matrix(matrix);
         }
 
+
+        public Matrix Pascal()
+        {
+            var identity = new double[rowLength,columnLength];
+
+            for (var i = 0; i < rowLength; i++)
+            {
+
+                for (var j = 0; j < columnLength; j++)
+                {
+
+
+                    identity[i, j] = Pascal(i + 1, j + 1);
+
+
+                }
+            }
+            return new Matrix(identity);
+
+        }
+
+        private int Pascal(int row, int column)
+        {
+            if (column == 0 || column > row)
+            {
+                return 0;
+            }
+
+            if (row == 1 && column == 1)
+            {
+                return 1;
+            }
+
+            return (Pascal(row - 1, column - 1) + Pascal(row - 1, column));
+
+        }
+
         public double Determinant()
         {
             if (rowLength == columnLength)
