@@ -251,7 +251,7 @@ Calculate for range. It is done in same way as for gradient E.g save both the ve
 
   `data.Save(@"${path}\${file}.csv");`
 
-  `data.Save(@"${path}\${file}.csv");`
+  `curl.Save(@"${path}\${file}.csv");`
 
 ### Laplacian
 
