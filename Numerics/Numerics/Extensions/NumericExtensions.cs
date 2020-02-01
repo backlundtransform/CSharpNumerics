@@ -53,7 +53,39 @@ namespace System
             return func(variables);
         }
 
-       
+
+
+        public static double Derivate(this Func<(double x,double y), double> func, (double x, double y) variables, Cartesian cartesian, int order = 1)
+        {
+
+            switch (cartesian)
+            {
+                case Cartesian.x:
+                    Func<double, double> funcX = (double v) => func((v, variables.y));
+                    return funcX.Derivate(variables.x, order);
+
+                case Cartesian.y:
+                    Func<double, double> funcY = (double v) => func((variables.x, v));
+                    return funcY.Derivate(variables.y, order);
+
+            }
+
+            return func(variables);
+        }
+
+
+        public static ComplexNumber Derivate(this ComplexFunction func, ComplexNumber variables, int order = 1)
+        {
+
+            var du= func.u.Derivate((variables.realPart, variables.imaginaryPart),Cartesian.x,order);
+
+            var dv = func.v.Derivate((variables.realPart, variables.imaginaryPart), Cartesian.x, order);
+          
+            return (new ComplexNumber(du, dv));
+  
+        }
+
+
         public static IDictionary<Vector, Vector> Gradient(this Func<Vector, double> func, double xmin, double ymin, double zmin, double stepSize, double maxSteps)
         {
             var vectorField = new Dictionary<Vector, Vector>();

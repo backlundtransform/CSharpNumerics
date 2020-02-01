@@ -260,7 +260,33 @@ Calculate for one point
   `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
 
   `var v=func.Laplacian((1, -2, 0))`
- 
+
+## The complex function object
+
+To work with Complex functions use this struct: 
+
+ `ComplexFunction(Func<(double x, double y), double> re, Func<(double x, double y), double> im)`
+
+E.g:
+
+  `double fx((double x, double y) p) => Math.Pow(Math.E, p.x) * Math.Cos(p.y);`
+
+  `double fy((double x, double y) p) => Math.Pow(Math.E, p.x) * Math.Sin(p.y);`
+
+   `var fz = new ComplexFunction(fx, fy);`
+
+ To derivate a complex function use:
             
+   `Derivate(this ComplexFunction func, ComplexNumber variables, int order = 1)`
 
+### Cauchy–Riemann equations
 
+To test if analytic fuction in a point using Cauchy–Riemann equations:
+	
+   `fz.IsAnalytical((x0,y0))`
+
+### Jacobian
+
+To get the Jacobian as a Matrix
+
+    `fz.Jacobian((x0,y0))`

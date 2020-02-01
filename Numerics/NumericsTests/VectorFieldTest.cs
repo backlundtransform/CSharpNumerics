@@ -55,6 +55,21 @@ namespace NumericsTests
     
         }
 
+
+        [TestMethod]
+        public void TestVectorIdentities()
+        {
+            Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);
+            double fx(Vector p) => 2*p.x  *Math.Pow(p.y, 3);
+            double fy(Vector p) => Math.Pow(p.x, 2) * 3* Math.Pow(p.y, 2); 
+            double fz(Vector p) => 0;
+            var w = new VectorField(fx, fy, fz);
+
+            var curl = w.Curl((1, -2, 0));
+            Assert.IsTrue(Math.Round(curl.GetMagnitude()) == 0);
+
+        }
+
         [TestMethod]
         public void TestPlot()
         {

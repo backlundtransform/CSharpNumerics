@@ -48,6 +48,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComplexFunctionTest.cs" />
     <Compile Include="ComplexNumberTests.cs" />
     <Compile Include="MatrixTest.cs" />
     <Compile Include="NumericsTests.cs" />

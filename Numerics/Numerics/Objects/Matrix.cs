@@ -70,21 +70,18 @@ namespace Numerics.Objects
 
         public Matrix Pascal()
         {
-            var identity = new double[rowLength,columnLength];
+            var pascal = new double[rowLength,columnLength];
 
             for (var i = 0; i < rowLength; i++)
             {
 
                 for (var j = 0; j < columnLength; j++)
                 {
-
-
-                    identity[i, j] = Pascal(i + 1, j + 1);
-
+                    pascal[i, j] = Pascal(i + 1, j + 1);
 
                 }
             }
-            return new Matrix(identity);
+            return new Matrix(pascal);
 
         }
 
