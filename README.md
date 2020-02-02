@@ -279,9 +279,9 @@ E.g:
             
    `Derivate(this ComplexFunction func, ComplexNumber variables, int order = 1)`
 
-### Cauchy–Riemann equations
+### Cauchyâ€“Riemann equations
 
-To test if analytic fuction in a point using Cauchy–Riemann equations:
+To test if analytic fuction in a point using Cauchyâ€“Riemann equations:
 	
    `fz.IsAnalytical((x0,y0))`
 
@@ -289,4 +289,4 @@ To test if analytic fuction in a point using Cauchy–Riemann equations:
 
 To get the Jacobian as a Matrix
 
-    `fz.Jacobian((x0,y0))`
+   `fz.Jacobian((x0,y0))`
