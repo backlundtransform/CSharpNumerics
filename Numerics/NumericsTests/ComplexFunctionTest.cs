@@ -15,12 +15,19 @@ namespace NumericsTests
             double fx((double x, double y) p) => Math.Pow(Math.E ,p.x) *Math.Cos(p.y);
             double fy((double x, double y) p) => Math.Pow(Math.E, p.x) * Math.Sin(p.y);
 
-            var fz = new ComplexFunction(fx, fy);
+            var w = new ComplexFunction(fx, fy);
 
             var rnd = new Random();
 
-            Assert.IsTrue(fz.IsAnalytical((rnd.Next(10), rnd.Next(10))));
+            Assert.IsTrue(w.IsAnalytical((rnd.Next(10), rnd.Next(10))));
 
+
+            ComplexNumber fz(ComplexNumber z) => new ComplexNumber(Math.Pow(Math.E, z.realPart) * Math.Cos(z.imaginaryPart), Math.Pow(Math.E, z.realPart) * Math.Sin(z.imaginaryPart));
+
+           w = new ComplexFunction(fz);
+
+
+            Assert.IsTrue(w.IsAnalytical((rnd.Next(10), rnd.Next(10))));
         }
 
         [TestMethod]

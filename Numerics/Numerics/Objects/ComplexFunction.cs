@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace Numerics.Objects
 {
@@ -19,6 +18,17 @@ namespace Numerics.Objects
             u = re;
             v = im;
         }
+
+        public ComplexFunction(Func<ComplexNumber, ComplexNumber> fz)
+        {
+            double funcRe((double x, double y) point) => fz(new ComplexNumber(point.x, point.y)).realPart;
+            double funcIm((double x, double y) point) => fz(new ComplexNumber(point.x, point.y)).imaginaryPart;
+
+            u = funcRe;
+            v = funcIm;
+
+        }
+
 
         public Matrix Jacobian((double x, double y) point) {
 
