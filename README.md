@@ -18,9 +18,13 @@ Or use the vector (x,y,z)
 
 `Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
 
-To integrate a function use:
+To integrate a function with Trapezoidal rule use:
 
-`Integrate(this Func<double, double> func, double lowerlimit, double upperlimit)`
+`Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)`
+
+To solve double integrals with Monte Carlo method use:
+
+`Integrate(this Func<(double x, double y), double> func, (double lowerLimit, double upperLimit) xlimit, (double lowerLimit, double upperLimit) ylimit)`
 
 
 ## The complex object

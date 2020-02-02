@@ -118,7 +118,24 @@ namespace NumericsTests
             var upperlimit = Math.PI/5;
             var result = func.Integrate(lowerlimit, upperlimit);
             Assert.IsTrue(Math.Round(result) == Math.Round(Math.Sin(upperlimit)- Math.Sin(lowerlimit)));
-        } 
+        }
+
+
+        [TestMethod]
+        public void TestDoubleIntegrate()
+        {
+            Func<(double, double), double> func = ((double x, double y) v) => (Math.Pow(v.x, 3) + Math.Pow(v.y, 2));
+    
+            var result = func.Integrate((1,4),(1,4));
+            Assert.IsTrue(Math.Truncate(result) == 254);
+
+            Func<(double, double), double> func2 = ((double x, double y) v) => 2*v.x*v.y + Math.Pow(v.y, 2);
+
+            result = func2.Integrate((1, 4), (1, 4));
+            Assert.IsTrue(Math.Truncate(result) == 175);
+        }
+
+
 
     }
 }

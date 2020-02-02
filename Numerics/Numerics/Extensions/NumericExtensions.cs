@@ -7,7 +7,7 @@ namespace System
 {
     public static class NumericExtensions
     {
-        public const double h = 0.0000001;
+        public const double h = 0.000001;
 
 
         public static double Derivate(this Func<double, double> func, double x, int order =1) {
@@ -115,15 +115,39 @@ namespace System
 
         }
 
-        public static double Integrate(this Func<double, double> func, double lowerlimit, double upperlimit)
+        public static double Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)
         {
             var result = 0.0;
-            for (var i = lowerlimit; i <= upperlimit; i += h)
+            for (var i = lowerLimit; i <= upperLimit; i += h)
             {
                 result += h * (func(i) + func(i + h)) / 2;
             }
             return result;
         }
+
+
+        public static double Integrate(this Func<(double x, double y), double> func, (double lowerLimit, double upperLimit) xlimit, (double lowerLimit, double upperLimit) ylimit)
+        {
+
+           var rnd = new Random();
+
+            var result = 0.0;
+            var throws = 999999;
+
+
+            for (var i = 0; i < throws; i ++)
+                {
+
+                var x = rnd.NextDouble() *(xlimit.upperLimit - xlimit.lowerLimit) + xlimit.lowerLimit;
+                var y = rnd.NextDouble() * (ylimit.upperLimit - ylimit.lowerLimit) + ylimit.lowerLimit; 
+
+                result +=func((x,y));
+
+            }
+            return (xlimit.upperLimit - xlimit.lowerLimit) * (ylimit.upperLimit - ylimit.lowerLimit) * result / 999999; 
+         
+        }
+
 
 
         private static int Sign(int index) => index % 2 == 0 ? -1 : 1;
