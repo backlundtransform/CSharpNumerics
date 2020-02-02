@@ -275,13 +275,17 @@ E.g:
 
    `var fz = new ComplexFunction(fx, fy);`
 
+or 
+
+   `ComplexNumber fz(ComplexNumber z) => new ComplexNumber(Math.Pow(Math.E, z.realPart) * Math.Cos(z.imaginaryPart), Math.Pow(Math.E, z.realPart) * Math.Sin(z.imaginaryPart));` 
+
  To derivate a complex function use:
             
    `Derivate(this ComplexFunction func, ComplexNumber variables, int order = 1)`
 
-### Cauchyâ€“Riemann equations
+### Cauchy–Riemann equations
 
-To test if analytic fuction in a point using Cauchyâ€“Riemann equations:
+To test if analytic fuction in a point using Cauchy–Riemann equations:
 	
    `fz.IsAnalytical((x0,y0))`
 
@@ -289,4 +293,4 @@ To test if analytic fuction in a point using Cauchyâ€“Riemann equations:
 
 To get the Jacobian as a Matrix
 
-   `fz.Jacobian((x0,y0))`
+    `fz.Jacobian((x0,y0))`
