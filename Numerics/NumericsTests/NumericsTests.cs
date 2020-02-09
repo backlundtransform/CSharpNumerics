@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Numerics.Objects;
 
 namespace NumericsTests
 {
@@ -136,6 +137,15 @@ namespace NumericsTests
         }
 
 
+        [TestMethod]
+        public void TestTrippleIntegral()
+        {
+            Func<Vector, double> func = (Vector v) => (Math.Pow(v.x, 3) + Math.Pow(v.y, 2))+v.z;
+
+            var result = func.Integrate(new Vector(-2, -2,-2), new Vector(2, 2, 2));
+           
+            Assert.IsTrue(Math.Truncate(result) ==85);
+        }
 
     }
 }

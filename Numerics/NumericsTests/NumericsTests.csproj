@@ -53,6 +53,7 @@
     <Compile Include="MatrixTest.cs" />
     <Compile Include="NumericsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StatisticsTest.cs" />
     <Compile Include="VectorFieldTest.cs" />
     <Compile Include="VectorTest.cs" />
   </ItemGroup>

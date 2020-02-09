@@ -58,5 +58,9 @@ namespace Numerics.Objects
             return new ComplexNumber((a.realPart * b.realPart + a.imaginaryPart * b.imaginaryPart) / denominator,
                 (a.imaginaryPart * b.realPart - a.realPart * b.imaginaryPart) / denominator);
         }
+
+        public static ComplexNumber operator /(ComplexNumber a,double b)=>new ComplexNumber(a.realPart / b, a.imaginaryPart);
+                
+   
     }
 }
