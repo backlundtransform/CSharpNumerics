@@ -12,7 +12,7 @@ namespace NumericsTests
         public void TestImaginaryPower()
         {
             var i = new ComplexNumber(3, 2);
-            i.Pow(2);
+            i =i.Pow(2);
             Assert.IsTrue(Math.Round(i.realPart) == 5);
             Assert.IsTrue(Math.Round(i.imaginaryPart) == 12);
         }
@@ -21,7 +21,7 @@ namespace NumericsTests
         public void TestEulerIdentity()
         {
             var i = new ComplexNumber(0, Math.PI);
-            i.Exponential();
+            i = i.Exponential();
             Assert.IsTrue(Math.Round(i.realPart) == -1);
 
         }

@@ -26,6 +26,10 @@ To solve double integrals with Monte Carlo method use:
 
 `Integrate(this Func<(double x, double y), double> func, (double lowerLimit, double upperLimit) xlimit, (double lowerLimit, double upperLimit) ylimit)`
 
+or triple integral
+
+`Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit)`
+
 
 ## The complex object
 
@@ -298,3 +302,26 @@ To test if analytic fuction in a point using Cauchy–Riemann equations:
 To get the Jacobian as a Matrix
 
    `fz.Jacobian((x0,y0))`
+
+
+## Transform
+
+###Fourier transform
+
+To use a fast fourier transform use extentionsmethods
+from list of complexnumber 
+
+`Fouriertransform(this List<ComplexNumber> numbers)`
+
+to calculate the invers fourier transform
+
+`List<ComplexNumber> InverseFouriertransform(this List<ComplexNumber> numbers)`
+
+## Statistics
+
+To calculate the median use linq in the sameway as calculating avarerage, sum, max or min
+
+`timeserie.Median(p => p.Value)`
+
+
+

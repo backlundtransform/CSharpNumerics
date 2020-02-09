@@ -21,22 +21,9 @@ namespace Numerics.Objects
 
         public double GetMagnitude() => Math.Sqrt(Math.Pow(realPart, 2) + Math.Pow(imaginaryPart, 2));
 
-        public ComplexNumber GetConjugate() => new ComplexNumber(realPart, imaginaryPart);
+        public ComplexNumber GetConjugate() => new ComplexNumber(realPart, -imaginaryPart);
 
-        public void Exponential()
-        {
-            realPart = Math.Pow(Math.E, realPart) * Math.Cos(imaginaryPart);
-            imaginaryPart = Math.Sin(imaginaryPart);
-        }
-
-        public void Pow(int power)
-        {
-            var mag = GetMagnitude();
-            var arg = GetArgument();
-            realPart = Math.Pow(mag, power) * Math.Cos(power * arg);
-            imaginaryPart = Math.Pow(mag, power) * Math.Sin(power * arg);
-        }
-
+     
         public static ComplexNumber FromPolarCoordinates(double r, double theta) => new ComplexNumber(r * Math.Cos(theta), r * Math.Sin(theta));
 
         public static ComplexNumber operator +(ComplexNumber a, ComplexNumber b)
@@ -55,12 +42,25 @@ namespace Numerics.Objects
         public static ComplexNumber operator /(ComplexNumber a, ComplexNumber b)
         {
             var denominator = Math.Pow(b.realPart, 2) + Math.Pow(b.imaginaryPart, 2);
+         
             return new ComplexNumber((a.realPart * b.realPart + a.imaginaryPart * b.imaginaryPart) / denominator,
                 (a.imaginaryPart * b.realPart - a.realPart * b.imaginaryPart) / denominator);
         }
 
         public static ComplexNumber operator /(ComplexNumber a,double b)=>new ComplexNumber(a.realPart / b, a.imaginaryPart);
-                
-   
+
+        public static ComplexNumber operator *(double a, ComplexNumber b) => new ComplexNumber(b.realPart * a, b.imaginaryPart);
+
+        public static ComplexNumber operator *(ComplexNumber a, double b) => new ComplexNumber(a.realPart* b, a.imaginaryPart);
+
+        public static ComplexNumber operator +(ComplexNumber a, double b) => new ComplexNumber(a.realPart + b, a.imaginaryPart);
+
+        public static ComplexNumber operator -(double a, ComplexNumber b) => new ComplexNumber(a-b.realPart, b.imaginaryPart);
+
+        public static ComplexNumber operator -(ComplexNumber a, double b) => new ComplexNumber(a.realPart - b, a.imaginaryPart);
+
+        public static ComplexNumber operator +(double a, ComplexNumber b) => new ComplexNumber(a+b.realPart, b.imaginaryPart);
+
+
     }
 }

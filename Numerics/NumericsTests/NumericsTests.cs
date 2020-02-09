@@ -138,7 +138,7 @@ namespace NumericsTests
 
 
         [TestMethod]
-        public void TestTrippleIntegral()
+        public void TestTripleIntegral()
         {
             Func<Vector, double> func = (Vector v) => (Math.Pow(v.x, 3) + Math.Pow(v.y, 2))+v.z;
 
