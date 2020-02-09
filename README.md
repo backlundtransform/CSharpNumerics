@@ -306,7 +306,7 @@ To get the Jacobian as a Matrix
 
 ## Transform
 
-###Fourier transform
+### Fourier transform
 
 To use a fast fourier transform use extentionsmethods
 from list of complexnumber 
