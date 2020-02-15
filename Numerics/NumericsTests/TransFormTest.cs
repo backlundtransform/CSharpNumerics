@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
+
 namespace NumericsTests
 {
     [TestClass]
@@ -13,7 +14,7 @@ namespace NumericsTests
     {
 
         [TestMethod]
-        public void TestFourierTransform()
+        public void TestFastFourierTransform()
         {
 
             var input = new List<ComplexNumber>() { new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0) };
@@ -48,8 +49,9 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(transform[7].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[7].imaginaryPart, 2) == 2.41);
 
-            input = transform.InverseFouriertransform();
+            transform.Save(@"\transform.csv");
 
+            input = transform.InverseFouriertransform().ToList();
 
             Assert.IsTrue(Math.Round(input[0].realPart) == 1);
             Assert.IsTrue(Math.Round(input[0].imaginaryPart) == 0);
@@ -80,6 +82,9 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(input[7].imaginaryPart) == 0);
 
 
+          
+
         }
+    
     }
 }

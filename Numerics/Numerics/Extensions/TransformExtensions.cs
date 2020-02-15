@@ -13,39 +13,10 @@ namespace System
         }
 
 
-
         public static List<ComplexNumber> Fouriertransform(this List<double> numbers)
         {
             return numbers.Select(p=>new ComplexNumber(p,0)).Fouriertransform(-1);
         }
-
-
-
-        public static IDictionary<double,ComplexNumber> Fouriertransform(this Func<double,double> func, double tmin, double tmax, double stepSize)
-        {
-            var numbers = new Dictionary<double, ComplexNumber>();
-
-
-            var step = (tmax - tmin) / stepSize;
-            for (var i = tmin; i <= tmax; i += step) {
-
-                numbers.Add(i, new ComplexNumber(func(i), 0) );
-
-            }
-
-            var transform = numbers.Select(p => p.Value).Fouriertransform(-1);
-
-            var result = new Dictionary<double, ComplexNumber>();
-            for (var i = 0; i < numbers.Count(); i ++)
-            {
-
-                result.Add(numbers.ElementAt(i).Key , transform[i]);
-
-            }
-
-            return result;
-        }
-
 
 
         public static List<ComplexNumber> InverseFouriertransform(this List<ComplexNumber> numbers)
