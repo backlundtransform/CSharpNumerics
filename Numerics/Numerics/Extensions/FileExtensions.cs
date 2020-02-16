@@ -1,5 +1,7 @@
-﻿using Numerics.Objects;
+﻿using Numerics.Models;
+using Numerics.Objects;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace System.IO
@@ -7,7 +9,7 @@ namespace System.IO
     public static class FileExtensions
     {
         public static void Save(this IDictionary<Vector,Vector> data, string path) => data.Save(path, Encoding.Default);
-        public static void Save(this IEnumerable<ComplexNumber> data, string path) => data.Save(path, Encoding.Default);
+        public static void Save<T>(this IEnumerable<T> data, string path) => data.Save(path, Encoding.Default);
 
         public static void Save(this IDictionary<Vector, Vector> data, string path, Encoding encoding)
         {
@@ -26,16 +28,28 @@ namespace System.IO
 
         }
 
-        public static void Save(this IEnumerable<ComplexNumber> data, string path, Encoding encoding)
+
+
+
+        public static void Save<T>(this IEnumerable<T> data, string path, Encoding encoding)
         {
             var csv = new StringBuilder();
 
-            var newLine = $"Real,Imaginary";
-            csv.AppendLine(newLine);
-
+    
             foreach (var item in data)
             {
-                newLine = $"{item.realPart},{item.imaginaryPart}";
+
+                var newLine = "";
+                var properties = typeof(T).GetProperties();
+                for (var i = 0; i < properties.Length; i++)
+                {
+                    newLine += properties[i].GetValue(item).ToString();
+                    if (i != properties.Length - 1)
+                    {
+                        newLine += ",";
+                    }
+                }
+           
                 csv.AppendLine(newLine);
 
             }

@@ -1,4 +1,5 @@
-﻿using Numerics.Objects;
+﻿using Numerics.Models;
+using Numerics.Objects;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,27 +7,55 @@ namespace System
 {
     public static class TransformExtensions
     {
-
-        public static List<ComplexNumber> Fouriertransform(this List<ComplexNumber> numbers)
+        public static List<Serie> ToFrequencyResolution(this List<ComplexNumber> numbers, double samplingFrequency, int pow=1)
         {
-            return numbers.Fouriertransform(-1);
+            return numbers.Select((p, index)=>new Serie() { Value=Math.Pow(p.GetMagnitude(),pow), Index = index* samplingFrequency/numbers.Count() }).ToList();
+        }
+
+        public static List<Serie> GetSeries(this Func<double, double> func, double minValue, double maxValue, double stepSize)
+        {
+            var numbers = new List<Serie>();
+
+            var step = (maxValue - minValue) / stepSize;
+
+            for (var i = minValue; i < maxValue; i += step)
+            {
+                numbers.Add(new Serie() { Value = func(i), Index = i });
+
+            }
+
+            return numbers;
+
         }
 
 
-        public static List<ComplexNumber> Fouriertransform(this List<double> numbers)
+        public static List<ComplexNumber> FastFouriertransform(this Func<double,double> func,double minValue, double maxValue, double stepSize)
         {
-            return numbers.Select(p=>new ComplexNumber(p,0)).Fouriertransform(-1);
+         return func.GetSeries(minValue, maxValue, stepSize).Select(p => new ComplexNumber(p.Value, 0)).FastFouriertransform(-1);
         }
 
 
-        public static List<ComplexNumber> InverseFouriertransform(this List<ComplexNumber> numbers)
+
+        public static List<ComplexNumber> FastFouriertransform(this List<ComplexNumber> numbers)
+        {
+            return numbers.FastFouriertransform(-1);
+        }
+
+
+        public static List<ComplexNumber> FastFouriertransform(this List<double> numbers)
+        {
+            return numbers.Select(p=>new ComplexNumber(p,0)).FastFouriertransform(-1);
+        }
+
+
+        public static List<ComplexNumber> InverseFastFouriertransform(this List<ComplexNumber> numbers)
         {
      
-            return numbers.Fouriertransform(1).Select(p=>new ComplexNumber(p.realPart/numbers.Count(),p.imaginaryPart)).ToList();
+            return numbers.FastFouriertransform(1).Select(p=>new ComplexNumber(p.realPart/numbers.Count(),p.imaginaryPart)).ToList();
 
         }
 
-        public static List<ComplexNumber> Fouriertransform(this IEnumerable<ComplexNumber> input, int sign)
+        public static List<ComplexNumber> FastFouriertransform(this IEnumerable<ComplexNumber> input, int sign)
         {
             var numbers = new List<ComplexNumber>(input);
 

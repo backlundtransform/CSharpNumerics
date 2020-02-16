@@ -19,7 +19,7 @@ namespace NumericsTests
 
             var input = new List<ComplexNumber>() { new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0) };
 
-            var transform = input.Fouriertransform().ToList();
+            var transform = input.FastFouriertransform().ToList();
 
             Assert.IsTrue(transform[0].realPart == 4);
             Assert.IsTrue(transform[0].imaginaryPart == 0);
@@ -49,9 +49,8 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(transform[7].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[7].imaginaryPart, 2) == 2.41);
 
-            transform.Save(@"\transform.csv");
 
-            input = transform.InverseFouriertransform().ToList();
+            input = transform.InverseFastFouriertransform().ToList();
 
             Assert.IsTrue(Math.Round(input[0].realPart) == 1);
             Assert.IsTrue(Math.Round(input[0].imaginaryPart) == 0);
@@ -81,10 +80,19 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(input[7].realPart) == 0);
             Assert.IsTrue(Math.Round(input[7].imaginaryPart) == 0);
 
-
-          
-
         }
-    
+        [TestMethod]
+        public void GaussianPulse()
+        {
+            Func<double, double> func = (double t) => 1 / (4 * Math.Sqrt(2 * Math.PI * 0.01)) * (Math.Exp(-t * t / (2 * 0.01)));
+            var timeseries = func.GetSeries(-0.5, 0.5, 100);
+            Assert.IsTrue(timeseries.Count() == 100);
+            timeseries.Save(@"\timeserie.csv");
+
+         
+            var frequency = func.FastFouriertransform(-0.5, 0.5, 100).ToFrequencyResolution(100);
+            Assert.IsTrue(frequency.Count() == 100);
+            frequency.Save(@"\frequency.csv");
+        }
     }
 }

@@ -311,11 +311,25 @@ To get the Jacobian as a Matrix
 To use a fast fourier transform use extentionsmethods
 from list of complexnumber 
 
-`Fouriertransform(this List<ComplexNumber> numbers)`
+`FastFouriertransform(this List<ComplexNumber> numbers)`
 
-to calculate the invers fourier transform
+to calculate the invers fast fourier transform
 
-`List<ComplexNumber> InverseFouriertransform(this List<ComplexNumber> numbers)`
+`List<ComplexNumber> InverseFastFouriertransform(this List<ComplexNumber> numbers)`
+
+E.g Convert a Gaussian pulse from the time domain to the frequency domain and save result.
+
+`Func<double, double> func = (double t) => 1 / (4 * Math.Sqrt(2 * Math.PI * 0.01)) * (Math.Exp(-t * t / (2 * 0.01)));`
+`var timeseries = func.GetSeries(-0.5, 0.5, 100);`
+`timeseries.Save(@"\timeserie.csv");`
+
+`var frequency = func.FastFouriertransform(-0.5, 0.5, 100).ToFrequencyResolution(100);`
+`frequency.Save(@"\frequency.csv");`
+
+
+
+
+
 
 ## Statistics
 
