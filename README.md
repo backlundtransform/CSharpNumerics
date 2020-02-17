@@ -1,5 +1,5 @@
 # CSharpNumerics
-Simple numeric package
+Numeric package
 
 
 ## Numeric Extensions
@@ -323,11 +323,13 @@ E.g Convert a Gaussian pulse from the time domain to the frequency domain and sa
 `var timeseries = func.GetSeries(-0.5, 0.5, 100);`
 `timeseries.Save(@"\timeserie.csv");`
 
+GetSeries takes the interval and how many values to return
+
 `var frequency = func.FastFouriertransform(-0.5, 0.5, 100).ToFrequencyResolution(100);`
 `frequency.Save(@"\frequency.csv");`
 
 
-
+ToFrequencyResolution takes the sample rate and will return the frequency as index and the magnitude of the complex number as value
 
 
 
