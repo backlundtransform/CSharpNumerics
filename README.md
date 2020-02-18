@@ -338,7 +338,7 @@ ToFrequencyResolution takes the sample rate and will return the frequency as ind
 
 ## Statistics
 
-To calculate the median use linq in the sameway as calculating avarerage, sum, max or min
+To calculate the median use linq in the same way as calculating avarerage, sum, max or min
 
 `timeserie.Median(p => p.Value)`
 
