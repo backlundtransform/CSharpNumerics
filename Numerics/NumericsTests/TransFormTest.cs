@@ -156,5 +156,25 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(result, 3) == Math.Round(1.0 / Math.Exp(6), 3));
 
         }
+
+
+        [TestMethod]
+        public void TestLowPass()
+        {
+            Func<double, double> func = (double t) => Math.Sin(t);
+            var series = func.GetSeries(-10, 10, 100);
+            var input = series.Select(p => p.Value + 0.0.GetRandomNumber(p.Value)).ToList();
+            var output= series.Select(p => p.Value).ToList();
+            var result =input.LowPassFilter(output).ToList();
+
+
+            Assert.IsTrue(Math.Round(result[32], 3) != Math.Round(input[32], 3));
+
+            Assert.IsTrue(Math.Round(result[32], 3) == Math.Round(output[32], 3));
+
+
+        }
+
+
     }
 }

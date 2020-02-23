@@ -1,4 +1,5 @@
 ﻿using Numerics;
+using Numerics.Models;
 using Numerics.Objects;
 using System.Collections.Generic;
 using System.Linq;
@@ -169,6 +170,38 @@ namespace System
             var img = funcv.Integrate(new Vector(xlimit.lowerLimit, ylimit.lowerLimit, 1), new Vector(xlimit.upperLimit, ylimit.upperLimit, 2));
 
             return new ComplexNumber(re, img);
+        }
+        public static double Integrate(this List<TimeSerie> data)
+        {
+            double sum = 0;
+
+            for (var i = 0; i < data.Count - 1; i++)
+            {
+                sum += (data[i + 1].TimeStamp - data[i].TimeStamp).TotalSeconds * (data[i].Value + data[i + 1].Value) / 2;
+            }
+
+            return sum;
+        }
+
+
+        public static double Integrate(this List<Serie> data)
+        {
+            double sum = 0;
+
+            for (var i = 0; i < data.Count - 1; i++)
+            {
+                sum += (data[i + 1].Index - data[i].Index) * (data[i].Value + data[i + 1].Value) / 2;
+            }
+
+            return sum;
+        }
+
+
+
+        public static double GetRandomNumber(this double minimum, double maximum)
+        {
+            Random random = new Random();
+            return random.NextDouble() * (maximum - minimum) + minimum;
         }
 
         public static double Factorial(this int number)

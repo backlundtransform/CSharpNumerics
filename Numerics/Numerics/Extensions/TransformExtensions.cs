@@ -7,126 +7,12 @@ namespace System
 {
     public static class TransformExtensions
     {
-        const int DefaultStehfest = 14;
-        public delegate double FunctionDelegate(double t);
-        static double[] V; // Stehfest coefficients 
-        static double[] V1; // Stehfest coefficients 
-        static double ln2; // log of 2
-
-        public static void InitStehfest(int N)
-        {
-            ln2 = Math.Log(2.0);
-            int N2 = N / 2;
-            int NV = 2 * N2;
-            V = new double[NV];
-            int sign = 1;
-            if ((N2 % 2) != 0)
-                sign = -1;
-            for (int i = 0; i < NV; i++)
-            {
-                int kmin = (i + 2) / 2;
-                int kmax = i + 1;
-                if (kmax > N2)
-                    kmax = N2;
-                V[i] = 0;
-                sign = -sign;
-                for (int k = kmin; k <= kmax; k++)
-                {
-                    V[i] = V[i] + (Math.Pow(k, N2) / Factorial(k)) * (Factorial(2 * k)
-                         / Factorial(2 * k - i - 1)) / Factorial(N2 - k)
-                         / Factorial(k - 1) / Factorial(i + 1 - k);
-                }
-                V[i] = sign * V[i];
-            }
-        }
-
-        public static double InverseTransform(Func<double, double> f, double t)
-        {
-            double ln2t = ln2 / t;
-            double x = 0;
-            double y = 0;
-            for (int i = 0; i < V.Length; i++)
-            {
-                x += ln2t;
-                y += V[i] * f(x);
-            }
-            return ln2t * y;
-        }
-
-
-        public static double LaplacejghjTransform(this Func<double, double> f, double t)
-        {
-            InitStehfest(14);
-
-            return InverseTransform( f,  t);
-        }
-
-        public static double InverseLaplaceTransform(this Func<double, double> func, double t)
-        {
-            var numbers = 14;
-            var result = 0.0;
-            var sign = -1;
-
-            for (var i = 0; i < numbers; i++)
-            {
-                var v = 0.0;
-                sign = -sign;
-              
-                for (int k = (i + 2) / 2; k <= Math.Min(i+1, numbers/2); k++)
-                {
-                    v += (Math.Pow(k, 7) ) * (2 * k).Factorial()
-                     / ((2 * k - i - 1).Factorial() * (7 - k).Factorial()
-                    *(k - 1).Factorial() * (i + 1 - k).Factorial() * k.Factorial());
-                }
-              
-                result += v * sign * func(i * Math.Log(2) / t);
-
-            }
-            return Math.Log(2.0) / t * result/2;
-
-        }
-        public static double Factorial(double N)
-        {
-            double x = 1;
-            if (N > 1)
-            {
-                for (int i = 2; i <= N; i++)
-                    x = i * x;
-            }
-            return x;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
+        private const int defaultNvalue= 14;
+ 
 
         public static List<Serie> ToFrequencyResolution(this List<ComplexNumber> numbers, double samplingFrequency, int pow=1)
         {
             return numbers.Select((p, index)=>new Serie() { Value=Math.Pow(p.GetMagnitude(),pow) / numbers.Count(), Index = index* samplingFrequency/numbers.Count() }).ToList();
-        }
-
-        public static List<Serie> GetSeries(this Func<double, double> func, double minValue, double maxValue, double stepSize)
-        {
-            var numbers = new List<Serie>();
-
-            var step = (maxValue - minValue) / stepSize;
-
-            for (var i = minValue; i < maxValue; i += step)
-            {
-                numbers.Add(new Serie() { Value = func(i), Index = i });
-
-            }
-
-            return numbers;
-
         }
 
 
@@ -198,7 +84,6 @@ namespace System
         {
      
             return numbers.FastFourierTransform(1).Select(p=>new ComplexNumber(p.realPart/numbers.Count(),p.imaginaryPart)).ToList();
-
         }
 
 
@@ -220,7 +105,8 @@ namespace System
                 }
             }
             return result;
-        }
+        }
+
 
         public static List<ComplexNumber> FastFourierTransform(this IEnumerable<ComplexNumber> input, int sign)
         {
@@ -274,7 +160,45 @@ namespace System
         }
 
 
-  
+        public static double InverseLaplaceTransform(this Func<double, double> func, double t)
+        {
+            var numbers = defaultNvalue;
+            var result = 0.0;
+            var sign = -1;
+
+            for (var i = 0; i < numbers; i++)
+            {
+                var v = 0.0;
+                sign = -sign;
+
+                for (int k = (i + 2) / 2; k <= Math.Min(i + 1, numbers / 2); k++)
+                {
+                    v += (Math.Pow(k, 7)) * (2 * k).Factorial()
+                     / ((2 * k - i - 1).Factorial() * (7 - k).Factorial()
+                    * (k - 1).Factorial() * (i + 1 - k).Factorial() * k.Factorial());
+                }
+
+                result += v * sign * func(i * Math.Log(2) / t);
+
+            }
+            return Math.Log(2.0) / t * result / 2;
+
+        }
+   
+
+        public static List<double> LowPassFilter(this List<double> input, List<double> output,double alpha = 0.25)
+        {
+            if (output == null)
+            {
+                return input.ToList();
+            }
+            for (int i = 0; i < input.Count(); i++)
+            {
+                output[i] = output[i] + alpha * (input[i] - output[i]);
+            }
+            return output;
+        }
+
 
 
         public static ComplexNumber Exponential(this ComplexNumber complex)

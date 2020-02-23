@@ -4,6 +4,18 @@ Numeric package
 
 ## Numeric Extensions
 
+Get the Factorial of int 
+
+`Factorial(this int number)`
+
+E.g 
+
+`5.Factorial()`
+
+Outputs 120
+
+### Derivative
+
 To derivate a function use:
 
 `Derivate(this Func<double, double> func, double variablevalue, int order=1)`
@@ -18,9 +30,20 @@ Or use the vector (x,y,z)
 
 `Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
 
+### Integrals
+
 To integrate a function with Trapezoidal rule use:
 
 `Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)`
+
+To integrate a timeserie there is a TimeSerie model with properties TimeStamp as DateTime and Value as double
+
+`Integrate(this List<TimeSerie> data)`
+
+To integrate a serie there is a Serie model with properties Index as souble and Value as double
+
+`Integrate(this List<Serie> data)`
+
 
 To solve double integrals with Monte Carlo method use:
 
@@ -30,15 +53,7 @@ or triple integral
 
 `Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit)`
 
-Get the Factorial of int 
 
-`Factorial(this int number)`
-
-E.g 
-
-`5.Factorial()`
-
-Outputs 120
 
 ## The complex object
 
@@ -314,6 +329,10 @@ To get the Jacobian as a Matrix
 
 
 ## Transform
+
+E.g use a lowpass filter to remove noise from a signal
+
+`var result =input.LowPassFilter(output).ToList()`
 
 ### Fast Fourier transform
 
