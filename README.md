@@ -1,5 +1,5 @@
 # CSharpNumerics
-Simple numeric package
+Numeric package
 
 
 ## Numeric Extensions
@@ -306,7 +306,7 @@ To get the Jacobian as a Matrix
 
 ## Transform
 
-### Fourier transform
+### Fast Fourier transform
 
 To use a fast fourier transform use extentionsmethods
 from list of complexnumber 
@@ -320,20 +320,25 @@ to calculate the invers fast fourier transform
 E.g Convert a Gaussian pulse from the time domain to the frequency domain and save result.
 
 `Func<double, double> func = (double t) => 1 / (4 * Math.Sqrt(2 * Math.PI * 0.01)) * (Math.Exp(-t * t / (2 * 0.01)));`
+
 `var timeseries = func.GetSeries(-0.5, 0.5, 100);`
+
 `timeseries.Save(@"\timeserie.csv");`
 
+GetSeries takes the interval and how many values to return
+
 `var frequency = func.FastFouriertransform(-0.5, 0.5, 100).ToFrequencyResolution(100);`
+
 `frequency.Save(@"\frequency.csv");`
 
 
-
+ToFrequencyResolution takes the sample rate and will return the frequency as index and the magnitude of the complex number as value
 
 
 
 ## Statistics
 
-To calculate the median use linq in the sameway as calculating avarerage, sum, max or min
+To calculate the median use linq in the same way as calculating avarerage, sum, max or min
 
 `timeserie.Median(p => p.Value)`
 
