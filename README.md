@@ -351,7 +351,7 @@ Use in the same way as a fast fourier transform
 
 ### LaplaceTransform
 
-Calculate the laplacetansform for s value
+Calculate the laplace transform for s value
 
 `LaplaceTransform(this Func<double, double> func, double s)`
 
