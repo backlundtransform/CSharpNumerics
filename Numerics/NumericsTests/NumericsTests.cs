@@ -147,5 +147,11 @@ namespace NumericsTests
             Assert.IsTrue(Math.Truncate(result) ==85);
         }
 
+        [TestMethod]
+        public void TestFactorial()
+        {
+           Assert.IsTrue(5.Factorial() == 120);
+        }
+
     }
 }

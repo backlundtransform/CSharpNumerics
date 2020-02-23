@@ -171,6 +171,20 @@ namespace System
             return new ComplexNumber(re, img);
         }
 
+        public static double Factorial(this int number)
+        {
+            if (number <= 1)
+            {
+                return 1;
+            }
+
+            return number*((number - 1).Factorial());
+        }
+        public static double Factorial(this double number)
+        {
+            return ((int)number).Factorial();
+        }
+
         private static int Sign(int index) => index % 2 == 0 ? -1 : 1;
     }
 }
