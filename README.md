@@ -30,6 +30,15 @@ or triple integral
 
 `Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit)`
 
+Get the Factorial of int 
+
+`Factorial(this int number)`
+
+E.g 
+
+`5.Factorial()`
+
+Outputs 120
 
 ## The complex object
 
@@ -309,11 +318,11 @@ To get the Jacobian as a Matrix
 ### Fast Fourier transform
 
 To use a fast fourier transform use extentionsmethods
-from list of complexnumber 
+from a list of complexnumber 
 
 `FastFouriertransform(this List<ComplexNumber> numbers)`
 
-to calculate the invers fast fourier transform
+to calculate the inverse fast fourier transform
 
 `List<ComplexNumber> InverseFastFouriertransform(this List<ComplexNumber> numbers)`
 
@@ -334,7 +343,21 @@ GetSeries takes the interval and how many values to return
 
 ToFrequencyResolution takes the sample rate and will return the frequency as index and the magnitude of the complex number as value
 
+### Discrete Fourier transform
 
+Use in the same way as a fast fourier transform 
+
+`DiscreteFourierTransform(this List<ComplexNumber> numbers)`
+
+### LaplaceTransform
+
+Calculate the laplacetansform for s value
+
+`LaplaceTransform(this Func<double, double> func, double s)`
+
+or it's invers from t value
+
+`InverseLaplaceTransform(this Func<double, double> func, double t)`
 
 ## Statistics
 
