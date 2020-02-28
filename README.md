@@ -382,7 +382,20 @@ or it's invers from t value
 
 To calculate the median use linq in the same way as calculating avarerage, sum, max or min
 
-`timeserie.Median(p => p.Value)`
+`timeseries.Median(p => p.Value)`
+
+To calculate the standard deviation
+
+`timeseries.StandardDeviation(p => p.Value)`
+
+To calculate the variance
+
+`timeseries.Variance(p => p.Value)`
+
+To calculate the covariance if model has X,Y properties
+
+
+`series.Covariance(p => (p.X,p.Y))`
 
 
 

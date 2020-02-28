@@ -1,6 +1,7 @@
 ﻿using Numerics.Models;
 using Numerics.Objects;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 
@@ -43,14 +44,14 @@ namespace System.IO
                 var properties = typeof(T).GetProperties();
                 for (var i = 0; i < properties.Length; i++)
                 {
-                    newLine += properties[i].GetValue(item).ToString();
+                    newLine += Convert.ToString(properties[i].GetValue(item),CultureInfo.InvariantCulture);
                     if (i != properties.Length - 1)
                     {
                         newLine += ",";
                     }
                 }
            
-                csv.AppendLine(newLine);
+                csv.AppendLine(newLine );
 
             }
             File.WriteAllText(path, csv.ToString(), encoding);

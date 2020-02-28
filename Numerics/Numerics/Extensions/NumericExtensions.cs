@@ -197,13 +197,6 @@ namespace System
         }
 
 
-
-        public static double GetRandomNumber(this double minimum, double maximum)
-        {
-            Random random = new Random();
-            return random.NextDouble() * (maximum - minimum) + minimum;
-        }
-
         public static double Factorial(this int number)
         {
             if (number <= 1)

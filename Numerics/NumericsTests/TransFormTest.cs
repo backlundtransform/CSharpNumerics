@@ -1,22 +1,19 @@
-﻿
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-
+using Numerics.Models;
 
 namespace NumericsTests
 {
     [TestClass]
     public class TransFormTest
     {
-
         [TestMethod]
         public void TestFastFourierTransform()
         {
-
             var input = new List<ComplexNumber>() { new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0) };
 
             var transform = input.FastFourierTransform().ToList();
@@ -27,18 +24,14 @@ namespace NumericsTests
             Assert.IsTrue(transform[1].realPart == 1);
             Assert.IsTrue(Math.Round(transform[1].imaginaryPart, 2) == -2.41);
 
-
             Assert.IsTrue(transform[2].realPart == 0);
             Assert.IsTrue(transform[2].imaginaryPart == 0);
-
 
             Assert.IsTrue(transform[3].realPart == 1);
             Assert.IsTrue(Math.Round(transform[3].imaginaryPart, 2) == -0.41);
 
-
             Assert.IsTrue(transform[4].realPart == 0);
             Assert.IsTrue(transform[4].imaginaryPart == 0);
-
 
             Assert.IsTrue(Math.Round(transform[5].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[5].imaginaryPart, 2) == 0.41);
@@ -49,8 +42,7 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(transform[7].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[7].imaginaryPart, 2) == 2.41);
 
-
-            input = transform.InverseFastFouriertransform().ToList();
+            input = transform.InverseFastFourierTransform().ToList();
 
             Assert.IsTrue(Math.Round(input[0].realPart) == 1);
             Assert.IsTrue(Math.Round(input[0].imaginaryPart) == 0);
@@ -58,18 +50,14 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(input[1].realPart) == 1);
             Assert.IsTrue(Math.Round(input[1].imaginaryPart) == 0);
 
-
             Assert.IsTrue(Math.Round(input[2].realPart) == 1);
             Assert.IsTrue(Math.Round(input[2].imaginaryPart) == 0);
-
 
             Assert.IsTrue(Math.Round(input[3].realPart) == 1);
             Assert.IsTrue(Math.Round(input[3].imaginaryPart) == 0);
 
-
             Assert.IsTrue(Math.Round(input[4].realPart) == 0);
             Assert.IsTrue(Math.Round(input[4].imaginaryPart) == 0);
-
 
             Assert.IsTrue(Math.Round(input[5].realPart) == 0);
             Assert.IsTrue(Math.Round(input[5].imaginaryPart) == 0);
@@ -79,14 +67,11 @@ namespace NumericsTests
 
             Assert.IsTrue(Math.Round(input[7].realPart) == 0);
             Assert.IsTrue(Math.Round(input[7].imaginaryPart) == 0);
-
         }
-
 
         [TestMethod]
         public void TestDiscreteFourierTransform()
         {
-
             var input = new List<ComplexNumber>() { new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(1, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0), new ComplexNumber(0, 0) };
 
             var transform = input.DiscreteFourierTransform(-1).ToList();
@@ -97,18 +82,14 @@ namespace NumericsTests
             Assert.IsTrue(transform[1].realPart == 1);
             Assert.IsTrue(Math.Round(transform[1].imaginaryPart, 2) == -2.41);
 
-
             Assert.IsTrue(Math.Round(transform[2].realPart) == 0);
             Assert.IsTrue(Math.Round(transform[2].imaginaryPart) == 0);
-
 
             Assert.IsTrue(transform[3].realPart == 1);
             Assert.IsTrue(Math.Round(transform[3].imaginaryPart, 2) == -0.41);
 
-
             Assert.IsTrue(Math.Round(transform[4].realPart) == 0);
             Assert.IsTrue(Math.Round(transform[4].imaginaryPart) == 0);
-
 
             Assert.IsTrue(Math.Round(transform[5].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[5].imaginaryPart, 2) == 0.41);
@@ -118,9 +99,6 @@ namespace NumericsTests
 
             Assert.IsTrue(Math.Round(transform[7].realPart) == 1);
             Assert.IsTrue(Math.Round(transform[7].imaginaryPart, 2) == 2.41);
-
-
-         
         }
         [TestMethod]
         public void GaussianPulse()
@@ -130,7 +108,6 @@ namespace NumericsTests
             Assert.IsTrue(timeseries.Count() == 100);
             timeseries.Save(@"\timeserie.csv");
 
-         
             var frequency = func.FastFourierTransform(-0.5, 0.5, 100).ToFrequencyResolution(100);
             Assert.IsTrue(frequency.Count() == 100);
             frequency.Save(@"\frequency.csv");
@@ -141,40 +118,58 @@ namespace NumericsTests
         {
             Func<double, double> func = (double t) => 1.0 / Math.Exp(2.0 * t);
             var result = func.LaplaceTransform(2);
-            Assert.IsTrue(Math.Round(result,2)== Math.Round(1.0 / 4.0,2));
-
-
+            Assert.IsTrue(Math.Round(result, 2) == Math.Round(1.0 / 4.0, 2));
         }
-
 
         [TestMethod]
         public void TestInvertLaplaceTransForm()
         {
-            Func<double, double> func = (double s) => 1.0 / (s+2);
+            Func<double, double> func = (double s) => 1.0 / (s + 2);
             var result = func.InverseLaplaceTransform(3);
-        
+
             Assert.IsTrue(Math.Round(result, 3) == Math.Round(1.0 / Math.Exp(6), 3));
-
         }
-
 
         [TestMethod]
-        public void TestLowPass()
+        public void TestLowPassFilter()
         {
+         var rnd = new Random();
+
             Func<double, double> func = (double t) => Math.Sin(t);
             var series = func.GetSeries(-10, 10, 100);
-            var input = series.Select(p => p.Value + 0.0.GetRandomNumber(p.Value)).ToList();
-            var output= series.Select(p => p.Value).ToList();
-            var result =input.LowPassFilter(output).ToList();
+            var noiseSignal = series.Select(p => p.Value + rnd.GenerateNoise(4)).ToList();
+            var output = series.Select(p => p.Value).ToList();
+            var result = noiseSignal.LowPassFilter(output, 0.25).ToList();
 
-
-            Assert.IsTrue(Math.Round(result[32], 3) != Math.Round(input[32], 3));
+            Assert.IsTrue(Math.Round(result[32], 3) != Math.Round(noiseSignal[32], 3));
 
             Assert.IsTrue(Math.Round(result[32], 3) == Math.Round(output[32], 3));
-
-
         }
 
+        [TestMethod]
+        public void TestFFTFilter()
+        {
+            Func<double, double> func = (double t) => 0.7 * Math.Sin(2*Math.PI * 50 * t) +Math.Sin(2 * Math.PI * 120 * t);
+            var rnd = new Random();
+            var signal = func.GetSeries(0, 50, 200).ToList();
+            var noiseSignal = signal.Select(p => new Serie() { Value=p.Value + rnd.GenerateNoise(4), Index=p.Index }).ToList();
 
+            noiseSignal.Save(@"\noiseSignal.csv");
+            signal.Save(@"\signal.csv");
+
+            var fft = noiseSignal.Select(p=>p.Value).ToList().FastFourierTransform().ToFrequencyResolution(1000);
+
+
+
+
+
+            fft.Save(@"\result.csv");
+
+            var maxValue = fft.Max(p => p.Value);
+          var maxIndex = fft.First(p => p.Value== maxValue).Index;
+            //Assert.IsTrue(maxIndex == 120);
+
+      
+        }
     }
 }

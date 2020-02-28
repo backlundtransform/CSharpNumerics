@@ -80,13 +80,6 @@ namespace System
         }
 
 
-        public static List<ComplexNumber> InverseFastFouriertransform(this List<ComplexNumber> numbers)
-        {
-     
-            return numbers.FastFourierTransform(1).Select(p=>new ComplexNumber(p.realPart/numbers.Count(),p.imaginaryPart)).ToList();
-        }
-
-
         public static List<ComplexNumber> DiscreteFourierTransform(this IEnumerable<ComplexNumber> input, int sign)
         {
 
