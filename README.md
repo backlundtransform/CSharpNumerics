@@ -56,7 +56,7 @@ To integrate a serie
 
 Serie model is a model  with properties Index as souble and Value as double
 
-###Monte Carlo Integration
+### Monte Carlo Integration
 
 To solve double integrals with Monte Carlo method use:
 
