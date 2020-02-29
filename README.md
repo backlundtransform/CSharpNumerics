@@ -394,8 +394,13 @@ To calculate the variance
 
 To calculate the covariance if model has X,Y properties
 
-
 `series.Covariance(p => (p.X,p.Y))`
+
+There is also a Statistics class containing static methods
+
+E.g  get normal distribution curve 
+
+ `Statistics.NormalDistribution(variance, mean)`
 
 
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Numerics.Methods;
+using System.Collections.Generic;
 
 namespace System.Linq
 {
@@ -54,8 +55,7 @@ namespace System.Linq
 
         public static double GenerateNoise(this Random random, double variance)
         {
-            double normalDistribution(double t) =>1/(Math.Sqrt(2* variance * Math.PI))* Math.Exp(-Math.Pow(t / Math.Sqrt(variance),2));
-            var foo = normalDistribution(1);
+            var normalDistribution = Statistics.NormalDistribution(Math.Sqrt(variance), 0);
 
             return normalDistribution(random.Next((int)variance));
         }

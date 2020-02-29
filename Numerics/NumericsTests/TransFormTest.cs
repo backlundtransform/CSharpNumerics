@@ -151,13 +151,13 @@ namespace NumericsTests
         {
             Func<double, double> func = (double t) => 0.7 * Math.Sin(2*Math.PI * 50 * t) +Math.Sin(2 * Math.PI * 120 * t);
             var rnd = new Random();
-            var signal = func.GetSeries(0, 50, 200).ToList();
-            var noiseSignal = signal.Select(p => new Serie() { Value=p.Value + rnd.GenerateNoise(4), Index=p.Index }).ToList();
+            var signal = func.GetSeries(0,15, 100).ToList();
+            //var noiseSignal = signal.Select(p => new Serie() { Value=p.Value + 2* rnd.GenerateNoise(4), Index=p.Index }).ToList();
 
-            noiseSignal.Save(@"\noiseSignal.csv");
+           // noiseSignal.Save(@"\noiseSignal.csv");
             signal.Save(@"\signal.csv");
 
-            var fft = noiseSignal.Select(p=>p.Value).ToList().FastFourierTransform().ToFrequencyResolution(1000);
+            var fft = signal.Select(p=>p.Value).ToList().FastFourierTransform().ToFrequencyResolution(187.5);
 
 
 
@@ -167,9 +167,12 @@ namespace NumericsTests
 
             var maxValue = fft.Max(p => p.Value);
           var maxIndex = fft.First(p => p.Value== maxValue).Index;
-            //Assert.IsTrue(maxIndex == 120);
+          Assert.IsTrue(maxIndex == 120);
 
-      
+             maxValue = fft.Where(p => p.Index < 120).Max(p => p.Value);
+           maxIndex = fft.First(p => p.Value == maxValue).Index;
+
+            Assert.IsTrue(maxIndex == 50);
         }
     }
 }
