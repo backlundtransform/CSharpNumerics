@@ -44,14 +44,19 @@ To integrate a function with Trapezoidal rule use:
 
 `Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)`
 
-To integrate a timeserie there is a TimeSerie model with properties TimeStamp as DateTime and Value as double
+To integrate a timeserie 
 
 `Integrate(this List<TimeSerie> data)`
 
-To integrate a serie there is a Serie model with properties Index as souble and Value as double
+TimeSerie is a model with properties TimeStamp as DateTime and Value as double
+
+To integrate a serie  
 
 `Integrate(this List<Serie> data)`
 
+Serie model is a model  with properties Index as souble and Value as double
+
+####Monte Carlo
 
 To solve double integrals with Monte Carlo method use:
 
