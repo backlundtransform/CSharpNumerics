@@ -22,6 +22,14 @@ To derivate a function use:
 
 Calculate higher order derivative by setting the order parameter 
 
+E.g with Chain rule
+
+`double funcG(double x) => 4 * x - 3`
+ 
+`Func<double, double> funcF=(double x) => Math.Pow(x, 2)`
+ 
+`var result = funcF.Derivate(funcG,1)`
+
 If several variables use:
 
 `Derivate(this Func<double[], double> func, double[] variables, int index, int order=1)`

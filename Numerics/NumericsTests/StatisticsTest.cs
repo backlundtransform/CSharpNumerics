@@ -1,8 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Numerics.Methods;
 using Numerics.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace NumericsTests
 {
@@ -54,6 +56,18 @@ namespace NumericsTests
 
             var covariance = serie.Covariance(p => (p.Index,p.Value));
             Assert.IsTrue(Math.Round(covariance,2) == 2.85);
+
+        }
+
+
+        [TestMethod]
+        public void NormalDistribution()
+        {
+            var normalDistribution = Statistics.NormalDistribution(15, 100).GetSeries(0, 200, 100);
+           
+            Assert.IsTrue(Math.Round(normalDistribution.First(p=>p.Value==normalDistribution.Max(c=>c.Value)).Index) == 100);
+
+            normalDistribution.Save(@"\normalDistribution.csv");
 
         }
     }

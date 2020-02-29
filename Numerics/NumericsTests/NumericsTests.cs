@@ -66,6 +66,15 @@ namespace NumericsTests
         }
 
         [TestMethod]
+        public void TestChainRule()
+        {
+            double funcG(double x) => 4 * x - 3;
+            Func<double, double> funcF=(double x) => Math.Pow(x, 2);
+            var result = funcF.Derivate(funcG,1);
+            Assert.IsTrue(Math.Round(result) == 8);
+        }
+
+        [TestMethod]
         public void TestIntegrateExponentiation()
         {
             Func<double, double> func = (double variable) => g * variable;

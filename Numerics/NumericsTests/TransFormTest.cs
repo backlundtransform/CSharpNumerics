@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using Numerics.Models;
 
 namespace NumericsTests
 {
@@ -145,34 +144,6 @@ namespace NumericsTests
 
             Assert.IsTrue(Math.Round(result[32], 3) == Math.Round(output[32], 3));
         }
-
-        [TestMethod]
-        public void TestFFTFilter()
-        {
-            Func<double, double> func = (double t) => 0.7 * Math.Sin(2*Math.PI * 50 * t) +Math.Sin(2 * Math.PI * 120 * t);
-            var rnd = new Random();
-            var signal = func.GetSeries(0,15, 100).ToList();
-            //var noiseSignal = signal.Select(p => new Serie() { Value=p.Value + 2* rnd.GenerateNoise(4), Index=p.Index }).ToList();
-
-           // noiseSignal.Save(@"\noiseSignal.csv");
-            signal.Save(@"\signal.csv");
-
-            var fft = signal.Select(p=>p.Value).ToList().FastFourierTransform().ToFrequencyResolution(187.5);
-
-
-
-
-
-            fft.Save(@"\result.csv");
-
-            var maxValue = fft.Max(p => p.Value);
-          var maxIndex = fft.First(p => p.Value== maxValue).Index;
-          Assert.IsTrue(maxIndex == 120);
-
-             maxValue = fft.Where(p => p.Index < 120).Max(p => p.Value);
-           maxIndex = fft.First(p => p.Value == maxValue).Index;
-
-            Assert.IsTrue(maxIndex == 50);
-        }
+ 
     }
 }

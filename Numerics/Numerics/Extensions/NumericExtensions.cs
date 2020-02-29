@@ -34,6 +34,16 @@ namespace System
 
         }
 
+        public static double Derivate(this Func<double, double> funcF,  Func<double, double> funcG,  double x, int order = 1)
+        {
+
+            var t = funcF.Derivate(funcG(x), order);
+
+            var t2 = funcG.Derivate(x, order);
+            return funcF.Derivate(funcG(x), order)*  funcG.Derivate(x, order);
+
+        }
+
         public static double Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order = 1)
         {
 
