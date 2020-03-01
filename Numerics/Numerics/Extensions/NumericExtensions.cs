@@ -1,4 +1,5 @@
 ﻿using Numerics;
+using Numerics.Enums;
 using Numerics.Models;
 using Numerics.Objects;
 using System.Collections.Generic;
@@ -34,14 +35,23 @@ namespace System
 
         }
 
-        public static double Derivate(this Func<double, double> funcF,  Func<double, double> funcG,  double x, int order = 1)
+        public static double Derivate(this Func<double, double> funcF,  Func<double, double> funcG,  double x, DerivateOperator derivateOperator = DerivateOperator.Chain, int order = 1)
         {
 
-            var t = funcF.Derivate(funcG(x), order);
+            switch (derivateOperator)
+            {
+               
+                case DerivateOperator.Product:
+                   return funcF.Derivate(x, order) * funcG(x) + funcF(x)*funcG.Derivate(x, order);
+                case DerivateOperator.Quotient:
+                    return (funcF.Derivate(x, order) * funcG(x) -funcF(x) * funcG.Derivate(x, order)) / Math.Pow(funcG(x),2);
+                case DerivateOperator.Chain:
+                default:
+                    return funcF.Derivate(funcG(x), order) * funcG.Derivate(x, order);
 
-            var t2 = funcG.Derivate(x, order);
-            return funcF.Derivate(funcG(x), order)*  funcG.Derivate(x, order);
+            }
 
+          
         }
 
         public static double Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order = 1)

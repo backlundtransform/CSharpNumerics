@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
+using Numerics.Enums;
 
 namespace NumericsTests
 {
@@ -72,6 +73,24 @@ namespace NumericsTests
             Func<double, double> funcF=(double x) => Math.Pow(x, 2);
             var result = funcF.Derivate(funcG,1);
             Assert.IsTrue(Math.Round(result) == 8);
+        }
+
+        [TestMethod]
+        public void TestProductRule()
+        {
+            double funcG(double x) => Math.Exp(x);
+            Func<double, double> funcF = (double x) => Math.Sin(x);
+            var result = funcF.Derivate(funcG, 5, DerivateOperator.Product);
+            Assert.IsTrue(Math.Round(result) == -100);
+        }
+
+        [TestMethod]
+        public void TestQuotientRule()
+        {
+            Func<double, double> funcF=(double x) =>3* Math.Cos(x) ;
+            Func<double, double> funcG = (double x) => 2 * x + 1;
+            var result = funcF.Derivate(funcG, 0, DerivateOperator.Quotient);
+            Assert.IsTrue(Math.Round(result) ==-6);
         }
 
         [TestMethod]

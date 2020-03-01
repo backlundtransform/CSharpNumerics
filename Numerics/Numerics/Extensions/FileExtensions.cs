@@ -27,9 +27,6 @@ namespace System.IO
 
         }
 
-
-
-
         public static void Save<T>(this IEnumerable<T> data, string path, Encoding encoding)
         {
             var csv = new StringBuilder();
