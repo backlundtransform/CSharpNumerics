@@ -1,4 +1,8 @@
-﻿namespace System
+﻿using Numerics.Objects;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace System
 {
     public static class DifferentialEquationExtensions
     {
@@ -6,18 +10,46 @@
         public static double RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)
         {
 
+            return func.RungeKutta(min, max, stepSize, yInitial, new Matrix(new double[,] { { 0, 0, 0 }, { 0.5, 0, 0 }, { 0, 0.5, 0 }, { 0, 0, 1 } }), new double[] { 1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0 }, new double[] { 0.0, 0.5, 0.5, 1 });
+
+        }
+
+
+        public static double RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial, Matrix rungeKuttaMatrix  , double[] weights, double[] nodes)
+        {
+
             var y = yInitial;
 
-            for (var t = min+stepSize; t <= max; t += stepSize)
+            for (var t = min + stepSize; t <= max; t += stepSize)
             {
-                var k1 = func((t, y));
+                var kList = new List<double>();
 
-                var k2 = func((t + 2.0 / 3.0 * stepSize, y + 2.0 / 3.0 * stepSize * k1));
-                y += stepSize * (1.0 / 4.0 * k1 + 3.0 / 4.0 * k2);
+
+                for (var i = 0; i < nodes.Length; i++)
+                {
+                    var value = 0.0;
+
+                    var columnLength = rungeKuttaMatrix.values.GetLength(1);
+
+                   for (var j = 0; j < columnLength; j++)
+                    {
+                        value += rungeKuttaMatrix.values[i,j]*(j>= kList.Count?0: kList[j]);
+
+                    }
+                    kList.Add(func((t + nodes[i] * stepSize, y + stepSize * value)));
+
+                }
+
+
+                y += stepSize * kList.Sum(p => p * weights[kList.IndexOf(p)]);
 
             }
             return y;
 
         }
+
+
+
+
     }
 }

@@ -399,7 +399,7 @@ or it's invers from t value
 
 ## Differential Equations
 
-The two-stage second-order Runge–Kutta method uses this extension method 
+The Runge–Kutta (R4) method uses this extension method 
 
 `RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)`
 
@@ -409,6 +409,9 @@ E.g yprim =tan(y)+1 with the initial-value problem  y0=1 and 1<= t <= 1.1 and st
          
 `var result = func.RungeKutta(1,1.1,0.025,1)`
 
+It is also possible using Explicit Runge–Kutta methods by defining the Runge–Kutta matrix, weights and nodes
+
+`var result = func.RungeKutta(1,1.1,0.025,1,new Matrix(new double[,] { { 0, 0, 0 }, { 0.5, 0, 0 }, { 0, 0.5, 0 }, { 0, 0, 1 } }), new double[] { 1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0 }, new double[] { 0.0, 0.5, 0.5, 1 })`
 
 ## Statistics
 
