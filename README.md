@@ -44,14 +44,19 @@ To integrate a function with Trapezoidal rule use:
 
 `Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)`
 
-To integrate a timeserie there is a TimeSerie model with properties TimeStamp as DateTime and Value as double
+To integrate a timeserie 
 
 `Integrate(this List<TimeSerie> data)`
 
-To integrate a serie there is a Serie model with properties Index as souble and Value as double
+TimeSerie is a model with properties TimeStamp as DateTime and Value as double
+
+To integrate a serie  
 
 `Integrate(this List<Serie> data)`
 
+Serie model is a model  with properties Index as souble and Value as double
+
+### Monte Carlo Integration
 
 To solve double integrals with Monte Carlo method use:
 
@@ -387,6 +392,12 @@ or it's invers from t value
 `InverseLaplaceTransform(this Func<double, double> func, double t)`
 
 ## Statistics
+Generate zero-mean white noise with a variance of 4 using Random
+
+`var rnd = new Random()`
+
+`rnd.GenerateNoise(4)`
+
 
 To calculate the median use linq in the same way as calculating avarerage, sum, max or min
 
