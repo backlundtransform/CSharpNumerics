@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="ComplexFunctionTest.cs" />
     <Compile Include="ComplexNumberTests.cs" />
+    <Compile Include="DifferentialEquationTest.cs" />
     <Compile Include="MatrixTest.cs" />
     <Compile Include="NumericsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

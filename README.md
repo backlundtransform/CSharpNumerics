@@ -397,7 +397,21 @@ or it's invers from t value
 
 `InverseLaplaceTransform(this Func<double, double> func, double t)`
 
+## Differential Equations
+
+The two-stage second-order Runge–Kutta method uses this extension method 
+
+`RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)`
+
+E.g yprim =tan(y)+1 with the initial-value problem  y0=1 and 1<= t <= 1.1 and step size 0.025
+
+`Func<(double y, double t), double> func = ((double t, double y) v) => Math.Tan(v.y) +1`
+         
+`var result = func.RungeKutta(1,1.1,0.025,1)`
+
+
 ## Statistics
+
 Generate zero-mean white noise with a variance of 4 using Random
 
 `var rnd = new Random()`

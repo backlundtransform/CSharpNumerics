@@ -1,5 +1,4 @@
-﻿
-using Numerics.Models;
+﻿using Numerics.Models;
 using System.Collections.Generic;
 
 namespace System

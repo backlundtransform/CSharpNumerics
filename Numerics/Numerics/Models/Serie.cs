@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Numerics.Models
+﻿namespace Numerics.Models
 {
    public class Serie
     {
