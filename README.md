@@ -30,6 +30,12 @@ E.g with Chain rule
  
 `var result = funcF.Derivate(funcG,1)`
 
+By using Numerics.Enums.DerivateOperator the Chain rule, Product rule, or Quotient rule can be used
+
+`var result = funcF.Derivate(funcG,Numerics.Enums.DerivateOperator.Product)`
+
+`var result = funcF.Derivate(funcG,Numerics.Enums.DerivateOperator.Quotient)`
+
 If several variables use:
 
 `Derivate(this Func<double[], double> func, double[] variables, int index, int order=1)`
@@ -46,15 +52,15 @@ To integrate a function with Trapezoidal rule use:
 
 To integrate a timeserie 
 
-`Integrate(this List<TimeSerie> data)`
+`Integrate(this List<Numerics.Models.TimeSerie> data)`
 
-TimeSerie is a model with properties TimeStamp as DateTime and Value as double
+TimeSerie is a model with properties TimeStamp as DateTime and Value as double 
 
 To integrate a serie  
 
-`Integrate(this List<Serie> data)`
+`Integrate(this List<Numerics.Models.Serie> data)`
 
-Serie model is a model  with properties Index as souble and Value as double
+Serie model is a model with properties Index as souble and Value as double
 
 ### Monte Carlo Integration
 
@@ -419,7 +425,7 @@ There is also a Statistics class containing static methods
 
 E.g  get normal distribution curve 
 
- `Statistics.NormalDistribution(variance, mean)`
+ `Numerics.Methods.Statistics.NormalDistribution(variance, mean)`
 
 
 
