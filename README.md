@@ -413,6 +413,11 @@ It is also possible using Explicit Rungeâ€“Kutta methods by defining the Rungeâ€
 
 `var result = func.RungeKutta(1,1.1,0.025,1,new Matrix(new double[,] { { 0, 0, 0 }, { 0.5, 0, 0 }, { 0, 0.5, 0 }, { 0, 0, 1 } }), new double[] { 1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0 }, new double[] { 0.0, 0.5, 0.5, 1 })`
 
+Or by using the Trapezoidal rule
+
+`var result = func.TrapezoidalRule(1, 1.1, 0.00025, 1);`
+
+
 ## Statistics
 
 Generate zero-mean white noise with a variance of 4 using Random

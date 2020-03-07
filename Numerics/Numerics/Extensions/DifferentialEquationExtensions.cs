@@ -48,8 +48,19 @@ namespace System
 
         }
 
+        public static double TrapezoidalRule(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)
+        {
+
+            var y = yInitial;
 
 
+            for (var i = min; i <=max; i += stepSize)
+            {
+                y += stepSize * (func((i, y)) + func((i + stepSize, y + stepSize))) / 2;
+         
+            }
+            return y;
+        }
 
     }
 }
