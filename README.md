@@ -399,6 +399,8 @@ or it's invers from t value
 
 ## Differential Equations
 
+###Linear equation systems 
+
 Extension methods to solve linear equation system  
 
 `LinearSystemSolver(this Matrix matrix, Vector vector)`
@@ -406,6 +408,8 @@ Extension methods to solve linear equation system
 Find eigen values of matrix 
 
 `var result = matrix.EigenValues()`
+
+###Runge–Kutta
 
 The Runge–Kutta (R4) method uses this extension method 
 
@@ -421,7 +425,7 @@ It is also possible using Explicit Runge–Kutta methods by defining the Runge�
 
 `var result = func.RungeKutta(1,1.1,0.025,1,new Matrix(new double[,] { { 0, 0, 0 }, { 0.5, 0, 0 }, { 0, 0.5, 0 }, { 0, 0, 1 } }), new double[] { 1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0 }, new double[] { 0.0, 0.5, 0.5, 1 })`
 
-Or by using the Trapezoidal rule
+Or solve ode by using the Trapezoidal rule
 
 `var result = func.TrapezoidalRule(1, 1.1, 0.00025, 1);`
 
