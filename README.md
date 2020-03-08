@@ -399,7 +399,7 @@ or it's invers from t value
 
 ## Differential Equations
 
-###Linear equation systems 
+### Linear equation systems 
 
 Extension methods to solve linear equation system  
 
@@ -409,7 +409,7 @@ Find eigen values of matrix
 
 `var result = matrix.EigenValues()`
 
-###Runge–Kutta
+### Runge–Kutta
 
 The Runge–Kutta (R4) method uses this extension method 
 
