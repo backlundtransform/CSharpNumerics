@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Numerics.Objects
 {
@@ -166,6 +167,7 @@ namespace Numerics.Objects
 
         public static Matrix operator *(Matrix a, Matrix b) => a.GetMultiplicationResult(b);
         public static Vector operator *(Matrix a, Vector b) => a.GetMultiplicationResult(b);
+        public static List<double> operator *(Matrix a, List<double> b) => a.GetMultiplicationResult(b);
         public static Matrix operator *(double a, Matrix b) => b.GetResult(b, 0, a);
         public static Matrix operator /(Matrix a, double b) => a.GetResult(a, 0, 1/b);
         public static Matrix operator -(Matrix a, Matrix b) => a.GetResult(b, -1);
@@ -247,6 +249,12 @@ namespace Numerics.Objects
 
         private Vector GetMultiplicationResult(Vector b)
         {
+
+            if (columnLength == 2)
+            {
+                return new Vector(values[0, 0] * b.x + values[0, 1] * b.y,
+                values[1, 0] * b.x + values[1, 1] * b.y,0);
+            }
             if (columnLength != 3)
             {
                 throw new Exception("The column length of the matrix should be 3");
@@ -255,6 +263,22 @@ namespace Numerics.Objects
                 values[1, 0] * b.x + values[1, 1] * b.y + values[1, 2] * b.z,
                 values[2, 0] * b.x + values[2, 1] * b.y + values[2, 2] * b.z); 
 
+        }
+
+
+        private List<double> GetMultiplicationResult(List<double> b)
+        {
+            var result = new List<double>();
+            for (var row = 0; row < columnLength; row++)
+            {
+                var value = 0.0;
+                for (var col = 0; col < columnLength; col++)
+                {
+                    value += values[row, col] * b[col];
+                }
+                result.Add(value);
+            }
+            return result;
         }
     }
 }

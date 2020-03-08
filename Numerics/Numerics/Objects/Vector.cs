@@ -46,6 +46,8 @@ namespace Numerics.Objects
 
         public static Vector operator *(double a, Vector b) => new Vector(a * b.x, a * b.y, a * b.z);
 
+        public static Vector operator /(Vector a, double b) => new Vector(a.x /b, a.y / b, a.z / b);
+
         public static Vector operator -(Vector a, Vector b) => new Vector(a.x - b.x, a.y - b.y, a.z - b.z);
 
         public static Vector operator +(Vector a, Vector b) => new Vector(a.x + b.x, a.y + b.y, a.z + b.z);

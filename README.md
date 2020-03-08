@@ -399,6 +399,14 @@ or it's invers from t value
 
 ## Differential Equations
 
+Extension methods to solve linear equation system  
+
+`LinearSystemSolver(this Matrix matrix, Vector vector)`
+
+Find eigen values of matrix 
+
+`var result = matrix.EigenValues()`
+
 The Runge–Kutta (R4) method uses this extension method 
 
 `RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)`
