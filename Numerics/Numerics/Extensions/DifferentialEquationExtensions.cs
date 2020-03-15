@@ -78,7 +78,72 @@ namespace System
             return values;
         }
 
- 
+
+        public static Vector GaussElimination(this Matrix matrix, Vector vector)
+        {
+            var values = matrix.GaussElimination(new List<double>() { vector.x,vector.y, vector.z });
+
+            return new Vector(values[0], values[1], values[2]);
+        }
+
+
+        public static List<double> GaussElimination(this Matrix matrix, List<double> vector)
+        {
+            var n = vector.Count;
+
+            for (var p = 0; p < n; p++)
+            {
+
+                var max = p;
+                for (var i = p + 1; i < n; i++)
+                {
+                    if (Math.Abs(matrix.values[i,p]) > Math.Abs(matrix.values[max,p]))
+                    {
+                        max = i;
+                    }
+                }
+      
+
+                for (var c = 0; c < matrix.columnLength; c++) {
+                    var temp = matrix.values[p, c];
+
+                    matrix.values[p, c] = matrix.values[max, c];
+
+                    matrix.values[max, c] = temp;
+                }
+
+               var t = vector[p];
+                vector[p] = vector[max];
+                vector[max] = t;
+
+         
+                for (var i = p + 1; i < n; i++)
+                {
+                    var alpha = matrix.values[i,p] / matrix.values[p,p];
+                    vector[i] -= alpha * vector[p];
+                    for (var j = p; j < n; j++)
+                    {
+                        matrix.values[i,j] -= alpha * matrix.values[p,j];
+                    }
+                }
+            }
+
+            var x = new double[n];
+            for (var i = n - 1; i >= 0; i--)
+            {
+                var sum = 0.0;
+                for (var j = i + 1; j < n; j++)
+                {
+                    sum += matrix.values[i,j] * x[j];
+                }
+                x[i] = (vector[i] - sum) / matrix.values[i,i];
+            }
+            return x.ToList();
+
+     
+        }
+
+
 
         public static List<double> EigenValues(this Matrix matrix)
         {

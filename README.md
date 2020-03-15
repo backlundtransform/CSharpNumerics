@@ -403,6 +403,14 @@ Extension methods to solve linear equation system
 
 `LinearSystemSolver(this Matrix matrix, Vector vector)`
 
+or gauss elimination
+
+`GaussElimination(this Matrix matrix, Vector vector)`
+
+for N values
+
+`GaussElimination(this Matrix matrix, List<double> vector)`
+
 Find eigen values of matrix 
 
 `var result = matrix.EigenValues()`
