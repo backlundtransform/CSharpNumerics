@@ -1,4 +1,4 @@
-# CSharpNumerics
+  # CSharpNumerics
 Numeric package
 
 
@@ -416,6 +416,10 @@ for N values
 Find eigen values of matrix 
 
 `var result = matrix.EigenValues()`
+
+Get dominant eigenvector
+
+`var result =matrix.DominantEigenVector()`
 
 ### Runge–Kutta
 

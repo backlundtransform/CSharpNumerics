@@ -87,7 +87,7 @@ namespace System
         }
 
 
-        public static List<double> GaussElimination(this Matrix matrix, List<double> vector)
+        public static List<double>  GaussElimination(this Matrix matrix, List<double> vector)
         {
             var n = vector.Count;
 
@@ -136,12 +136,32 @@ namespace System
                 {
                     sum += matrix.values[i,j] * x[j];
                 }
-                x[i] = (vector[i] - sum) / matrix.values[i,i];
+               if( matrix.values[i, i] != 0)
+                {
+                    x[i] = (vector[i] - sum) / matrix.values[i, i];
+                }
+              
             }
             return x.ToList();
 
      
         }
+
+        public static Vector DominantEigenVector(this Matrix matrix)
+        {
+        
+            var vector = new Vector(1, 1, 1);
+            for (var i = 0; i < 1000; i++)
+            {
+                vector = matrix * vector / (matrix * vector).GetMagnitude();
+
+            }
+
+            return vector;
+        }
+
+
+
 
 
 

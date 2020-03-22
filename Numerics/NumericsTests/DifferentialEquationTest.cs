@@ -89,6 +89,7 @@ namespace NumericsTests
         }
 
 
+
         [TestMethod]
         public void TestEigenvalueLarge()
         {
@@ -96,6 +97,16 @@ namespace NumericsTests
             var result = matrix.LargestEigenValue();
             Assert.IsTrue(result ==2);
            
+        }
+
+        [TestMethod]
+        public void TestEigenVector()
+        {
+            var matrix = new Matrix(new double[,] { { 2, -12}, { 1, -5}});
+            var result = matrix.DominantEigenVector();
+            Assert.IsTrue(Math.Round(result.x,1) == 0.9);
+            Assert.IsTrue(Math.Round(result.y,1) == 0.3);
+
         }
 
         [TestMethod]
