@@ -1,4 +1,5 @@
 ﻿using Numerics.Methods;
+using Numerics.Models;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -52,6 +53,19 @@ namespace System.Linq
             return xy.Sum(p => (p.x - meanX) * (p.y - meanY)) / (xy.Count() - 1);
         }
 
+        public static IEnumerable<double> CumulativeSum<T>(this IEnumerable<T> enumerable, Func<T, double> func)
+        {
+            double sum = 0;
+
+            var sequence = enumerable.Select(func);
+
+            foreach (var item in sequence)
+            {
+                sum += item;
+                yield return sum;
+            }
+        }
+
 
         public static double GenerateNoise(this Random random, double variance)
         {
@@ -65,5 +79,27 @@ namespace System.Linq
             return random.NextDouble() * (maximum - minimum) + minimum;
         }
 
+
+        public static double LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp) {
+
+            var prev = ts.FirstOrDefault(p => p.TimeStamp < timeStamp);
+            var next = ts.LastOrDefault(p => p.TimeStamp > timeStamp);
+
+            if(prev== null || next == null)
+            {
+                return 0;
+            }
+
+            var previousValue= prev.Value;
+            var nextValue = next.Value;
+
+            var previousTicks = prev.TimeStamp.Ticks;
+            var nextTicks = next.TimeStamp.Ticks;
+
+            var currentTicks = timeStamp.Ticks;
+
+            return previousValue + (nextValue - previousValue) * (currentTicks - previousTicks) / (nextTicks - previousTicks);
+        }
+    
     }
 }

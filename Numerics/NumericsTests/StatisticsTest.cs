@@ -70,5 +70,30 @@ namespace NumericsTests
             normalDistribution.Save(@"\normalDistribution.csv");
 
         }
+
+
+        [TestMethod]
+        public void TestCumulativeSum()
+        {
+            var timeserie = new List<TimeSerie>() { new TimeSerie() { Value = 1.0 }, new TimeSerie() { Value = 2.0 }, new TimeSerie() { Value = 3.0 }, new TimeSerie() { Value =4.0 }, new TimeSerie() { Value = 5.0 }};
+
+            var cumSum= timeserie.CumulativeSum(p => p.Value);
+            Assert.IsTrue(Math.Round(cumSum.Sum(),1) == 35.0);
+
+        }
+
+        [TestMethod]
+        public void TestinearInterpolationTimeSerie()
+        {
+            var timeserie = new List<TimeSerie>() { new TimeSerie() { TimeStamp=new DateTime(2020,01,01),  Value = 1.0 }, new TimeSerie() { TimeStamp = new DateTime(2020, 01, 30), Value = 2.0 } };
+
+            var value = timeserie.LinearInterpolationTimeSerie(new DateTime(2020, 01, 15));
+            Assert.IsTrue(Math.Round(value, 1) == 1.5);
+
+        }
+
+
+      
+
     }
 }

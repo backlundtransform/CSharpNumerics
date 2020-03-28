@@ -473,5 +473,15 @@ E.g  get normal distribution curve
 
  `Numerics.Methods.Statistics.NormalDistribution(variance, mean)`
 
+Extension method for calculating cumulative sum of list
+
+`CumulativeSum<T>(this IEnumerable<T> enumerable, Func<T, double> func)`
+
+### Interpolation
+
+Linear interpolation of a timeserie
+
+`LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp)`
+
 
 
