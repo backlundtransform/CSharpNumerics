@@ -93,7 +93,31 @@ namespace NumericsTests
         }
 
 
-      
+        [TestMethod]
+        public void TestLinearRegression()
+        {
+            var serie = new List<Serie>() {
+              new Serie() { Index = 3.0, Value = 0.62},
+              new Serie() { Index = 3.4, Value = 0.93 },
+              new Serie() { Index = 3.8, Value = 1.08 },
+              new Serie() { Index = 4.2, Value = 1.19},
+              new Serie() { Index = 4.6, Value = 1.45 },
+              new Serie() { Index = 5.0, Value = 1.54 },
+              new Serie() { Index = 5.4, Value = 1.62 },
+              new Serie() { Index = 5.8, Value = 1.92 },
+              new Serie() { Index = 6.2, Value = 1.96 },
+              new Serie() { Index = 6.6, Value = 2.10 },
+              new Serie() { Index = 7.0, Value = 2.35},
+              new Serie() { Index = 7.4, Value = 2.49 },
+              new Serie() { Index = 7.8, Value = 2.58 } };
+
+            var value = serie.LinearRegression(p=>(p.Index, p.Value));
+            Assert.IsTrue(Math.Round(value.slope, 3) == 0.395);
+            Assert.IsTrue(Math.Round(value.intercept, 3) == -0.455);
+            Assert.IsTrue(Math.Round(value.correlation, 3) == 0.995);
+        }
+
+
 
     }
 }

@@ -483,5 +483,23 @@ Linear interpolation of a timeserie
 
 `LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp)`
 
+### Regression
+
+Linear regression that will return intercept correlation and slope
+
+`(double slope, double intercept, double correlation) LinearRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)`
+
+E.g
+
+`var serie = new List<Serie>() { new Serie() { Index = 3.0, Value = 0.62},new Serie() { Index = 3.4, Value = 0.93 },new Serie() { Index = 3.8, Value = 1.08 }};`
+`var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value))`
+
+Exponetial regression  that will return a exponetial function
+
+`var func = serie.ExponentialRegression(p => (p.Index, p.Value));`
+
+
+
+
 
 
