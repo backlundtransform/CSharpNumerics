@@ -82,23 +82,25 @@ namespace System.Linq
 
         public static double LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp) {
 
-            var prev = ts.FirstOrDefault(p => p.TimeStamp < timeStamp);
-            var next = ts.LastOrDefault(p => p.TimeStamp > timeStamp);
+            return ts.LinearInterpolation(p => (p.TimeStamp.Ticks, p.Value), timeStamp.Ticks);
+        }
 
-            if(prev== null || next == null)
-            {
-                return 0;
-            }
 
-            var previousValue= prev.Value;
-            var nextValue = next.Value;
+        public static double LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)
+        {
 
-            var previousTicks = prev.TimeStamp.Ticks;
-            var nextTicks = next.TimeStamp.Ticks;
+            var prev = ts.Select(func).FirstOrDefault(p => p.x < index);
+            var next = ts.Select(func).LastOrDefault(p => p.x > index);
 
-            var currentTicks = timeStamp.Ticks;
+            var previousValue = prev.y;
+            var nextValue = next.y;
 
-            return previousValue + (nextValue - previousValue) * (currentTicks - previousTicks) / (nextTicks - previousTicks);
+            var previousIndex = prev.x;
+            var nextIndex = next.x;
+
+            var currentIndex = index;
+
+            return previousValue + (nextValue - previousValue) * (currentIndex - previousIndex) / (nextIndex - previousIndex);
         }
 
 

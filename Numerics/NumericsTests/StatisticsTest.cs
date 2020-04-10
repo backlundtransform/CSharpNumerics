@@ -111,13 +111,11 @@ namespace NumericsTests
               new Serie() { Index = 7.4, Value = 2.49 },
               new Serie() { Index = 7.8, Value = 2.58 } };
 
-            var value = serie.LinearRegression(p=>(p.Index, p.Value));
-            Assert.IsTrue(Math.Round(value.slope, 3) == 0.395);
-            Assert.IsTrue(Math.Round(value.intercept, 3) == -0.455);
-            Assert.IsTrue(Math.Round(value.correlation, 3) == 0.995);
+            var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value));
+            Assert.IsTrue(Math.Round(slope, 3) == 0.395);
+            Assert.IsTrue(Math.Round(intercept, 3) == -0.455);
+            Assert.IsTrue(Math.Round(correlation, 3) == 0.995);
         }
-
-
 
     }
 }
