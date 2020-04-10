@@ -483,6 +483,15 @@ Linear interpolation of a timeserie
 
 `LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp)`
 
+Or serie
+
+`LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)`
+
+E.g
+
+`var value = serie.LinearInterpolation(p=>(p.Index, p.Value),1)` 
+
+
 ### Regression
 
 Linear regression that will return intercept correlation and slope
