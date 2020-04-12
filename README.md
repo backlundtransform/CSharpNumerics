@@ -417,9 +417,9 @@ Find eigen values of matrix
 
 `var result = matrix.EigenValues()`
 
-Get dominant eigenvector
+If knowing a eigenvalue of a matrix (in this example 1)
 
-`var result =matrix.DominantEigenVector()`
+`var result =matrix.EigenVector(1)`
 
 ### Runge–Kutta
 

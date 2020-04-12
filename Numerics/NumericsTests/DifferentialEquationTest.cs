@@ -99,13 +99,17 @@ namespace NumericsTests
            
         }
 
+
         [TestMethod]
         public void TestEigenVector()
         {
-            var matrix = new Matrix(new double[,] { { 2, -12}, { 1, -5}});
-            var result = matrix.DominantEigenVector();
-            Assert.IsTrue(Math.Round(result.x,1) == 0.9);
-            Assert.IsTrue(Math.Round(result.y,1) == 0.3);
+            var matrix = new Matrix(new double[,] { { 3, -4 }, {4, -7 } });
+            var result = matrix.EigenVector(1);
+            Assert.IsTrue(Math.Round(result.x, 1) ==2);
+            Assert.IsTrue(Math.Round(result.y, 1) == 1);
+            var result2 = matrix.EigenVector(-5);
+            Assert.IsTrue(Math.Round(result.x, 1) == 2);
+            Assert.IsTrue(Math.Round(result.y, 1) == 1);
 
         }
 
@@ -117,7 +121,6 @@ namespace NumericsTests
             Assert.IsTrue(result == -1);
 
         }
-
 
         [TestMethod]
         public void TestEigenvalues()

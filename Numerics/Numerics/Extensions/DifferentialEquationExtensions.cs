@@ -138,7 +138,17 @@ namespace System
                 }
                if( matrix.values[i, i] != 0)
                 {
-                    x[i] = (vector[i] - sum) / matrix.values[i, i];
+
+                    if((vector[i] - sum) != 0)
+                    {
+                        x[i] = (vector[i] - sum) / matrix.values[i, i];
+                    }
+
+                    if ((vector[i] - sum) == 0)
+                    {
+                        x[i] = matrix.values[i, i];
+                    }
+
                 }
               
             }
@@ -147,20 +157,36 @@ namespace System
      
         }
 
-        public static Vector DominantEigenVector(this Matrix matrix)
+
+        public static Vector EigenVector(this Matrix matrix, double egienValue)
         {
+
         
-            var vector = new Vector(1, 1, 1);
-            for (var i = 0; i < 1000; i++)
+
+            for (var i = 0; i < matrix.rowLength; i++)
             {
-                vector = matrix * vector / (matrix * vector).GetMagnitude();
+
+                for (var j = 0; j < matrix.columnLength; j++)
+                {
+
+                    if (i == j)
+                    {
+                        matrix.values[i, j] -= egienValue-0.1;
+                    } 
+
+                }
+            }
+            var vector = new Vector(1, 1, 1);
+            for (var i = 0; i < 5; i++)
+            {
+                vector = matrix.Inverse() * vector;
 
             }
+            var min = new List<double>() { vector.x, vector.y, vector.z }.Where(p => p != 0).Min(p => p);
 
-            return vector;
+
+            return new Vector(Math.Round(vector.x/min), Math.Round(vector.y/min), Math.Round(vector.z/min));
         }
-
-
 
 
 
