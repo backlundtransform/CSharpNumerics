@@ -399,32 +399,6 @@ or it's invers from t value
 
 ## Differential Equations
 
-### Linear equation systems 
-
-Extension methods to solve linear equation system  
-
-`LinearSystemSolver(this Matrix matrix, Vector vector)`
-
-or gauss elimination
-
-`GaussElimination(this Matrix matrix, Vector vector)`
-
-for N values
-
-`GaussElimination(this Matrix matrix, List<double> vector)`
-
-Find eigen values of matrix 
-
-`var result = matrix.EigenValues()`
-
-If knowing a eigenvalue of a matrix (in this example 1)
-
-`var result =matrix.EigenVector(1)`
-
-To solve a linear system of differential equations use OdeSolver with initial value y(0)=x(0)=tZero when t=0
-
-`List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)`
-
 ### Runge–Kutta
 
 The Runge–Kutta (R4) method uses this extension method 
@@ -444,6 +418,32 @@ It is also possible using Explicit Runge–Kutta methods by defining the Runge�
 Or solve ode by using the Trapezoidal rule
 
 `var result = func.TrapezoidalRule(1, 1.1, 0.00025, 1);`
+
+### Matrix differential equation 
+
+Extension methods to solve linear equation system  
+
+`LinearSystemSolver(this Matrix matrix, Vector vector)`
+
+or gauss elimination
+
+`GaussElimination(this Matrix matrix, Vector vector)`
+
+for N values
+
+`GaussElimination(this Matrix matrix, List<double> vector)`
+
+Find eigen values of matrix 
+
+`var result = matrix.EigenValues()`
+
+Find Eigenvector if knowing a eigenvalue of a matrix (in this example 1)
+
+`var result =matrix.EigenVector(1)`
+
+To solve a linear system of differential equations use OdeSolver with initial value y(0)=x(0)=tZero when t=0
+
+`List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)`
 
 
 ## Statistics
