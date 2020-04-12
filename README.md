@@ -421,6 +421,10 @@ If knowing a eigenvalue of a matrix (in this example 1)
 
 `var result =matrix.EigenVector(1)`
 
+To solve a linear system of differential equations use OdeSolver with initial value y(0)=x(0)=tZero when t=0
+
+`List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)`
+
 ### Runge–Kutta
 
 The Runge–Kutta (R4) method uses this extension method 

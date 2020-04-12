@@ -146,7 +146,7 @@ namespace NumericsTests
 
             Assert.IsTrue(result[1](2) == 1.0 / 3.0 * Math.Exp(2) + 2.0 / 3.0 * Math.Exp(-10));
                     
-           Assert.IsTrue(result[3](2) == 0);
+     
         }
 
     }

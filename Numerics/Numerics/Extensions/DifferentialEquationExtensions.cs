@@ -192,6 +192,8 @@ namespace System
             var eigenValues = matrix.EigenValues();
             var eigenVectors = new Dictionary<double, List<double>>();
 
+            eigenValues.Reverse();
+
             foreach (var value in eigenValues) {
                 var vector = matrix.EigenVector(value);
                 eigenVectors.Add(value, new List<double>() { vector.x, vector.y, vector.z });
@@ -210,7 +212,7 @@ namespace System
                 }
             }
 
-            var constants = eigenMatrix.GaussElimination(new List<double>() { tZero, tZero, tZero });
+            var constants = eigenMatrix.LinearSystemSolver(new List<double>() { tZero, tZero, tZero });
 
             double fx(double t) => GetFunc(0, constants, eigenValues, eigenVectors, t);
             double fy(double t) => GetFunc(1, constants, eigenValues, eigenVectors, t);
@@ -223,7 +225,7 @@ namespace System
         {
             return Math.Exp(eigenValues[0] * t) * eigenVectors[eigenValues[0]][index] * constants[0] +
                                        Math.Exp(eigenValues[1] * t) * eigenVectors[eigenValues[1]][index] * constants[1] +
-                                           Math.Exp(eigenValues[2] * t) * eigenVectors[eigenValues[2]][index] * constants[2];
+                                          (constants.Count>2? Math.Exp(eigenValues[2] * t) * eigenVectors[eigenValues[2]][index] * constants[2]:0.0);
         }
 
         public static List<double> EigenValues(this Matrix matrix)
