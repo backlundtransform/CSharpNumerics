@@ -161,8 +161,6 @@ namespace System
         public static Vector EigenVector(this Matrix matrix, double egienValue)
         {
 
-        
-
             for (var i = 0; i < matrix.rowLength; i++)
             {
 
@@ -189,25 +187,58 @@ namespace System
         }
 
 
+        public static List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)
+        {
+            var eigenValues = matrix.EigenValues();
+            var eigenVectors = new Dictionary<double, List<double>>();
 
+            foreach (var value in eigenValues) {
+                var vector = matrix.EigenVector(value);
+                eigenVectors.Add(value, new List<double>() { vector.x, vector.y, vector.z });
+            }
+
+            var eigenMatrix = matrix;
+
+            for (var i = 0; i < matrix.rowLength; i++)
+            {
+
+                for (var j = 0; j < matrix.columnLength; j++)
+                {
+                
+                    eigenMatrix.values[i, j] = eigenVectors[eigenValues[j]][i]; 
+
+                }
+            }
+
+            var constants = eigenMatrix.GaussElimination(new List<double>() { tZero, tZero, tZero });
+
+            double fx(double t) => GetFunc(0, constants, eigenValues, eigenVectors, t);
+            double fy(double t) => GetFunc(1, constants, eigenValues, eigenVectors, t);
+            double fz(double t) => GetFunc(2, constants, eigenValues, eigenVectors, t);
+
+            return new List<Func<double, double>>() { fx, fy, fz };
+        }
+
+        private static double GetFunc(int index, List<double> constants, List<double> eigenValues, Dictionary<double, List<double>> eigenVectors, double t)
+        {
+            return Math.Exp(eigenValues[0] * t) * eigenVectors[eigenValues[0]][index] * constants[0] +
+                                       Math.Exp(eigenValues[1] * t) * eigenVectors[eigenValues[1]][index] * constants[1] +
+                                           Math.Exp(eigenValues[2] * t) * eigenVectors[eigenValues[2]][index] * constants[2];
+        }
 
         public static List<double> EigenValues(this Matrix matrix)
         {
 
-            var largest = matrix.LargestEigenValue();
-
-            var smallest = matrix.SmallestEigenValue();
 
             var results = new List<double>();
 
-            for (var i = smallest; i <= largest; i ++)
+            for (var i = -100.0; i <= 100; i ++)
             {
            
                 if (Math.Round((matrix - i * new Matrix(matrix.identity)).Determinant()) == 0.00)
                 {
 
                     results.Add(i);
-
                 }
 
             }
@@ -225,7 +256,6 @@ namespace System
             var result = (matrix - largest * matrix.Inverse()).LargestEigenValue();
 
             return result-largest;
-
 
         }
 
