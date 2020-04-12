@@ -108,8 +108,8 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(result.x, 1) ==2);
             Assert.IsTrue(Math.Round(result.y, 1) == 1);
             var result2 = matrix.EigenVector(-5);
-            Assert.IsTrue(Math.Round(result.x, 1) == 2);
-            Assert.IsTrue(Math.Round(result.y, 1) == 1);
+            Assert.IsTrue(Math.Round(result2.x, 1) == 1);
+            Assert.IsTrue(Math.Round(result2.y, 1) == 2);
 
         }
 

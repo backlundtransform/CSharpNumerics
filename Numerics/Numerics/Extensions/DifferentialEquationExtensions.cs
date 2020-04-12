@@ -177,15 +177,15 @@ namespace System
                 }
             }
             var vector = new Vector(1, 1, 1);
+
             for (var i = 0; i < 5; i++)
             {
                 vector = matrix.Inverse() * vector;
 
             }
-            var min = new List<double>() { vector.x, vector.y, vector.z }.Where(p => p != 0).Min(p => p);
+            var min = new List<double>() { Math.Abs(vector.x), Math.Abs(vector.y), Math.Abs(vector.z) }.Where(p => p != 0).Min(p => p);
 
-
-            return new Vector(Math.Round(vector.x/min), Math.Round(vector.y/min), Math.Round(vector.z/min));
+            return new Vector(Math.Abs(Math.Round(vector.x/min)), Math.Abs(Math.Round(vector.y/min)), Math.Abs(Math.Round(vector.z/min)));
         }
 
 
