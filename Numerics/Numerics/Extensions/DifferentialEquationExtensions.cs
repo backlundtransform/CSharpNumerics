@@ -186,6 +186,21 @@ namespace System
             return new Vector(Math.Abs(Math.Round(vector.x/min)), Math.Abs(Math.Round(vector.y/min)), Math.Abs(Math.Round(vector.z/min)));
         }
 
+        public static Vector DominantEigenVector(this Matrix matrix)
+        {
+ 
+            var vector = new Vector(1, 1, 1);
+
+            for (var i = 0; i < 5; i++)
+            {
+                vector = matrix * vector;
+
+            }
+            var min = new List<double>() { Math.Abs(vector.x), Math.Abs(vector.y), Math.Abs(vector.z) }.Where(p => p != 0).Min(p => p);
+
+            return new Vector(Math.Abs(Math.Round(vector.x / min)), Math.Abs(Math.Round(vector.y / min)), Math.Abs(Math.Round(vector.z / min)));
+        }
+
 
         public static List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)
         {
@@ -234,6 +249,7 @@ namespace System
 
             var results = new List<double>();
 
+
             for (var i = -100.0; i <= 100; i ++)
             {
            
@@ -250,47 +266,15 @@ namespace System
         }
 
 
-        public static double SmallestEigenValue(this Matrix matrix)
-        {
+        public static double DominantEigenValue(this Matrix matrix) {
 
-            var largest = matrix.LargestEigenValue();
+            var result = matrix.DominantEigenVector();
 
-            var result = (matrix - largest * matrix.Inverse()).LargestEigenValue();
+            var eigenvalue = (matrix * result).Dot(result) / result.Dot(result);
 
-            return result-largest;
-
+            return eigenvalue;
+        
         }
-
-
-        public static double LargestEigenValue(this Matrix matrix)
-        {
-
-            var results = new List<double>();
-            for (var i = 0; i < matrix.rowLength; i++)
-            {
-                var result =0.0;
-                for (var j = 0; j < matrix.columnLength; j++)
-                {
-                    result +=matrix.values[i, j];
-                }
-                results.Add(result);
-            }
-    
-
-            for (var i = results.Min(); i <= results.Max(); i +=0.1)
-            {
-                var lambda = Math.Round(i, 2);
-                if (Math.Round((matrix - lambda * new Matrix(matrix.identity)).Determinant(), 2) == 0.00) {
-
-                    return lambda;           
-
-                };
-
-            }
-            return 0.0;
-        }
-
-
 
     }
 }

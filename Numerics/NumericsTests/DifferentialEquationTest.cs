@@ -89,17 +89,6 @@ namespace NumericsTests
         }
 
 
-
-        [TestMethod]
-        public void TestEigenvalueLarge()
-        {
-            var matrix = new Matrix(new double[,] { {3, -1 }, { 4, -2 }});
-            var result = matrix.LargestEigenValue();
-            Assert.IsTrue(result ==2);
-           
-        }
-
-
         [TestMethod]
         public void TestEigenVector()
         {
@@ -113,14 +102,25 @@ namespace NumericsTests
 
         }
 
+
         [TestMethod]
-        public void TestEigenvalueSmall()
+        public void TestDominantEigenVector()
         {
-            var matrix = new Matrix(new double[,] { { 3, -1 }, { 4, -2 } });
-            var result = matrix.SmallestEigenValue();
-            Assert.IsTrue(result == -1);
+            var matrix = new Matrix(new double[,] { { 3, -4 }, { 4, -7 } });
+           var result = matrix.DominantEigenVector();
+
+            Assert.IsTrue(Math.Round(result.x, 1) == 1);
+            Assert.IsTrue(Math.Round(result.y, 1) == 2);
+
+            result =  matrix.Inverse().DominantEigenVector();
+            Assert.IsTrue(Math.Round(result.x, 1) == 2);
+            Assert.IsTrue(Math.Round(result.y, 1) == 1);
+
+           
 
         }
+
+   
 
         [TestMethod]
         public void TestEigenvalues()
