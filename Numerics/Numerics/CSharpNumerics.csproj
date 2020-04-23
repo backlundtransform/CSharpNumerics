@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Authors>Göran Bäcklund</Authors>
+    <Company>ExoplanetHunter</Company>
+    <Description>Numeric package</Description>
+    <PackageProjectUrl>https://github.com/backlundtransform/CSharpNumerics</PackageProjectUrl>
+    <PackageLicenseFile>license.txt</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Numerics,Statistics</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\license.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

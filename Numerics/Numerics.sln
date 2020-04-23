@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2042
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Numerics", "Numerics\Numerics.csproj", "{33EE6428-EC7D-47C8-A41D-10B40F4DB15F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharpNumerics", "Numerics\CSharpNumerics.csproj", "{33EE6428-EC7D-47C8-A41D-10B40F4DB15F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NumericsTests", "NumericsTests\NumericsTests.csproj", "{DEB665FC-33AF-4567-AE92-F554F1772D14}"
 EndProject

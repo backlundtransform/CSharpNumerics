@@ -63,9 +63,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Numerics\Numerics.csproj">
+    <ProjectReference Include="..\Numerics\CSharpNumerics.csproj">
       <Project>{33ee6428-ec7d-47c8-a41d-10b40f4db15f}</Project>
-      <Name>Numerics</Name>
+      <Name>CSharpNumerics</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

@@ -134,17 +134,14 @@ namespace NumericsTests
         }
 
  
-
         [TestMethod]
         public void TestSolveOde()
         {
             var matrix = new Matrix(new double[,] { { 3, -4 }, { 4, -7 } });
             var result = matrix.OdeSolver(1);
 
-
             Assert.IsTrue(result[0](2) ==2.0/3.0* Math.Exp(2)+ 1.0 / 3.0 * Math.Exp(-10));
-
-            Assert.IsTrue(result[1](2) == 1.0 / 3.0 * Math.Exp(2) + 2.0 / 3.0 * Math.Exp(-10));
+          Assert.IsTrue(result[1](2) == 1.0 / 3.0 * Math.Exp(2) + 2.0 / 3.0 * Math.Exp(-10));
                     
      
         }
