@@ -1,6 +1,7 @@
   # CSharpNumerics
 Numeric package
 
+https://www.nuget.org/packages/CSharpNumerics/
 
 ## Numeric Extensions
 

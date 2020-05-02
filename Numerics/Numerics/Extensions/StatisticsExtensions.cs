@@ -127,5 +127,15 @@ namespace System.Linq
             return (double x)=> Math.Exp(intercept)* Math.Exp(slope*x);
         }
 
+
+
+        public static IEnumerable<Serie> LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)
+        {
+     
+            return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
+
+            
+        }
+
     }
 }

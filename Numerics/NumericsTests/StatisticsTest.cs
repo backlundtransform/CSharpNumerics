@@ -121,10 +121,46 @@ namespace NumericsTests
               new Serie() { Index = 7.4, Value = 2.49 },
               new Serie() { Index = 7.8, Value = 2.58 } };
 
+
             var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value));
             Assert.IsTrue(Math.Round(slope, 3) == 0.395);
             Assert.IsTrue(Math.Round(intercept, 3) == -0.455);
             Assert.IsTrue(Math.Round(correlation, 3) == 0.995);
+        }
+
+
+        [TestMethod]
+        public void LogisticRegression()
+        {
+            var serie = new List<Serie>() {
+              new Serie() { Index = 1, Value = 0.5},
+              new Serie() { Index = 0, Value = 0.75 },
+              new Serie() { Index = 0, Value = 1.0},
+              new Serie() { Index = 0, Value = 1.25},
+              new Serie() { Index = 0, Value = 1.50 },
+              new Serie() { Index =1, Value = 1.75 },
+              new Serie() { Index = 0, Value = 1.75 },
+              new Serie() { Index = 0, Value = 2 },
+              new Serie() { Index = 1, Value = 2.25 },
+              new Serie() { Index = 0, Value = 2.5 },
+              new Serie() { Index = 1, Value = 2.75 },
+              new Serie() { Index = 0, Value = 3},
+              new Serie() { Index = 1, Value = 3.25 },
+              new Serie() { Index = 0, Value = 3.50 },
+              new Serie() { Index = 1, Value = 4 },
+              new Serie() { Index = 1, Value = 4.25 },
+              new Serie() { Index =1, Value = 4.50 },
+              new Serie() { Index = 1, Value = 4.75 },
+              new Serie() { Index = 1, Value = 5 },
+              new Serie() { Index = 1, Value = 5.5 }
+            };
+
+
+            var result = serie.LogisticRegression(p => (p.Index, p.Value), 1.5046, -4.0777);
+
+       
+            Assert.IsTrue(Math.Round(result.First(p=>p.Index==2).Value, 2) == 0.26);
+  
         }
 
     }
