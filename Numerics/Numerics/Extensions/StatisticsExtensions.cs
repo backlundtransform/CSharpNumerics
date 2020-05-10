@@ -89,8 +89,11 @@ namespace System.Linq
         public static double LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)
         {
 
+            
+
             var prev = ts.Select(func).FirstOrDefault(p => p.x < index);
-            var next = ts.Select(func).LastOrDefault(p => p.x > index);
+            var next = ts.Select(func).FirstOrDefault(p => p.x > index);
+
 
             var previousValue = prev.y;
             var nextValue = next.y;

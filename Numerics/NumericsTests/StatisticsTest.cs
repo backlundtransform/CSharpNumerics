@@ -95,7 +95,7 @@ namespace NumericsTests
         [TestMethod]
         public void TestinearInterpolationSerie()
         {
-            var serie = new List<Serie>() { new Serie() { Index= 0, Value = 1.0 }, new Serie() { Index = 2, Value = 2.0 } };
+            var serie = new List<Serie>() { new Serie() { Index= 0, Value = 1.0 }, new Serie() { Index = 2, Value = 2.0 }, new Serie() { Index = 3, Value = 2.5 } };
 
             var value = serie.LinearInterpolation(p=>(p.Index, p.Value),1);
             Assert.IsTrue(Math.Round(value, 1) == 1.5);
