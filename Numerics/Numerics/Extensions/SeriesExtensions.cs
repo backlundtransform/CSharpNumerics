@@ -38,7 +38,13 @@ namespace System
             return timeSeries;
 
         }
-        public static List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, int minutes, DateTime startDate, DateTime endDate, GroupOperator groupOperator= GroupOperator.Average, int multiplier=1, bool shouldInterpolate=true)
+        public static List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, 
+            int minutes,
+            DateTime startDate, 
+            DateTime endDate, 
+            GroupOperator groupOperator= GroupOperator.Average, 
+            int multiplier=1, 
+            bool shouldInterpolate=true)
         {
             var groups = timeSeries.GroupBy(x =>
             {
