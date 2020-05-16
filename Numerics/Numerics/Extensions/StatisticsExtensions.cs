@@ -90,11 +90,8 @@ namespace System.Linq
         {
 
             
-
             var prev = ts.Select(func).FirstOrDefault(p => p.x < index);
             var next = ts.Select(func).FirstOrDefault(p => p.x > index);
-
-
             var previousValue = prev.y;
             var nextValue = next.y;
 

@@ -132,7 +132,7 @@ namespace NumericsTests
         [TestMethod]
         public void LogisticRegression()
         {
-            var serie = new List<Serie>() {
+            var series = new List<Serie>() {
               new Serie() { Index = 1, Value = 0.5},
               new Serie() { Index = 0, Value = 0.75 },
               new Serie() { Index = 0, Value = 1.0},
@@ -154,9 +154,8 @@ namespace NumericsTests
               new Serie() { Index = 1, Value = 5 },
               new Serie() { Index = 1, Value = 5.5 }
             };
-
-
-            var result = serie.LogisticRegression(p => (p.Index, p.Value), 1.5046, -4.0777);
+           
+            var result = series.LogisticRegression(p => (p.Index, p.Value), 1.5046, -4.0777);
 
        
             Assert.IsTrue(Math.Round(result.First(p=>p.Index==2).Value, 2) == 0.26);

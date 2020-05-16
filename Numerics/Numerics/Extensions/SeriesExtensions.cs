@@ -1,5 +1,7 @@
-﻿using Numerics.Models;
+﻿using CSharpNumerics.Enums;
+using Numerics.Models;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace System
 {
@@ -36,6 +38,54 @@ namespace System
             return timeSeries;
 
         }
+        public static List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, int minutes, DateTime startDate, DateTime endDate, GroupOperator groupOperator= GroupOperator.Average, int multiplier=1, bool shouldInterpolate=true)
+        {
+            var groups = timeSeries.GroupBy(x =>
+            {
+                var stamp = x.TimeStamp;
+                stamp = stamp.AddMinutes(-(stamp.Minute % minutes));
+                stamp = stamp.AddMilliseconds(-stamp.Millisecond - 1000 * stamp.Second);
+                return stamp;
+            }).ToDictionary(g => g.Key, g => g.ToList());
 
+            var newTimeserie = new List<TimeSerie>();
+
+            for (var date = startDate; date <= endDate; date = date.AddMinutes(minutes))
+            {
+                var value = 0.0;
+
+                if (!groups.ContainsKey(date) && shouldInterpolate)
+                {
+                    value = timeSeries.LinearInterpolationTimeSerie(date);
+                }
+
+                if (groups.ContainsKey(date))
+                {
+
+                    switch (groupOperator)
+                    {
+                        case GroupOperator.Average:
+                            value =groups[date].Average(p => p.Value);
+                            break;
+                        case GroupOperator.Max:
+                            value = groups[date].Max(p => p.Value);
+                            break;
+                        case GroupOperator.Min:
+                            value = groups[date].Min(p => p.Value);
+                            break;
+                        case GroupOperator.Sum:
+                            value = groups[date].Sum(p => p.Value);
+                            break;
+                        case GroupOperator.Median:
+                            value = groups[date].Median(p => p.Value);
+                            break;
+                    }
+                }
+
+                   newTimeserie.Add(new TimeSerie { TimeStamp = date, Value = (multiplier) * value });
+                
+            }
+            return newTimeserie;
+        }
     }
 }
