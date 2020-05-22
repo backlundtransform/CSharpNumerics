@@ -512,10 +512,28 @@ new Serie() { Index = 3.8, Value = 1.08 }};`
 
 `var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value))`
 
-Exponetial regression  that will return a exponetial function
+Exponetial regression that will return a exponetial function
 
 `var func = serie.ExponentialRegression(p => (p.Index, p.Value));`
 
+Logistic regression using slope and intercept
+
+ `LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)`
+ 
+ ### Timeseries
+ 
+Following extension method
+ 
+  `List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, 
+            int minutes,
+            DateTime startDate, 
+            DateTime endDate, 
+            GroupOperator groupOperator= GroupOperator.Average, 
+            int multiplier=1, 
+            bool shouldInterpolate=true)`
+
+adds an existing timeseries on a grid with equivalent timesteps in x minutes. The enum group operator tells how to group the existing data and has the option average, median,sum, max or min. As default linear interpolation is used when time step has no data. If false a zero will be inserted
+ 
 
 
 
