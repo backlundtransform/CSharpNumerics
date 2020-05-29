@@ -163,30 +163,6 @@ namespace NumericsTests
         }
 
 
-
-        [TestMethod]
-        public void TestZScore()
-        {
-     
-            var zIndex = 0.0;
-
-            for (var i = 4.0; i>=0; i -= 0.001)
-
-            {
-              var area = 1 - (1 - Math.Exp(-1.98 * i / Math.Sqrt(2))) * Math.Exp(-Math.Pow(i / Math.Sqrt(2), 2)) / (1.135 * Math.Sqrt(Math.PI) * i / Math.Sqrt(2));
-
-                if (Math.Round(area,3)== 0.900)
-                {
-                    zIndex = i;
-                    break;
-                }
-
-            }
-
-            Assert.IsTrue(Math.Round(zIndex,3) == 1.644);
-
-        }
-
         [TestMethod]
         public void TestConfidence()
         {
@@ -197,8 +173,8 @@ namespace NumericsTests
                           ,new TimeSerie() { Value = 10 }, new TimeSerie() { Value = 9 }, new TimeSerie() { Value = 6 }, new TimeSerie() { Value =9 }, new TimeSerie() { Value = 4 } };
 
             var (lower,upper) = timeserie.ConfidenceIntervals(p => p.Value, 0.95);
-            Assert.IsTrue(Math.Round(lower, 1) ==5.7);
 
+            Assert.IsTrue(Math.Round(lower, 1) ==5.7);
             Assert.IsTrue(Math.Round(upper, 1) == 8.3);
 
         }

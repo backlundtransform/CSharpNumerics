@@ -67,7 +67,6 @@ namespace System
 
                 if (groups.ContainsKey(date))
                 {
-
                     switch (groupOperator)
                     {
                         case GroupOperator.Average:
