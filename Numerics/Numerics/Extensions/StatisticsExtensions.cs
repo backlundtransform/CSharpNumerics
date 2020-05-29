@@ -41,6 +41,8 @@ namespace System.Linq
             return sum / count;
         }
 
+   
+
         public static double StandardDeviation<T>(this IEnumerable<T> enumerable, Func<T, double> func) => Math.Sqrt(enumerable.Variance(func));
 
         public static double Covariance<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
@@ -51,6 +53,33 @@ namespace System.Linq
             var meanY = xy.Average(p => p.y);
 
             return xy.Sum(p => (p.x - meanX) * (p.y - meanY)) / (xy.Count() - 1);
+        }
+
+        public static (double lowerValue, double upperValue) ConfidenceIntervals<T>(this IEnumerable<T> enumerable, Func<T, double> func, double confidenceLevel) {
+
+            var standardDeviation = enumerable.StandardDeviation(func);
+
+            var mean = enumerable.Average(func);
+
+            var count = enumerable.Count();
+
+            var zIndex = 0.0;
+
+            for (var i = 4.0; i >= 0; i -= 0.001)
+            {
+                var area = 1 - (1 - Math.Exp(-1.98 * i / Math.Sqrt(2))) * Math.Exp(-Math.Pow(i / Math.Sqrt(2), 2)) / (1.135 * Math.Sqrt(Math.PI) * i / Math.Sqrt(2));
+
+                if (Math.Round(area, 3) ==confidenceLevel)
+                {
+                    zIndex = i;
+                    break;
+                }
+
+            }
+            var interval = zIndex * standardDeviation / Math.Sqrt(count);
+
+            return (mean-interval, mean+ interval);
+
         }
 
         public static IEnumerable<double> CumulativeSum<T>(this IEnumerable<T> enumerable, Func<T, double> func)
@@ -88,8 +117,7 @@ namespace System.Linq
 
         public static double LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)
         {
-
-            
+ 
             var prev = ts.Select(func).FirstOrDefault(p => p.x < index);
             var next = ts.Select(func).FirstOrDefault(p => p.x > index);
             var previousValue = prev.y;
@@ -131,10 +159,9 @@ namespace System.Linq
 
         public static IEnumerable<Serie> LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)
         {
-     
-            return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
 
-            
+            return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
+  
         }
 
     }

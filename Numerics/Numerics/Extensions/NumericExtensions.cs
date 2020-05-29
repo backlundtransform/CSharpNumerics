@@ -191,26 +191,39 @@ namespace System
 
             return new ComplexNumber(re, img);
         }
-        public static double Integrate(this List<TimeSerie> data)
-        {
-            double sum = 0;
 
-            for (var i = 0; i < data.Count - 1; i++)
+        public static double Integrate<T>(this List<T> data, Func<T, (DateTime timeStamp, double value)> func)
+        {
+            return data.Select(func).Select(p => new TimeSerie() { TimeStamp = p.timeStamp, Value = p.value }).Integrate();
+        }
+
+        public static double Integrate<T>(this List<T> data, Func<T, (double index, double value)> func)
+        {
+            return data.Select(func).Select(p => new Serie() { Index = p.index, Value = p.value }).Integrate();
+        }
+
+        public static double Integrate(this IEnumerable<TimeSerie> data)
+        {
+            var sum = 0.0;
+            var dataList = data.ToList();
+
+            for (var i = 0; i < dataList.Count - 1; i++)
             {
-                sum += (data[i + 1].TimeStamp - data[i].TimeStamp).TotalSeconds * (data[i].Value + data[i + 1].Value) / 2;
+                sum += (dataList[i + 1].TimeStamp - dataList[i].TimeStamp).TotalSeconds * (dataList[i].Value + dataList[i + 1].Value) / 2;
             }
 
             return sum;
         }
 
 
-        public static double Integrate(this List<Serie> data)
+        public static double Integrate(this IEnumerable<Serie> data)
         {
-            double sum = 0;
+            var sum = 0.0;
+            var dataList = data.ToList();
 
-            for (var i = 0; i < data.Count - 1; i++)
+            for (var i = 0; i < dataList.Count - 1; i++)
             {
-                sum += (data[i + 1].Index - data[i].Index) * (data[i].Value + data[i + 1].Value) / 2;
+                sum += (dataList[i + 1].Index - dataList[i].Index) * (dataList[i].Value + dataList[i + 1].Value) / 2;
             }
 
             return sum;

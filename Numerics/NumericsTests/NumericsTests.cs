@@ -20,7 +20,6 @@ namespace NumericsTests
         }
 
 
-
         [TestMethod]
         public void TestSecondDerivateExponentiation()
         {

@@ -83,7 +83,7 @@ namespace NumericsTests
         }
 
         [TestMethod]
-        public void TestinearInterpolationTimeSerie()
+        public void TestLinearInterpolationTimeSerie()
         {
             var timeserie = new List<TimeSerie>() { new TimeSerie() { TimeStamp=new DateTime(2020,01,01),  Value = 1.0 }, new TimeSerie() { TimeStamp = new DateTime(2020, 01, 30), Value = 2.0 } };
 
@@ -93,7 +93,7 @@ namespace NumericsTests
         }
 
         [TestMethod]
-        public void TestinearInterpolationSerie()
+        public void TestlinearInterpolationSerie()
         {
             var serie = new List<Serie>() { new Serie() { Index= 0, Value = 1.0 }, new Serie() { Index = 2, Value = 2.0 }, new Serie() { Index = 3, Value = 2.5 } };
 
@@ -160,6 +160,47 @@ namespace NumericsTests
        
             Assert.IsTrue(Math.Round(result.First(p=>p.Index==2).Value, 2) == 0.26);
   
+        }
+
+
+
+        [TestMethod]
+        public void TestZScore()
+        {
+     
+            var zIndex = 0.0;
+
+            for (var i = 4.0; i>=0; i -= 0.001)
+
+            {
+              var area = 1 - (1 - Math.Exp(-1.98 * i / Math.Sqrt(2))) * Math.Exp(-Math.Pow(i / Math.Sqrt(2), 2)) / (1.135 * Math.Sqrt(Math.PI) * i / Math.Sqrt(2));
+
+                if (Math.Round(area,3)== 0.900)
+                {
+                    zIndex = i;
+                    break;
+                }
+
+            }
+
+            Assert.IsTrue(Math.Round(zIndex,3) == 1.644);
+
+        }
+
+        [TestMethod]
+        public void TestConfidence()
+        {
+
+            var timeserie = new List<TimeSerie>() { new TimeSerie() { Value = 9 }, new TimeSerie() { Value = 2 }, new TimeSerie() { Value = 5 }, new TimeSerie() { Value =4 }, new TimeSerie() { Value = 12 },
+                           new TimeSerie() { Value = 7 }, new TimeSerie() { Value = 8 }, new TimeSerie() { Value = 11 }, new TimeSerie() { Value =9 }, new TimeSerie() { Value = 3 }
+                          ,new TimeSerie() { Value = 7 }, new TimeSerie() { Value = 4 }, new TimeSerie() { Value = 12 }, new TimeSerie() { Value =5 }, new TimeSerie() { Value = 4 }
+                          ,new TimeSerie() { Value = 10 }, new TimeSerie() { Value = 9 }, new TimeSerie() { Value = 6 }, new TimeSerie() { Value =9 }, new TimeSerie() { Value = 4 } };
+
+            var (lower,upper) = timeserie.ConfidenceIntervals(p => p.Value, 0.95);
+            Assert.IsTrue(Math.Round(lower, 1) ==5.7);
+
+            Assert.IsTrue(Math.Round(upper, 1) == 8.3);
+
         }
 
     }
