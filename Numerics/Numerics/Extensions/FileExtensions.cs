@@ -27,6 +27,24 @@ namespace System.IO
 
         }
 
+
+        public static void Save(this IDictionary<double, Vector> data, string path, Encoding encoding)
+        {
+            var csv = new StringBuilder();
+
+            var newLine = $"X,Y,Z,t";
+            csv.AppendLine(newLine);
+
+            foreach (var item in data)
+            {
+                newLine = $"{item.Value.x},{item.Value.y},{item.Value.z},{item.Key}";
+                csv.AppendLine(newLine);
+
+            }
+            File.WriteAllText(path, csv.ToString(), encoding);
+
+        }
+
         public static void Save<T>(this IEnumerable<T> data, string path, Encoding encoding)
         {
             var csv = new StringBuilder();

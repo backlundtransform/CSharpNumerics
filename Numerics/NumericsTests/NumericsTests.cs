@@ -161,6 +161,8 @@ namespace NumericsTests
 
             result = func2.Integrate((1, 4), (1, 4));
             Assert.IsTrue(Math.Truncate(result) == 175);
+
+            Assert.IsTrue(result < 177 && result > 173);
         }
 
 
@@ -171,7 +173,7 @@ namespace NumericsTests
 
             var result = func.Integrate(new Vector(-2, -2,-2), new Vector(2, 2, 2));
            
-            Assert.IsTrue(Math.Truncate(result) ==85);
+            Assert.IsTrue(result <87 && result >83);
         }
 
         [TestMethod]
