@@ -75,14 +75,6 @@ namespace System
             return func(variables);
         }
 
-        public static double Derivate(this Func<Vector, double, double> funcRt, Vector variables, Cartesian cartesian, int order = 1)
-        {
-
-            Func<Vector, double> funcR = (Vector parameter) => funcRt(parameter,0);
-
-            return funcR.Derivate(variables, cartesian, order);
-        }
-
 
         public static double Derivate(this Func<(double x, double y), double> func, (double x, double y) variables, Cartesian cartesian, int order = 1)
         {
@@ -135,12 +127,7 @@ namespace System
 
         }
 
-        public static Vector Gradient(this Func<Vector, double, double> funcRt, (double, double, double) points)
-        {
-            Func<Vector, double> funcR = (Vector parameter) => funcRt(parameter, 0);
-            return funcR.Gradient(points);
-
-        }
+    
 
         public static double Laplacian(this Func<Vector, double> func, (double, double, double) points)
         {

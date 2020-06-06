@@ -7,11 +7,11 @@ namespace Numerics.Objects
 {
     public struct VectorField
     {
-        public Func<Vector, double, double> fx;
+        public Func<Vector, double, double> fxt;
 
-        public Func<Vector, double, double> fy;
+        public Func<Vector, double, double> fyt;
 
-        public Func<Vector, double, double> fz;
+        public Func<Vector, double, double> fzt;
 
         public Func<double, double> xt;
 
@@ -19,38 +19,50 @@ namespace Numerics.Objects
 
         public Func<double, double> zt;
 
+        public Func<Vector, double> fx;
+
+        public Func<Vector, double> fy;
+
+        public Func<Vector, double> fz;
+
 
 
 
         public VectorField(Func<Vector, double> u, Func<Vector,  double> v, Func<Vector, double> w)
         {
-            fx = (Vector r, double t)=>u(r);
-            fy = (Vector r, double t) => v(r);
-            fz = (Vector r, double t) => w(r);
-            xt = null;
-            yt =null;
-            zt= null;
+            fx = u;
+            fy =  v;
+            fz =  w;
+            xt = (double t) => 1;
+            yt = (double t) => 1;
+            zt = (double t) => 1;
+            fxt = (Vector p, double t) => u(p);
+            fyt = (Vector p, double t) => v(p);
+            fzt = (Vector p, double t) => w(p);
 
 
         }
 
         public VectorField(Func<Vector, double, double> u, Func<Vector, double, double> v, Func<Vector, double, double> w, Func<double, double> x, Func<double, double> y, Func<double, double> z)
         {
-            fx = u;
-            fy = v;
-            fz = w;
+            fxt = u;
+            fyt = v;
+            fzt = w;
             xt = x;
             yt = y;
             zt = z;
+            fx = (Vector p)=>u(p,0);
+            fy = (Vector p) => v(p, 0); 
+            fz = (Vector p) => v(p, 0); 
 
         }
 
         public IDictionary<double,Vector> Velocity(double t)
         {
 
-            var x0 = fx(new Vector(xt(t),yt(t),zt(t)), t);
-            var y0 = fy(new Vector(xt(t), yt(t), zt(t)), t);
-            var z0 = fz(new Vector(xt(t), yt(t), zt(t)), t);
+            var x0 = fxt(new Vector(xt(t),yt(t),zt(t)), t);
+            var y0 = fyt(new Vector(xt(t), yt(t), zt(t)), t);
+            var z0 = fzt(new Vector(xt(t), yt(t), zt(t)), t);
 
             return new Dictionary<double, Vector>() { { t, new Vector(x0, y0, z0) } };
 
@@ -73,7 +85,7 @@ namespace Numerics.Objects
             for (var i = 0.0; i < maxSteps; i+=stepSize)
             {
                     var parameters = new Vector(xmin + i, ymin + i, zmin + i);
-                    vectorField.Add(parameters,new Vector(fx(parameters,0), fy(parameters,0), fz(parameters,0)));            
+                    vectorField.Add(parameters,new Vector(fx(parameters), fy(parameters), fz(parameters)));            
             }
             return vectorField;
         }
@@ -95,7 +107,7 @@ namespace Numerics.Objects
             for (var i = tmin; i < tmin + maxSteps; i += stepSize)
             {
                 var parameters = Velocity(i)[i];
-                vectorField.Add(i, Curl((fx(parameters,0), fy(parameters,0), fz(parameters,0))));
+                vectorField.Add(i, Curl((fx(parameters), fy(parameters), fz(parameters))));
             }
             return vectorField;
 
