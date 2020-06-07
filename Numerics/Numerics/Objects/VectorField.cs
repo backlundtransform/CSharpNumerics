@@ -33,9 +33,9 @@ namespace Numerics.Objects
             fx = u;
             fy =  v;
             fz =  w;
-            xt = (double t) => 1;
-            yt = (double t) => 1;
-            zt = (double t) => 1;
+            xt = (double t) => 0;
+            yt = (double t) => 0;
+            zt = (double t) => 0;
             fxt = (Vector p, double t) => u(p);
             fyt = (Vector p, double t) => v(p);
             fzt = (Vector p, double t) => w(p);
@@ -51,7 +51,7 @@ namespace Numerics.Objects
             xt = x;
             yt = y;
             zt = z;
-            fx = (Vector p)=>u(p,0);
+            fx = (Vector p)=>u(p, 0);
             fy = (Vector p) => v(p, 0); 
             fz = (Vector p) => v(p, 0); 
 

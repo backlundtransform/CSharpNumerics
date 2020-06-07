@@ -265,7 +265,6 @@ namespace System
 
         }
 
-
         public static double DominantEigenValue(this Matrix matrix) {
 
             var result = matrix.DominantEigenVector();

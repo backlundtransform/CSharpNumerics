@@ -1,14 +1,12 @@
 ﻿using Numerics.Objects;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace CSharpNumerics.Methods
+namespace System
 {
-    public class Physics
+    public static class PhysicsExtentions
     {
 
-        public static Vector ConvectiveDerivative(VectorField velocity, double time)
+        public static Vector ConvectiveDerivative(this VectorField velocity, double time)
         {
             var u = velocity.xt.Derivate(time);
             var v = velocity.yt.Derivate(time);
