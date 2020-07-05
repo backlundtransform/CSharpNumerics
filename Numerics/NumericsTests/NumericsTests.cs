@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using Numerics.Enums;
+using System.Linq;
 
 namespace NumericsTests
 {
@@ -20,6 +21,7 @@ namespace NumericsTests
         }
 
 
+   
         [TestMethod]
         public void TestSecondDerivateExponentiation()
         {
@@ -28,6 +30,16 @@ namespace NumericsTests
             var result = func.Derivate(t,2);
             Assert.IsTrue(Math.Round(result) == Math.Round(g));
         }
+
+        [TestMethod]
+        public void TestDerivateExponentiationTimeSeries()
+        {
+            Func<double, double> func = (double variable) => g * Math.Pow(variable, 2) / 2;
+            var t = 5;
+            var results = func.GetSeries(0,10,20).Derivate();
+            Assert.IsTrue(Math.Round(results.First(p=>p.Index==t).Value)< g * t+ 5 && Math.Round(results.First(p => p.Index == 5).Value) > g * t-5);
+        }
+
 
         [TestMethod]
         public void TestThirdDerivateExponentiation()

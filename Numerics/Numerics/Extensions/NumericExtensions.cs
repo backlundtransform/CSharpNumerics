@@ -107,6 +107,21 @@ namespace System
         }
 
 
+        public static IEnumerable<Serie> Derivate(this IEnumerable<Serie> series)
+        {
+            var derivativesSeries = new List<Serie>();
+            foreach (var serie in series) {
+                var dd = series.LinearInterpolation(p => (p.Index, p.Value), serie.Index + h);
+                var deltaY = series.LinearInterpolation(p => (p.Index, p.Value), serie.Index + h) - serie.Value;
+           
+
+                derivativesSeries.Add(new Serie() { Value = deltaY / h,  Index =serie.Index});
+            }
+            return derivativesSeries;
+
+
+        }
+
         public static IDictionary<Vector, Vector> Gradient(this Func<Vector, double> func, double xmin, double ymin, double zmin, double stepSize, double maxSteps)
         {
             var vectorField = new Dictionary<Vector, Vector>();
