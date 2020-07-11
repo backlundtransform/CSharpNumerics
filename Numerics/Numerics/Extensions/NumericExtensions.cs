@@ -106,16 +106,40 @@ namespace System
 
         }
 
+        public static IEnumerable<TimeSerie> Derivate<T>(this List<T> data, Func<T, (DateTime timeStamp, double value)> func)
+        {
+            return data.Select(func).Select(p => new TimeSerie() { TimeStamp = p.timeStamp, Value = p.value }).Derivate();
+        }
+
+        public static IEnumerable<Serie> Derivate<T>(this List<T> data, Func<T, (double index, double value)> func)
+        {
+            return data.Select(func).Select(p => new Serie() { Index = p.index, Value = p.value }).Derivate();
+        }
+
 
         public static IEnumerable<Serie> Derivate(this IEnumerable<Serie> series)
         {
             var derivativesSeries = new List<Serie>();
-            foreach (var serie in series) {
-                var dd = series.LinearInterpolation(p => (p.Index, p.Value), serie.Index + h);
+            foreach (var serie in series) 
+            {
                 var deltaY = series.LinearInterpolation(p => (p.Index, p.Value), serie.Index + h) - serie.Value;
-           
-
+    
                 derivativesSeries.Add(new Serie() { Value = deltaY / h,  Index =serie.Index});
+            }
+            return derivativesSeries;
+
+
+        }
+
+
+        public static IEnumerable<TimeSerie> Derivate(this IEnumerable<TimeSerie> series)
+        {
+            var derivativesSeries = new List<TimeSerie>();
+            foreach (var serie in series)
+            {
+                var deltaY = series.LinearInterpolation(p => (p.TimeStamp.Ticks, p.Value), serie.TimeStamp.Ticks + h) - serie.Value;
+
+                derivativesSeries.Add(new TimeSerie() { Value = deltaY / h, TimeStamp = serie.TimeStamp });
             }
             return derivativesSeries;
 
