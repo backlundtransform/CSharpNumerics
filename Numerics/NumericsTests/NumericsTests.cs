@@ -26,18 +26,24 @@ namespace NumericsTests
         public void TestSecondDerivateExponentiation()
         {
             Func<double, double> func = (double variable) => g * Math.Pow(variable, 2) / 2;
+
             var t = 5;
+
             var result = func.Derivate(t,2);
+
             Assert.IsTrue(Math.Round(result) == Math.Round(g));
         }
 
         [TestMethod]
-        public void TestDerivateExponentiationTimeSeries()
+        public void TestDerivateExponentiationSeries()
         {
             Func<double, double> func = (double variable) => g * Math.Pow(variable, 2) / 2;
-            var t = 5;
-            var results = func.GetSeries(0,10,20).Derivate();
-            Assert.IsTrue(Math.Round(results.First(p=>p.Index==t).Value)< g * t+ 5 && Math.Round(results.First(p => p.Index == 5).Value) > g * t-5);
+
+            var series = func.GetSeries(0,10,1000).Derivate();
+
+            var (slope, intercept, correlation) = series.LinearRegression(p => (p.Index, p.Value));
+
+            Assert.IsTrue(Math.Round(slope, 1)==g);
         }
 
 
@@ -172,7 +178,6 @@ namespace NumericsTests
             Func<(double, double), double> func2 = ((double x, double y) v) => 2*v.x*v.y + Math.Pow(v.y, 2);
 
             result = func2.Integrate((1, 4), (1, 4));
-            Assert.IsTrue(Math.Truncate(result) == 175);
 
             Assert.IsTrue(result < 177 && result > 173);
         }

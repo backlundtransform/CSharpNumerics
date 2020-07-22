@@ -132,7 +132,7 @@ namespace NumericsTests
         [TestMethod]
         public void TestLowPassFilter()
         {
-         var rnd = new Random();
+            var rnd = new Random();
 
             Func<double, double> func = (double t) => Math.Sin(t);
             var series = func.GetSeries(-10, 10, 100);

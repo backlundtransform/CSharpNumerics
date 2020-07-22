@@ -15,6 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Extensions\NumericExtensions.cs~RF43b9e4.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\license.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>

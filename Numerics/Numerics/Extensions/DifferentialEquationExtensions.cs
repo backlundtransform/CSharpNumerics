@@ -200,9 +200,12 @@ namespace System
 
             return new Vector(Math.Abs(Math.Round(vector.x / min)), Math.Abs(Math.Round(vector.y / min)), Math.Abs(Math.Round(vector.z / min)));
         }
+        public static List<Func<double, double>> OdeSolver(this Matrix matrix, double tZero)
+        {
+            return matrix.OdeSolver(new List<double>() { tZero, tZero, tZero });
+        }
 
-
-        public static List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)
+        public static List<Func<double,double>> OdeSolver(this Matrix matrix, List<double> tZeros)
         {
             var eigenValues = matrix.EigenValues();
             var eigenVectors = new Dictionary<double, List<double>>();
@@ -221,13 +224,18 @@ namespace System
 
                 for (var j = 0; j < matrix.columnLength; j++)
                 {
+                    if (eigenValues.Count > i)
+                    {
+                        var gg = eigenValues[j];
+                        eigenMatrix.values[i, j] = eigenVectors[eigenValues[j]][i];
+                    }
+                  
+                 
                 
-                    eigenMatrix.values[i, j] = eigenVectors[eigenValues[j]][i]; 
-
                 }
             }
 
-            var constants = eigenMatrix.LinearSystemSolver(new List<double>() { tZero, tZero, tZero });
+            var constants = eigenMatrix.LinearSystemSolver(tZeros);
 
             double fx(double t) => GetFunc(0, constants, eigenValues, eigenVectors, t);
             double fy(double t) => GetFunc(1, constants, eigenValues, eigenVectors, t);

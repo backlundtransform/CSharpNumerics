@@ -16,8 +16,11 @@ namespace System
         {
 
             var h0 = Math.Pow(10, order) * h;
+
             var d = 0.0;
+
             var pascalMatrix = new Matrix(new double[order + 1, order + 1]).Pascal();
+
             for (var i = 1; i <= order + 1; i++)
             {
 
@@ -120,6 +123,7 @@ namespace System
         public static IEnumerable<Serie> Derivate(this IEnumerable<Serie> series)
         {
             var derivativesSeries = new List<Serie>();
+
             foreach (var serie in series) 
             {
                 var deltaY = series.LinearInterpolation(p => (p.Index, p.Value), serie.Index + h) - serie.Value;
