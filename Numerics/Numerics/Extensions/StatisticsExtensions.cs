@@ -163,6 +163,23 @@ namespace System.Linq
             return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
   
         }
+        public static int KnearestNeighbors<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y, int classification)> func, (double x, double y) unkown, int k)
+        {
+            var data = enumerable.Select(func);
+
+            var pointInRing = new List<(double x, double y, int classification, double distance)>();
+
+            foreach(var (x, y, classification) in data)
+            {
+                var distance = Math.Sqrt(Math.Pow(unkown.x - x, 2) - Math.Pow(unkown.y - y, 2));
+                pointInRing.Add((x, y, classification, distance));     
+            }
+
+            return pointInRing.OrderBy(p => p.distance).Take(k).GroupBy(x => x.classification)
+                          .OrderByDescending(x => x.Count())
+                          .First().Key;
+
+        }
 
     }
 }

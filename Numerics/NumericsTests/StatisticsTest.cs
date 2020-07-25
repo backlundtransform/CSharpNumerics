@@ -179,5 +179,17 @@ namespace NumericsTests
 
         }
 
+        [TestMethod]
+        public void TestNearestNeighbors()
+        {
+
+            var timeserie = new List<(double x, double y, int classification)>() { (7, 7, 0), (7, 4, 0), (3, 4, 1), (1, 4, 1) };
+
+            var classification = timeserie.KnearestNeighbors(p=> (p.x, p.y, p.classification),(3,7),3);
+
+            Assert.IsTrue(classification == 1);
+
+        }
+
     }
 }
