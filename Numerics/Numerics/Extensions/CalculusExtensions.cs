@@ -7,11 +7,28 @@ using System.Linq;
 
 namespace System
 {
-    public static class NumericExtensions
+    public static class CalculusExtensions
     {
         public const double h = 0.000001;
 
+        public static double LeftLimit(this Func<double, double> function, double x)
+        {
+            return function(x - double.Epsilon);
+        }
 
+        public static double RightLimit(this Func<double, double> function, double x)
+        {
+            return function(x + double.Epsilon);
+        }
+
+        public static double Limit(this Func<double, double> function, double x)
+        {
+            var right =  function.LeftLimit(x);
+
+            var left = function.RightLimit(x);
+
+            return (right == left) ? right : double.NaN;
+        }
         public static double Derivate(this Func<double, double> func, double x, int order = 1)
         {
 
@@ -271,21 +288,6 @@ namespace System
             }
 
             return sum;
-        }
-
-
-        public static double Factorial(this int number)
-        {
-            if (number <= 1)
-            {
-                return 1;
-            }
-
-            return number*((number - 1).Factorial());
-        }
-        public static double Factorial(this double number)
-        {
-            return ((int)number).Factorial();
         }
 
         private static int Sign(int index) => index % 2 == 0 ? -1 : 1;

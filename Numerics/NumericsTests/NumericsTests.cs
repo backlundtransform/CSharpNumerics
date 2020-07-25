@@ -11,6 +11,16 @@ namespace NumericsTests
     public class NumericsTests
     {
         private const double g = 9.8;
+
+        [TestMethod]
+        public void TestLimit()
+        {
+            Func<double, double> func = (double x) =>Math.Sin(x) / x;
+          
+            var result = func.Limit(0);
+
+            Assert.IsTrue(Math.Round(result) ==1);
+        }
         [TestMethod]
         public void TestDerivateExponentiation()
         {

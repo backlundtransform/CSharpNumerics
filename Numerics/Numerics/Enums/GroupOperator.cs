@@ -6,7 +6,7 @@ namespace CSharpNumerics.Enums
 {
     public enum GroupOperator
     {
-        Average,Median,Sum, Max, Min
+        Average, Median,Sum, Max, Min
     }
    
 }
