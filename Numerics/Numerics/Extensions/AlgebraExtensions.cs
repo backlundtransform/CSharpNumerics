@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace CSharpNumerics.Extensions
+namespace System
 {
    public static class AlgebraExtensions
     {
@@ -19,6 +17,20 @@ namespace CSharpNumerics.Extensions
         {
             return ((int)number).Factorial();
         }
+
+        public static double Dot(this List<double> firstList, List<double> secondList)
+        {
+            var value = 0.0;
+
+            for (var j = 0; j < firstList.Count; j++)
+            {
+                value += firstList[j] * secondList[j];
+
+            }
+            return value;
+
+        }
+
 
     }
 }

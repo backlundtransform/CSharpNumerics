@@ -15,6 +15,7 @@ namespace Numerics.Objects
         {
             rowLength = matrix.GetLength(0);
             columnLength = matrix.GetLength(1);
+
             identity = new double[rowLength, columnLength];
 
             for (var i = 0; i < rowLength; i++)

@@ -1,7 +1,8 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
-
+using Numerics.Objects;
+using System.Collections.Generic;
 
 namespace NumericsTests
 {
@@ -98,12 +99,22 @@ namespace NumericsTests
         {
 
             Func<(double time, double velocity), double> func = ((double time, double velocity) v) => acceleration(v.time);
-            var result = func.TrapezoidalRule(0, timeZero, 0.00025, 0);
+            var result = func.EulerMetod(0, timeZero, 0.00025, 0);
   
             Assert.IsTrue(Math.Round(result, 1) == Math.Round(velocity(timeZero), 1));
 
         }
 
+        [TestMethod]
+        public void TestDisplacementWithOutDrag()
+        {
+
+            Func<(double time, double displacement), double> func = ((double time, double displacement) v) => velocity(v.time);
+            var result = func.RungeKutta(0, timeZero, 0.00025, 0);
+
+            Assert.IsTrue(Math.Round(result, 1) == Math.Round(displacement(timeZero), 1));
+
+        }
         [TestMethod]
         public void TestVelocityWithDrag()
         {
@@ -118,7 +129,6 @@ namespace NumericsTests
             Assert.IsTrue(Math.Round(result, 1) == Math.Round(velocityDragFunction, 1));    
 
         }
-
 
 
 

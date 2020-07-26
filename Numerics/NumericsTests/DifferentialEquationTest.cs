@@ -61,8 +61,8 @@ namespace NumericsTests
             Assert.IsTrue(result[1] == -1);
             Assert.IsTrue(result[2] == 1);
         }
-
-        public void TestGausElimination()
+        [TestMethod]
+        public void TestGaussElimination()
         {
             var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
 
@@ -73,10 +73,10 @@ namespace NumericsTests
             Assert.IsTrue(result.y == -1);
             Assert.IsTrue(result.z == 1);
         }
-
+   
 
         [TestMethod]
-        public void TestGausEliminationRange()
+        public void TestGaussEliminationRange()
         {
             var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
 
@@ -94,11 +94,11 @@ namespace NumericsTests
         {
             var matrix = new Matrix(new double[,] { { 3, -4 }, {4, -7 } });
             var result = matrix.EigenVector(1);
-            Assert.IsTrue(Math.Round(result.x, 1) ==2);
-            Assert.IsTrue(Math.Round(result.y, 1) == 1);
+            Assert.IsTrue(Math.Round(result[0], 1) ==2);
+            Assert.IsTrue(Math.Round(result[1], 1) == 1);
             var result2 = matrix.EigenVector(-5);
-            Assert.IsTrue(Math.Round(result2.x, 1) == 1);
-            Assert.IsTrue(Math.Round(result2.y, 1) == 2);
+            Assert.IsTrue(Math.Round(result2[0], 1) == 1);
+            Assert.IsTrue(Math.Round(result2[1], 1) == 2);
 
         }
 
@@ -106,42 +106,50 @@ namespace NumericsTests
         [TestMethod]
         public void TestDominantEigenVector()
         {
-            var matrix = new Matrix(new double[,] { { 3, -4 }, { 4, -7 } });
+           var matrix = new Matrix(new double[,] { { 3, -4 }, { 4, -7 } });
            var result = matrix.DominantEigenVector();
 
-            Assert.IsTrue(Math.Round(result.x, 1) == 1);
-            Assert.IsTrue(Math.Round(result.y, 1) == 2);
+            Assert.IsTrue(Math.Round(result[0], 1) == 1);
+            Assert.IsTrue(Math.Round(result[1], 1) == 2);
 
             result =  matrix.Inverse().DominantEigenVector();
-            Assert.IsTrue(Math.Round(result.x, 1) == 2);
-            Assert.IsTrue(Math.Round(result.y, 1) == 1);
+            Assert.IsTrue(Math.Round(result[0], 1) == 2);
+            Assert.IsTrue(Math.Round(result[1], 1) == 1);
+
+        }
+
+        [TestMethod]
+        public void TestEigenvalues()
+        {
+
+          
+            var matrix = new Matrix(new double[,] { { 3, -1 }, { 4, -2 } });
+
+            var result = matrix.EigenValues();
+            Assert.IsTrue(result.First() == 2);
+            Assert.IsTrue(result.Last() == -1);
+            matrix = new Matrix(new double[,] { { 2, 1 }, { 1, 2 } });
+            result = matrix.EigenValues();
+            Assert.IsTrue(result.First() == 3);
+            Assert.IsTrue(result.Last() == 1);
+
 
            
 
         }
 
-   
+      
 
-        [TestMethod]
-        public void TestEigenvalues()
-        {
-            var matrix = new Matrix(new double[,] { { 3, -1 }, { 4, -2 } });
 
-            var result = matrix.EigenValues();
-            Assert.IsTrue(result.First() == -1);
-            Assert.IsTrue(result.Last() == 2);
 
-        }
-
- 
         [TestMethod]
         public void TestSolveOde()
         {
             var matrix = new Matrix(new double[,] { { 3, -4 }, { 4, -7 } });
             var result = matrix.OdeSolver(1);
 
-            Assert.IsTrue(result[0](2) ==2.0/3.0* Math.Exp(2)+ 1.0 / 3.0 * Math.Exp(-10));
-            Assert.IsTrue(result[1](2) == 1.0 / 3.0 * Math.Exp(2) + 2.0 / 3.0 * Math.Exp(-10));
+            Assert.IsTrue(Math.Round(result[0](2),5) == Math.Round(2.0 /3.0* Math.Exp(2)+ 1.0 / 3.0 * Math.Exp(-10),5));
+            Assert.IsTrue(Math.Round(result[1](2),5) == Math.Round(1.0 / 3.0 * Math.Exp(2) + 2.0 / 3.0 * Math.Exp(-10), 5));
                     
      
         }

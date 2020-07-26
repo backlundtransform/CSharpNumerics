@@ -14,6 +14,21 @@ namespace System
 
         }
 
+        public static double EulerMetod(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)
+        {
+
+            var y = yInitial;
+
+            for (var t = min + stepSize; t <= max; t += stepSize)
+            {
+              
+                y += stepSize * func((t,y));
+
+            }
+            return y;
+
+        }
+
 
         public static double RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial, Matrix rungeKuttaMatrix  , double[] weights, double[] nodes)
         {
@@ -128,7 +143,7 @@ namespace System
                 }
             }
 
-            var x = new double[n];
+              var x = new double[n];
             for (var i = n - 1; i >= 0; i--)
             {
                 var sum = 0.0;
@@ -158,7 +173,7 @@ namespace System
         }
 
 
-        public static Vector EigenVector(this Matrix matrix, double egienValue)
+        public static List<double> EigenVector(this Matrix matrix, double egienValue)
         {
 
             for (var i = 0; i < matrix.rowLength; i++)
@@ -174,35 +189,39 @@ namespace System
 
                 }
             }
-            var vector = new Vector(1, 1, 1);
+            var vector = Enumerable.Range(1, matrix.rowLength).Select(x => 1 + 0.00001 * x).ToList();
 
             for (var i = 0; i < 5; i++)
             {
                 vector = matrix.Inverse() * vector;
 
             }
-            var min = new List<double>() { Math.Abs(vector.x), Math.Abs(vector.y), Math.Abs(vector.z) }.Where(p => p != 0).Min(p => p);
+            var min = vector.Where(p => p != 0).Min(p => Math.Abs(p));
 
-            return new Vector(Math.Abs(Math.Round(vector.x/min)), Math.Abs(Math.Round(vector.y/min)), Math.Abs(Math.Round(vector.z/min)));
+            return vector.Select(c => Math.Abs(Math.Round(c / min))).ToList();
         }
 
-        public static Vector DominantEigenVector(this Matrix matrix)
+        public static List<double> DominantEigenVector(this Matrix matrix)
         {
- 
-            var vector = new Vector(1, 1, 1);
+
+            var vector = Enumerable.Range(1, matrix.rowLength).Select(x => 1 + 0.00001 * x).ToList();
 
             for (var i = 0; i < 5; i++)
             {
                 vector = matrix * vector;
 
             }
-            var min = new List<double>() { Math.Abs(vector.x), Math.Abs(vector.y), Math.Abs(vector.z) }.Where(p => p != 0).Min(p => p);
+            var min = vector.Where(p => p != 0).Min(p => Math.Abs(p));
 
-            return new Vector(Math.Abs(Math.Round(vector.x / min)), Math.Abs(Math.Round(vector.y / min)), Math.Abs(Math.Round(vector.z / min)));
-        }
+            return vector.Select(c => Math.Abs(Math.Round(c / min))).ToList();
+                
+         }
         public static List<Func<double, double>> OdeSolver(this Matrix matrix, double tZero)
         {
-            return matrix.OdeSolver(new List<double>() { tZero, tZero, tZero });
+            var list = Enumerable.Range(1, matrix.rowLength).Select(x => tZero).ToList();
+          
+
+            return matrix.OdeSolver(list);
         }
 
         public static List<Func<double,double>> OdeSolver(this Matrix matrix, List<double> tZeros)
@@ -214,7 +233,7 @@ namespace System
 
             foreach (var value in eigenValues) {
                 var vector = matrix.EigenVector(value);
-                eigenVectors.Add(value, new List<double>() { vector.x, vector.y, vector.z });
+                eigenVectors.Add(value, vector);
             }
 
             var eigenMatrix = matrix;
@@ -226,16 +245,13 @@ namespace System
                 {
                     if (eigenValues.Count > i)
                     {
-                        var gg = eigenValues[j];
                         eigenMatrix.values[i, j] = eigenVectors[eigenValues[j]][i];
                     }
-                  
-                 
-                
+    
                 }
             }
 
-            var constants = eigenMatrix.LinearSystemSolver(tZeros);
+            var constants = eigenMatrix.GaussElimination(tZeros);
 
             double fx(double t) => GetFunc(0, constants, eigenValues, eigenVectors, t);
             double fy(double t) => GetFunc(1, constants, eigenValues, eigenVectors, t);
@@ -253,21 +269,34 @@ namespace System
 
         public static List<double> EigenValues(this Matrix matrix)
         {
-
-
             var results = new List<double>();
+            var dominantEigenvector = matrix.DominantEigenVector();
 
+            results.Add((matrix * dominantEigenvector).Dot(dominantEigenvector) / dominantEigenvector.Dot(dominantEigenvector));
 
-            for (var i = -100.0; i <= 100; i ++)
+            for (var s = 0; s < matrix.rowLength-1; s++)
             {
-           
-                if (Math.Round((matrix - i * new Matrix(matrix.identity)).Determinant()) == 0.00)
+     
+                var MatrixB = new Matrix(matrix.identity);
+
+                var MatrixA = new Matrix(matrix.values);
+
+
+                for (var j = 0; j < MatrixB.rowLength; j++)
                 {
+                    for (var i = 0; i < MatrixB.columnLength; i++)
+                    {
 
-                    results.Add(i);
+                        MatrixB.values[j, i] = MatrixA.values[j, i] - dominantEigenvector[j] * MatrixA.values[s, i] / dominantEigenvector[s];
+                    }
+
                 }
+                dominantEigenvector = MatrixB.DominantEigenVector();
 
+                results.Add((MatrixB * dominantEigenvector).Dot(dominantEigenvector) / dominantEigenvector.Dot(dominantEigenvector));
             }
+
+         
 
             return results;
 
@@ -282,6 +311,8 @@ namespace System
             return eigenvalue;
         
         }
+
+       
 
     }
 }
