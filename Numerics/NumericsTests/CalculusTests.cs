@@ -1,8 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
-using Numerics.Objects;
-using System.Collections.Generic;
 
 namespace NumericsTests
 {
@@ -27,8 +25,7 @@ namespace NumericsTests
         [TestMethod]
         public void TestVelocityToAccelerationSeries()
         {
-           
-
+          
             var series = velocity.GetSeries(0, 10, 1000).Derivate();
 
             var (slope, intercept, correlation) = series.LinearRegression(p => (p.Index, p.Value));
@@ -38,7 +35,7 @@ namespace NumericsTests
 
 
         [TestMethod]
-        public void TestDistanceToVelocity()
+        public void TestDisplacementToVelocity()
         {
          
             var result = displacement.Derivate(timeZero);
@@ -47,7 +44,7 @@ namespace NumericsTests
         }
 
         [TestMethod]
-        public void TestDistanceToVelocitySeries()
+        public void TestDisplacementVelocitySeries()
         {
           
             var series = displacement.GetSeries(0, 10, 1000).Derivate();
@@ -77,7 +74,7 @@ namespace NumericsTests
 
 
         [TestMethod]
-        public void TestVelocityToDistance()
+        public void TestVelocityToDisplacement()
         {
           
             var result = velocity.Integrate(0, timeZero);
@@ -85,7 +82,7 @@ namespace NumericsTests
         }
 
         [TestMethod]
-        public void TestVelocityToDistanceSeries()
+        public void TestVelocityToDisplacementSeries()
         {
             var result = velocity.GetSeries(0, timeZero, 1000).Integrate();
             Assert.IsTrue(Math.Round(result, 1) == Math.Round(displacement(timeZero), 1)); 
