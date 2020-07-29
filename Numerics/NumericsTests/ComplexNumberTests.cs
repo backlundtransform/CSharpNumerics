@@ -1,10 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Security.Cryptography.X509Certificates;
+
 
 namespace NumericsTests
 {
@@ -94,9 +93,11 @@ namespace NumericsTests
         public void TestMandelbrot()
         {
 
-            var  bitmap = new Bitmap(16, 16, PixelFormat.Format24bppRgb);
+            var  bitmap = new Bitmap(300, 300, PixelFormat.Format24bppRgb);
 
-            var scale = 0.1; 
+            var scale = 0.1;
+            var max = 255;
+            var norm = 4;
 
 
             for (var i = 0; i< bitmap.Height; i++)
@@ -107,7 +108,7 @@ namespace NumericsTests
                     var k = 0;
                     var x = (bitmap.Height / 2 - i)*scale;
                     var z = new ComplexNumber(0, 0);
-                    while (z.GetMagnitude() <16 && k<255)
+                    while (z.GetMagnitude() < norm && k < max)
                     {
 
                         z = z.Pow(2) + new ComplexNumber(x, y);
@@ -115,11 +116,8 @@ namespace NumericsTests
                        k++;
 
                     }
-                    if (k < 255) {
-                    
-                    }
                   
-                    bitmap.SetPixel(j, i, k < 255 ? Color.FromArgb(0, 0,k) : Color.FromArgb(0, 0, 0));
+                    bitmap.SetPixel(j, i, k < max ? Color.FromArgb(0, 0,k) : Color.FromArgb(0, 0, 0));
 
                 }
             }
