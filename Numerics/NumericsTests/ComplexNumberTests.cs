@@ -1,6 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NumericsTests
 {
@@ -12,7 +16,7 @@ namespace NumericsTests
         public void TestImaginaryPower()
         {
             var i = new ComplexNumber(3, 2);
-            i =i.Pow(2);
+            i = i.Pow(2);
             Assert.IsTrue(Math.Round(i.realPart) == 5);
             Assert.IsTrue(Math.Round(i.imaginaryPart) == 12);
         }
@@ -29,8 +33,8 @@ namespace NumericsTests
         [TestMethod]
         public void TestFromPolar()
         {
-            var i =  ComplexNumber.FromPolarCoordinates(2, Math.PI);
-     
+            var i = ComplexNumber.FromPolarCoordinates(2, Math.PI);
+
             Assert.IsTrue(Math.Round(i.realPart) == -2);
         }
 
@@ -82,6 +86,44 @@ namespace NumericsTests
             var result = a / b;
             Assert.IsTrue(Math.Round(result.realPart, 2) == 0.62);
             Assert.IsTrue(Math.Round(result.imaginaryPart, 2) == 0.03);
+
+        }
+
+
+        [TestMethod]
+        public void TestMandelbrot()
+        {
+
+            var  bitmap = new Bitmap(16, 16, PixelFormat.Format24bppRgb);
+
+            var scale = 0.1; 
+
+
+            for (var i = 0; i< bitmap.Height; i++)
+            {
+              var y = (bitmap.Height / 2 - i) * scale;
+                for (var j = 0; j < bitmap.Width; j++)
+                {
+                    var k = 0;
+                    var x = (bitmap.Height / 2 - i)*scale;
+                    var z = new ComplexNumber(0, 0);
+                    while (z.GetMagnitude() <16 && k<255)
+                    {
+
+                        z = z.Pow(2) + new ComplexNumber(x, y);
+
+                       k++;
+
+                    }
+                    if (k < 255) {
+                    
+                    }
+                  
+                    bitmap.SetPixel(j, i, k < 255 ? Color.FromArgb(0, 0,k) : Color.FromArgb(0, 0, 0));
+
+                }
+            }
+            bitmap.Save("mandelbrot.bmp");
 
         }
     }
