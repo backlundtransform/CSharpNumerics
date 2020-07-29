@@ -92,37 +92,38 @@ namespace NumericsTests
         [TestMethod]
         public void TestMandelbrot()
         {
-
+            var maxValueExtent = 2.0;
             var  bitmap = new Bitmap(300, 300, PixelFormat.Format24bppRgb);
-
-            var scale = 0.1;
-            var max = 255;
-            var norm = 4;
-
-
-            for (var i = 0; i< bitmap.Height; i++)
+            var scale = 2 * maxValueExtent / Math.Min(bitmap.Width, bitmap.Height);
+            for (int i = 0; i < bitmap.Height; i++)
             {
-              var y = (bitmap.Height / 2 - i) * scale;
+                var y = (bitmap.Height / 2 - i) * scale;
                 for (var j = 0; j < bitmap.Width; j++)
                 {
-                    var k = 0;
-                    var x = (bitmap.Height / 2 - i)*scale;
-                    var z = new ComplexNumber(0, 0);
-                    while (z.GetMagnitude() < norm && k < max)
+                    var x = (j - bitmap.Width / 2) * scale;
+
+                   var maxIterations = 1000;
+                   var maxNorm = maxValueExtent * maxValueExtent;
+
+                    int iteration = 0;
+                    ComplexNumber z = new ComplexNumber(0, 0);
+                    while (z.GetMagnitude() < maxNorm && iteration < maxIterations)
                     {
-
-                        z = z.Pow(2) + new ComplexNumber(x, y);
-
-                       k++;
-
+                        z = z * z + new ComplexNumber(x, y);
+                        iteration++;
                     }
-                  
-                    bitmap.SetPixel(j, i, k < max ? Color.FromArgb(0, 0,k) : Color.FromArgb(0, 0, 0));
 
+                    var color = iteration < maxIterations ? (double)iteration / maxIterations : 0;
+                    bitmap.SetPixel(j, i, Color.FromArgb(0, 0,
+                (int)(256 * Math.Pow(color, 0.2))));
                 }
             }
+
             bitmap.Save("mandelbrot.bmp");
 
         }
+  
+
+
     }
 }
