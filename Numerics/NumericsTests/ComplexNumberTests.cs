@@ -2,7 +2,7 @@
 using Numerics.Objects;
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
+
 
 
 namespace NumericsTests
@@ -93,7 +93,7 @@ namespace NumericsTests
         public void TestMandelbrot()
         {
             var maxValueExtent = 2.0;
-            var  bitmap = new Bitmap(300, 300, PixelFormat.Format24bppRgb);
+            var  bitmap = new Bitmap(600, 600);
             var scale = 2 * maxValueExtent / Math.Min(bitmap.Width, bitmap.Height);
             for (int i = 0; i < bitmap.Height; i++)
             {
@@ -122,8 +122,6 @@ namespace NumericsTests
             bitmap.Save("mandelbrot.bmp");
 
         }
-  
-
 
     }
 }
