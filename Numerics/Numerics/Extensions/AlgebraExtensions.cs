@@ -34,19 +34,14 @@ namespace System
 
         public static double NewtonRaphson(this Func<double,double> func, double xZero =1.0)
         {
-            var value = 0.0;
+            var value = xZero;
 
             for (var j = 0; j < 100; j++)
             {
-                var y = func(xZero);
-                var yPrime = func.Derivate(xZero);
-                if (Math.Abs(yPrime) <0.0000000000001) {
-                    break;
-                }
-                value = xZero - y / yPrime;
+                var y = func(value);
+                var yPrime = func.Derivate(value);
 
-                xZero = value;
-
+                value -= y / yPrime;
 
             }
             return value;
