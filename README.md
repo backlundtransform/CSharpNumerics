@@ -17,7 +17,11 @@ Outputs 120
 
 Findining roots using  Newton–Raphson method
 
+`Func<double, double> func = (double x) => Math.Pow(x,2) - 4`
+
 `func.NewtonRaphson()`
+
+Outputs 2
 
 ### Derivative
 
