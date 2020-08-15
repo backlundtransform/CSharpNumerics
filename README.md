@@ -15,6 +15,10 @@ E.g
 
 Outputs 120
 
+Findining roots using  Newton–Raphson method
+
+`func.NewtonRaphson()`
+
 ### Derivative
 
 To derivate a function use:
@@ -44,6 +48,12 @@ If several variables use:
 Or use the vector (x,y,z)  
 
 `Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
+
+Also possible derivate series
+
+ `Func<double, double> displacement = (double time) => 9.81 * Math.Pow(time, 2) / 2`
+ 
+ `var velocity = displacement.GetSeries(0, 10, 1000).Derivate()`
 
 ### Integrals
 
@@ -520,19 +530,17 @@ Logistic regression using slope and intercept
 
  `LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)`
  
- ### Timeseries
+ Calculate Confidence Intervals
  
-Following extension method
+ `var (lower,upper) = timeserie.ConfidenceIntervals(p => p.Value, 0.95)`
  
-  `List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, 
-            int minutes,
-            DateTime startDate, 
-            DateTime endDate, 
-            GroupOperator groupOperator= GroupOperator.Average, 
-            int multiplier=1, 
-            bool shouldInterpolate=true)`
+ Get K nearest neighbors 
+ 
+   `var timeserie = new List<(double x, double y, int classification)>() { (7, 7, 0), (7, 4, 0), (3, 4, 1), (1, 4, 1) } `
+   
+   `var classification = timeserie.KnearestNeighbors(p=> (p.x, p.y, p.classification),(3,7),3)`
+ 
 
-adds an existing timeseries on a grid with equivalent timesteps in x minutes. The enum group operator tells how to group the existing data and has the option average, median,sum, max or min. As default linear interpolation is used when time step has no data. If false a zero will be inserted
  
 
 
