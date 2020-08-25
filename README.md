@@ -1,6 +1,5 @@
   # CSharpNumerics
-Numeric package
-
+A numerical package that deals with scientific computing and mathematical analysis of discretizations and iterative processes
 https://www.nuget.org/packages/CSharpNumerics/
 
 ## Numeric Extensions
