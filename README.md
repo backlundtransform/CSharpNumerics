@@ -68,13 +68,13 @@ To integrate a timeserie
 
 `Integrate(this List<Numerics.Models.TimeSerie> data)`
 
-TimeSerie is a model with properties TimeStamp as DateTime and Value as double 
+TimeSerie is a model with the properties TimeStamp as DateTime and Value as double 
 
 To integrate a serie  
 
 `Integrate(this List<Numerics.Models.Serie> data)`
 
-Serie model is a model with properties Index as souble and Value as double
+Serie model is a model with the properties Index as double and Value as double
 
 ### Monte Carlo Integration
 
