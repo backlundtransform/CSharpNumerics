@@ -10,6 +10,8 @@ namespace NumericsTests
     {
         
         private const double timeZero = 5;
+       
+        
         private static readonly Func<double, double> acceleration =(double time) => 9.8;
         private static readonly Func<double, double> velocity= (double time) => acceleration(time) * time;
         private static readonly Func<double, double> displacement = (double time) => acceleration(time) * Math.Pow(time, 2) / 2;

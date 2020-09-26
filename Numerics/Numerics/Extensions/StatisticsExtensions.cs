@@ -163,6 +163,13 @@ namespace System.Linq
             return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
   
         }
+
+        public static IEnumerable<Serie> Rectifier<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
+        {
+
+            return enumerable.Select(func).Select(p => new Serie() { Value =p.x>0?p.x:0, Index = p.y });
+
+        }
         public static int KnearestNeighbors<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y, int classification)> func, (double x, double y) unkown, int k)
         {
             var data = enumerable.Select(func);

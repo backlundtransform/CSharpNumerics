@@ -214,7 +214,7 @@ namespace NumericsTests
         {
             Func<double, double> func = (double x) => Math.Pow(x,2) - 4;
             var result = func.NewtonRaphson();
-            Assert.IsTrue(Math.Abs(2) ==2);
+            Assert.IsTrue(Math.Abs(2) == 2);
         }
 
     }
