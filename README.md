@@ -1,6 +1,5 @@
   # CSharpNumerics
-Numeric package
-
+A numerical package that deals with scientific computing and mathematical analysis of discretizations and iterative processes
 https://www.nuget.org/packages/CSharpNumerics/
 
 ## Numeric Extensions
@@ -14,6 +13,14 @@ E.g
 `5.Factorial()`
 
 Outputs 120
+
+Findining roots using  Newton–Raphson method
+
+`Func<double, double> func = (double x) => Math.Pow(x,2) - 4`
+
+`func.NewtonRaphson()`
+
+Outputs 2
 
 ### Derivative
 
@@ -45,6 +52,12 @@ Or use the vector (x,y,z)
 
 `Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
 
+Also possible derivate series
+
+ `Func<double, double> displacement = (double time) => 9.81 * Math.Pow(time, 2) / 2`
+ 
+ `var velocity = displacement.GetSeries(0, 10, 1000).Derivate()`
+
 ### Integrals
 
 To integrate a function with Trapezoidal rule use:
@@ -55,13 +68,13 @@ To integrate a timeserie
 
 `Integrate(this List<Numerics.Models.TimeSerie> data)`
 
-TimeSerie is a model with properties TimeStamp as DateTime and Value as double 
+TimeSerie is a model with the properties TimeStamp as DateTime and Value as double 
 
 To integrate a serie  
 
 `Integrate(this List<Numerics.Models.Serie> data)`
 
-Serie model is a model with properties Index as souble and Value as double
+Serie model is a model with the properties Index as double and Value as double
 
 ### Monte Carlo Integration
 
@@ -520,19 +533,17 @@ Logistic regression using slope and intercept
 
  `LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)`
  
- ### Timeseries
+ Calculate Confidence Intervals
  
-Following extension method
+ `var (lower,upper) = timeserie.ConfidenceIntervals(p => p.Value, 0.95)`
  
-  `List<TimeSerie> GenerateTimeSerieWithEquivalentSteps(this List<TimeSerie> timeSeries, 
-            int minutes,
-            DateTime startDate, 
-            DateTime endDate, 
-            GroupOperator groupOperator= GroupOperator.Average, 
-            int multiplier=1, 
-            bool shouldInterpolate=true)`
+ Get K nearest neighbors 
+ 
+   `var timeserie = new List<(double x, double y, int classification)>() { (7, 7, 0), (7, 4, 0), (3, 4, 1), (1, 4, 1) } `
+   
+   `var classification = timeserie.KnearestNeighbors(p=> (p.x, p.y, p.classification),(3,7),3)`
+ 
 
-adds an existing timeseries on a grid with equivalent timesteps in x minutes. The enum group operator tells how to group the existing data and has the option average, median,sum, max or min. As default linear interpolation is used when time step has no data. If false a zero will be inserted
  
 
 
