@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using Numerics.Enums;
 using System.Linq;
+using Numerics.Models;
+using System.Collections.Generic;
 
 namespace NumericsTests
 {
@@ -217,5 +219,29 @@ namespace NumericsTests
             Assert.IsTrue(Math.Abs(2) == 2);
         }
 
+        [TestMethod]
+        public void TestIntegrateTimeSerie()
+        {
+
+            var date = new DateTime(2011, 1, 1);
+            var list = new List<TimeSerie>()
+            {
+                new TimeSerie () { TimeStamp = date, Value =0.56 },
+                new TimeSerie () { TimeStamp = date.AddHours(4) , Value =0.55 },
+                new TimeSerie () { TimeStamp = date.AddHours(8) , Value =0.43 },
+                new TimeSerie () { TimeStamp =date.AddHours(12) , Value =0.47 },
+                new TimeSerie () { TimeStamp =date.AddHours(16) , Value =0.65 },
+                new TimeSerie () { TimeStamp =date.AddHours(20) , Value =0.76 },
+
+            };
+
+            var valueApprox = list.Integrate(date, date.AddDays(1));
+            list.Add(new TimeSerie() { TimeStamp = date.AddHours(24), Value = 0.76 });
+            var value = list.Integrate();
+            var relError= 100 * Math.Abs(value - valueApprox) / value;
+            Assert.IsTrue(relError < 3.5);
+
+        }
+  
     }
 }

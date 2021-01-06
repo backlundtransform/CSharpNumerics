@@ -3,6 +3,7 @@ using Numerics.Enums;
 using Numerics.Models;
 using Numerics.Objects;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace System
@@ -262,6 +263,35 @@ namespace System
         {
             return data.Select(func).Select(p => new Serie() { Index = p.index, Value = p.value }).Integrate();
         }
+
+
+        public static double Integrate(this List<TimeSerie> data, DateTime start, DateTime end)
+        {
+            return data.Select(p => new Serie() { Index = (p.TimeStamp-start).TotalSeconds, Value = p.Value }).ToList().Integrate(0.0, (end - start).TotalSeconds);
+        }
+
+        public static double Integrate(this List<Serie> data, double start, double end)
+        {
+            var sum = 0.0;
+
+            if (data.Count == 1)
+            {
+                return (end - start)*data[0].Value;
+            }
+
+            sum += ((data[0].Index - start) + (data[1].Index - data[0].Index)/ 2) * data[0].Value;
+
+            for (var i = 1; i < data.Count - 1; i++)
+            {
+                sum += ((data[i].Index - data[i - 1].Index + (data[i + 1].Index - data[i].Index)) / 2) * data[i].Value;
+            }
+
+            sum += (data[data.Count - 1].Index - data[data.Count - 2].Index) / 2 + (end - data[data.Count - 1].Index) * data[data.Count - 1].Value;
+
+            return sum;
+        }
+
+
 
         public static double Integrate(this IEnumerable<TimeSerie> data)
         {
