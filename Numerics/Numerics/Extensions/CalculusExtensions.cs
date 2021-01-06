@@ -295,15 +295,8 @@ namespace System
 
         public static double Integrate(this IEnumerable<TimeSerie> data)
         {
-            var sum = 0.0;
-            var dataList = data.ToList();
+            return data.Select(p => new Serie() { Index = (p.TimeStamp - data.First().TimeStamp).TotalSeconds, Value = p.Value }).ToList().Integrate();
 
-            for (var i = 0; i < dataList.Count - 1; i++)
-            {
-                sum += (dataList[i + 1].TimeStamp - dataList[i].TimeStamp).TotalSeconds * (dataList[i].Value + dataList[i + 1].Value) / 2;
-            }
-
-            return sum;
         }
 
 
