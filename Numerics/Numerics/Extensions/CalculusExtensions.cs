@@ -299,7 +299,6 @@ namespace System
 
         }
 
-
         public static double Integrate(this IEnumerable<Serie> data)
         {
             var sum = 0.0;

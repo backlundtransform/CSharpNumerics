@@ -236,10 +236,14 @@ namespace NumericsTests
             };
 
             var valueApprox = list.Integrate(date, date.AddDays(1));
+            var approx = list.Average(p => p.Value) * 86400;
             list.Add(new TimeSerie() { TimeStamp = date.AddHours(24), Value = 0.76 });
             var value = list.Integrate();
             var relError= 100 * Math.Abs(value - valueApprox) / value;
             Assert.IsTrue(relError < 3.5);
+
+           relError = 100 * Math.Abs(approx - valueApprox) / value;
+            Assert.IsTrue(relError < 6.5);
 
         }
   
