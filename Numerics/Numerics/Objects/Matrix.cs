@@ -148,7 +148,7 @@ namespace Numerics.Objects
                 adj[0, 0] = 1;
                 return new Matrix(adj);
             }
-            var sign = 1;
+       
             var temp = new double[rowLength, columnLength];
 
             for (var i = 0; i < rowLength; i++)
@@ -158,7 +158,7 @@ namespace Numerics.Objects
 
                     temp = GetCofactor(values, temp, i, j, rowLength);
 
-                    sign = ((i + j) % 2 == 0) ? 1 : -1;
+                   var sign = ((i + j) % 2 == 0) ? 1 : -1;
 
                     adj[j, i] = (sign) * (Determinant(temp, rowLength - 1));
                 }

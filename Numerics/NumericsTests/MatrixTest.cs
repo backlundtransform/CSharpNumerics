@@ -13,7 +13,7 @@ namespace NumericsTests
             var matrix = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
             var transposematrix = matrix.Transpose();
 
-            Assert.IsTrue(transposematrix.values[0, 0] == 1);
+             Assert.IsTrue(transposematrix.values[0, 0] == 1);
             Assert.IsTrue(transposematrix.values[0, 1] == 5);
 
             Assert.IsTrue(transposematrix.values[1, 0] == 3);
