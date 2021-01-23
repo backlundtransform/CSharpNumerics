@@ -191,7 +191,57 @@ namespace NumericsTests
         }
 
 
+        [TestMethod]
+        public void TestTensorRank()
+        {
+        
+            var tensor1D = new Tensor(new double[] { 1, 3, 7 , 5, 2, 9  });
 
-   
+            var tensor2D = new Tensor(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
+
+            var tensor3D = new Tensor(new double[,,] { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } });
+
+            var tensor4D = new Tensor(new double[,,,] { { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } }, { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } } });
+
+           Assert.IsTrue(tensor1D.dimension ==1);
+            Assert.IsTrue(tensor2D.dimension == 2);
+            Assert.IsTrue(tensor3D.dimension == 3);
+            Assert.IsTrue(tensor4D.dimension == 4);
+        }
+
+
+        [TestMethod]
+        public void TestTensorShape()
+        {
+
+
+           var tensor1D = new Tensor(new double[] { 1, 3, 7, 5, 2, 9 });
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
+
+          Assert.IsTrue(tensor1D.shape[0] == 6);
+
+            Assert.IsTrue(tensor3D.shape[0] == 2);
+
+            Assert.IsTrue(tensor3D.shape[1] == 3);
+
+            Assert.IsTrue(tensor3D.shape[2] == 3);
+
+
+        }
+
+        [TestMethod]
+        public void TestTensorAddition()
+        {
+
+
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
+
+            var result = tensor3D + tensor3D;
+
+
+        }
+
+
+
     }
 }

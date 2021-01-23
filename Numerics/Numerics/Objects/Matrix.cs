@@ -240,7 +240,6 @@ namespace Numerics.Objects
                         result[i, j] += values[i, k] * b.values[k, j];
 
                     }
-
                 }
             }
 
