@@ -216,9 +216,9 @@ namespace NumericsTests
 
 
            var tensor1D = new Tensor(new double[] { 1, 3, 7, 5, 2, 9 });
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
+           var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
 
-          Assert.IsTrue(tensor1D.shape[0] == 6);
+            Assert.IsTrue(tensor1D.shape[0] == 6);
 
             Assert.IsTrue(tensor3D.shape[0] == 2);
 
@@ -234,10 +234,13 @@ namespace NumericsTests
         {
 
 
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
 
             var result = tensor3D + tensor3D;
 
+            CollectionAssert.AreEqual(result.values,new double[,,] { { { 2, 4, 6 }, { 8, 10, 12}, { 14, 16, 18 } },
+                { { 22, 24, 26}, { 28, 30, 32 }, { 34, 36, 38 } },  { { 42, 44, 46 }, { 48, 50, 52}, { 54, 56, 58 } } });
 
         }
 
