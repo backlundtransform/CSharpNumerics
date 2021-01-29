@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Numerics.Objects;
 using System;
+using System.Collections.Generic;
 
 namespace NumericsTests
 {
@@ -244,6 +245,85 @@ namespace NumericsTests
 
         }
 
+        [TestMethod]
+        public void TestTensorSubstraction()
+        {
+
+
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
+
+            var result = tensor3D - tensor3D;
+
+            CollectionAssert.AreEqual(result.values, new double[,,] { { { 0, 0, 0 }, { 0, 0, 0}, { 0, 0, 0 } },
+                { { 0,0, 0}, { 0, 0,0 }, { 0, 0, 0 } },  { { 0, 0, 0}, { 0, 0,0}, { 0, 0, 0 } } });
+
+        }
+
+
+        [TestMethod]
+        public void TestTensorDivision()
+        {
+
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
+
+            var result = tensor3D / tensor3D;
+
+            CollectionAssert.AreEqual(result.values, new double[,,] { { { 1, 1, 1 }, { 1, 1, 1}, { 1, 1, 1 } },
+                { { 1,1, 1}, { 1, 1,1 }, { 1, 1, 1 } },  { { 1, 1, 1}, { 1, 1, 1}, { 1, 1, 1} } });
+
+        }
+
+
+        [TestMethod]
+        public void TestTensorMultiplication()
+        {
+
+
+            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
+
+            var result = tensor3D *tensor3D;
+
+            CollectionAssert.AreEqual(result.values, new double[,,] { { { 1*1, 2*2, 3*3 }, { 4*4, 5*5, 6*6 }, { 7*7, 8*8, 9*9 } },
+                { { 11*11, 12*12, 13*13 }, { 14*14, 15*15, 16*16 }, { 17*17, 18*18, 19*19 } },  { { 21*21, 22*22, 23*23 }, { 24*24, 25*25, 26*26}, { 27*27, 28*28, 29*29 } }  });
+
+        }
+
+
+        [TestMethod]
+        public void TestTensorAdditionFail()
+        { 
+
+            try
+            {
+                var tensor3D = new Tensor(new string[,] { { "WDWD" } });
+
+                var result = tensor3D + tensor3D;
+                Assert.Fail("no exception thrown");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex is ArgumentException);
+            }
+
+        }
+
+
+        [TestMethod]
+        public void TestTensorDot()
+        {
+  
+           var tensor1Da = new Tensor(new double[] { 1,2});
+           var tensor1Db = new Tensor(new double[] { 3, 4 });
+           var result = tensor1Da.TensorDot(tensor1Db);
+          
+           Assert.AreEqual(result.values.GetValue(0).ToString(),  new double[2] { 3, 4}.ToString());
+            Assert.AreEqual(result.values.GetValue(1).ToString(), new double[2] { 6, 8 }.ToString());
+
+
+        }
 
 
     }

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 
 namespace Numerics.Objects
 {
@@ -31,10 +30,30 @@ namespace Numerics.Objects
          
         }
 
-        public static Tensor operator +(Tensor a, Tensor b) => a.GetResult(b);
+        public static Tensor operator +(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x + y);
+        public static Tensor operator -(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x - y);
+        public static Tensor operator *(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x * y);
+        public static Tensor operator /(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x / y);
+
+        public Tensor TensorDot(Tensor b) {
+
+            var result = new List<Array>();
 
 
-        public Tensor GetResult(Tensor b)
+            foreach (var index in values)
+            {
+                if (!double.TryParse(index.ToString(), out double convertA))
+                {
+                    throw new ArgumentException("Is not numric");
+
+                }
+                result.Add(GetResult(b, (x, y) => convertA * y).values);
+            }
+
+            return new Tensor(result.ToArray());
+
+        }
+        public Tensor GetResult(Tensor b, Func<double, double, double> operatoru)
         {
             
             var result = Array.CreateInstance(typeof(double), shape);
@@ -52,9 +71,19 @@ namespace Numerics.Objects
             
             while (true)
             {
-                var element = Convert.ToDouble(values.GetValue(indices), CultureInfo.InvariantCulture) + Convert.ToDouble(b.values.GetValue(indices), CultureInfo.InvariantCulture);
+
+               if (!double.TryParse(values.GetValue(indices).ToString(), out double convertA) || !double.TryParse(b.values.GetValue(indices).ToString(), out double convertB))
+                {
+
+                    throw new ArgumentException("Is not numric");
+
+                }
+
+                var element = operatoru(convertA, convertB);
                 result.SetValue(element, indices);
-               if(!InnerLoop(lastIndex, indices, upper, lower)){
+             
+                
+                if(!InnerLoop(lastIndex, indices, upper, lower)){
 
                     continue;
                 }
