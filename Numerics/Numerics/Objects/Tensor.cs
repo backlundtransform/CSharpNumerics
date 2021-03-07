@@ -44,7 +44,7 @@ namespace Numerics.Objects
             {
                 if (!double.TryParse(index.ToString(), out double convertA))
                 {
-                    throw new ArgumentException("Is not numric");
+                    throw new ArgumentException("Is not numeric");
 
                 }
                 result.Add(GetResult(b, (x, y) => convertA * y).values);
