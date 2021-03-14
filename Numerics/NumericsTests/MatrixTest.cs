@@ -319,7 +319,7 @@ namespace NumericsTests
            var tensor1Dy = new Tensor(new double[] { 3, 4 });
            var result = tensor1Dx.TensorDot(tensor1Dy);
           
-            Assert.AreEqual(result.values.GetValue(0).ToString(),  new double[2] { 3, 4}.ToString());
+            Assert.AreEqual(result.values.GetValue(0).ToString(), new double[2] { 3, 4}.ToString());
             Assert.AreEqual(result.values.GetValue(1).ToString(), new double[2] { 6, 8 }.ToString());
 
 
