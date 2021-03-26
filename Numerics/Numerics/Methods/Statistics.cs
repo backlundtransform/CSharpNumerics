@@ -11,5 +11,6 @@ namespace Numerics.Methods
             return func;
         }
 
+
     }
 }
