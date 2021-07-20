@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Numerics.Objects
 {
@@ -56,7 +57,7 @@ namespace Numerics.Objects
                     for (var k = 0; k < neuronsInPreviousLayer; k++)
                     {
                         
-                        neuronWeights[k] = RandomDouble(-0.5f, 0.5f);
+                        neuronWeights[k] = new Random().RandomDouble(-0.5f, 0.5f);
                     }
                     layerWeightsList.Add(neuronWeights);
                 }
@@ -104,11 +105,6 @@ namespace Numerics.Objects
 
  
 
-        public static double RandomDouble(double min, double max) 
-        {
-           var rnd = new Random();
-           return rnd.NextDouble() * (max - min) + min;
-        }
-
+     
     }
 }

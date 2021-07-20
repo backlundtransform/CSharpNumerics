@@ -190,8 +190,5 @@ namespace NumericsTests
             Assert.IsTrue(classification == 1);
 
         }
-
-
-    }
-
+   }
 }
