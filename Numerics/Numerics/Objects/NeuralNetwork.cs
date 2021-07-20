@@ -38,7 +38,7 @@ namespace Numerics.Objects
                 for (var j = 0; j < layers[i]; j++)
                 {
                    
-                    bias[j] = RandomDouble(-0.5f, 0.5f); 
+                    bias[j] = new Random().RandomDouble(-0.5f, 0.5f); 
                 }
                 biasesList.Add(bias);
             }
@@ -103,8 +103,12 @@ namespace Numerics.Objects
             return (double[])neurons.values.GetValue(neurons.values.Length - 1);
         }
 
- 
 
-     
+        public double[] Train(double[] features, double label, int epoch)
+        {
+            throw new Exception();
+        }
+
+
     }
 }
