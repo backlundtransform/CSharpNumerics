@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 namespace NumericsTests
 {
-    internal class TrigeometryTests
+    [TestClass]
+    public class TrigonometryTests
     {
+    
+        [TestMethod]
+        public void TestVelocityToAcceleration()
+        {
+            var result = 180d.DegreeToRadians();
+            Assert.IsTrue(result == Math.PI);
+        }
     }
 }
