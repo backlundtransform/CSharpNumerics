@@ -7,7 +7,7 @@ namespace NumericsTests
     {
     
         [TestMethod]
-        public void TestVelocityToAcceleration()
+        public void TestDegreeToRadians()
         {
             var result = 180d.DegreeToRadians();
             Assert.IsTrue(result == Math.PI);

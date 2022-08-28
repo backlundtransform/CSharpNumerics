@@ -58,6 +58,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatisticsTest.cs" />
     <Compile Include="TransFormTest.cs" />
+    <Compile Include="TrigonometryTests.cs" />
     <Compile Include="VectorFieldTest.cs" />
     <Compile Include="VectorTest.cs" />
   </ItemGroup>
