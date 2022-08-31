@@ -1,5 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using Xunit.Sdk;
+
 namespace NumericsTests
 {
     [TestClass]

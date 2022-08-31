@@ -1,9 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit.Sdk;
 using Numerics.Objects;
-using System;
 using System.Drawing;
-
-
 
 namespace NumericsTests
 {
@@ -93,11 +90,15 @@ namespace NumericsTests
         public void TestMandelbrot()
         {
             var maxValueExtent = 2.0;
+
             var  bitmap = new Bitmap(600, 600);
+
             var scale = 2 * maxValueExtent / Math.Min(bitmap.Width, bitmap.Height);
             for (int i = 0; i < bitmap.Height; i++)
             {
+
                 var y = (bitmap.Height / 2 - i) * scale;
+
                 for (var j = 0; j < bitmap.Width; j++)
                 {
                     var x = (j - bitmap.Width / 2) * scale;
@@ -114,8 +115,10 @@ namespace NumericsTests
                     }
 
                     var color = iteration < maxIterations ? (double)iteration / maxIterations : 0;
+
                     bitmap.SetPixel(j, i, Color.FromArgb(0, 0,
                 (int)(256 * Math.Pow(color, 0.2))));
+
                 }
             }
 

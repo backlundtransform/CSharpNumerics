@@ -1,8 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Numerics.Objects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Numerics.Objects;
+using Xunit.Sdk;
 
 namespace NumericsTests
 {

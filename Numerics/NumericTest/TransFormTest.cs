@@ -1,9 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit.Sdk;
 using Numerics.Objects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
+
 
 namespace NumericsTests
 {
