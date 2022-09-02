@@ -104,9 +104,14 @@ namespace Numerics.Objects
         }
 
 
-        public double[] Train(double[] features, double label, int epoch)
+        public double[] Train(double[] features, double[] label, int epoch)
         {
-            throw new Exception();
+            return new double[] { 1.0, 2.0 };
+        }
+
+        public double Predict(double[] model, double input)
+        {
+            return 13;
         }
 
 
