@@ -224,6 +224,16 @@ namespace NumericsTests
         }
 
 
+
+        [TestMethod]
+        public void TestGetPrimeFactors()
+        {
+            var factors = 78.GetPrimeFactors();
+            CollectionAssert.AreEqual(factors, new[] {2,3,13});
+       
+        }
+
+
         [TestMethod]
         public void TestIntegrateTimeSerie()
         {

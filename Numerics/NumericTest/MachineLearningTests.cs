@@ -24,7 +24,7 @@ namespace NumericTest
 
             var result = net.Predict(model, 11);
 
-            Assert.AreEqual(result, 13,1);
+            Assert.AreEqual(result, 13, 1);
         }
     }
 }
