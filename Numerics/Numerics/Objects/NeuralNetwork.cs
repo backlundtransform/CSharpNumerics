@@ -7,37 +7,48 @@ namespace Numerics.Objects
 
     public struct NeuralNetwork
     {
-        public int[] layers;
-        public Tensor neurons;
-        public Tensor biases;
-        public Tensor weights;
-        public double fitness;
-        public Func<double, double> activateFunction;
-        public NeuralNetwork(int[] layers, double fitness, Func<double,double> activateFunction)
-        {
-
-            this.fitness = fitness;
-            this.activateFunction =activateFunction;
-            this.layers = new int[layers.Length];
-       
-            this.activateFunction = activateFunction;
-            this.layers = new int[layers.Length];
-            neurons = new Tensor(Array.Empty<double>());
-            biases = new Tensor(Array.Empty<double>());
-
-            weights = new Tensor(Array.Empty<double>());
+      
+        public NeuralNetwork()
+        {         
 
         }
       
 
-        public double[] Train(double[] features, double[] label, int epoch)
+        public double[] Train(double[] features, double[] labels, int epoch)
         {
-            return new double[] { 1.0, 2.0 };
+            var weights = new double[features.Length];
+            var bias = 0.0;
+            var learningRate = 0.1;
+
+            for (int i = 0; i < epoch; i++)
+            {
+                for (int j = 0; j < features.Length; j++)
+                {
+                   var prediction = Predict(weights, features[j]) + bias;
+                   var error = labels[j] - prediction;
+
+                    for (int k = 0; k < weights.Length; k++)
+                    {
+                        weights[k] = weights[k] + error * features[j] * learningRate;
+                    }
+
+                    bias += error * learningRate;
+                }
+            }
+
+            return weights;
         }
 
         public double Predict(double[] model, double input)
         {
-            return 13;
+           var prediction = 0.0;
+
+            for (var i = 0; i < model.Length; i++)
+            {
+                prediction += input * model[i];
+            }
+
+            return prediction;
         }
 
 

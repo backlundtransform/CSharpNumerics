@@ -223,8 +223,6 @@ namespace NumericsTests
             Assert.IsTrue(79.IsPrime());
         }
 
-
-
         [TestMethod]
         public void TestGetPrimeFactors()
         {
