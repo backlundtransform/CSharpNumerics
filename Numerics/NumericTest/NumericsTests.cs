@@ -218,6 +218,13 @@ namespace NumericsTests
         }
 
         [TestMethod]
+        public void TestIsPrime()
+        {
+            Assert.IsTrue(79.IsPrime());
+        }
+
+
+        [TestMethod]
         public void TestIntegrateTimeSerie()
         {
 
