@@ -231,6 +231,13 @@ namespace NumericsTests
        
         }
 
+        [TestMethod]
+        public void TestIsHappy()
+        {
+            Assert.IsTrue(19.IsHappy());
+
+        }
+
 
         [TestMethod]
         public void TestIntegrateTimeSerie()

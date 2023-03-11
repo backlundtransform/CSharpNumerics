@@ -40,5 +40,23 @@ namespace System
             }
             return factors;
         }
+
+        public static bool IsHappy(this int n)
+        {
+            var visited = new HashSet<int>();
+            while (n != 1 && !visited.Contains(n))
+            {
+                visited.Add(n);
+                int sum = 0;
+                while (n != 0)
+                {
+                    int digit = n % 10;
+                    sum += digit * digit;
+                    n /= 10;
+                }
+                n = sum;
+            }
+            return n == 1;
+        }
     }
 }
