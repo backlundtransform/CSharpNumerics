@@ -58,5 +58,19 @@ namespace System
             }
             return n == 1;
         }
+
+        public static int GetDecimalPlaces(this double n)
+        {
+            n = Math.Abs(n);
+            n -= (int)n;
+            var decimalPlaces = 0;
+            while (n > 0)
+            {
+                decimalPlaces++;
+                n *= 10;
+                n -= (int)n;
+            }
+            return decimalPlaces;
+        }
     }
 }

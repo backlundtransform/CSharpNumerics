@@ -237,6 +237,12 @@ namespace NumericsTests
             Assert.IsTrue(19.IsHappy());
 
         }
+        [TestMethod]
+        public void TestDecimalPlace()
+        {
+            Assert.IsTrue(0.01.GetDecimalPlaces()== 2);
+
+        }
 
 
         [TestMethod]
@@ -262,7 +268,7 @@ namespace NumericsTests
             var relError= 100 * Math.Abs(value - valueApprox) / value;
             Assert.IsTrue(relError < 3.5);
 
-           relError = 100 * Math.Abs(approx - valueApprox) / value;
+            relError = 100 * Math.Abs(approx - valueApprox) / value;
             Assert.IsTrue(relError < 6.5);
 
         }
