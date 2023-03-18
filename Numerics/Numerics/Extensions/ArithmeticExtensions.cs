@@ -59,6 +59,23 @@ namespace System
             return n == 1;
         }
 
+        public static bool IsPerfectNumber(this int number)
+        {
+            var sum = 1;
+
+            for (var i = 2; i <= Math.Sqrt(number); i++)
+            {
+                if (number % i == 0)
+                {
+                    sum += i;
+                    sum += number / i;
+                }
+            }
+
+            return (sum == number && number != 1);
+
+        }
+
         public static int GetDecimalPlaces(this double n)
         {
             n = Math.Abs(n);

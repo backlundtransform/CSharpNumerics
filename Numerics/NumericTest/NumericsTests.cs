@@ -243,9 +243,15 @@ namespace NumericsTests
             Assert.IsTrue(0.01.GetDecimalPlaces()== 2);
 
         }
-
-
         [TestMethod]
+        public void TestIsPerfectNumber()
+        {
+            Assert.IsTrue(6.IsPerfectNumber());
+
+        }
+       
+
+       [TestMethod]
         public void TestIntegrateTimeSerie()
         {
 
