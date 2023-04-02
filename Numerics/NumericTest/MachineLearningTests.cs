@@ -14,7 +14,7 @@ namespace NumericTest
             int[] layers = new int[] { 10, 10 };
             Func<double, double> activate = (x) => 1 / (1 + Math.Exp(-x));
 
-            NeuralNetwork neuralNetwork = new NeuralNetwork(layers, 0.0007, activate);
+            var neuralNetwork = new NeuralNetwork(layers, 0.0007, activate);
             neuralNetwork.Train(features, labels, 100);
          
 
