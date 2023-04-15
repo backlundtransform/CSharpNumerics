@@ -9,21 +9,22 @@ namespace NumericTest
         [TestMethod]
         public void MachineLearning()
         {
-            var features = new double[] { 0, 0 };
-            var labels = new double[] { 1 };
-            int[] layers = new int[] { 2, 1, 1 };
-            Func<double, double> activate = (x) => x;
+            var features = new Tensor(new double[,] { { 1, 2 }, { 3, 4 } , { 5, 6 } });
+            var labels = new Tensor(new double[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
+            int[] layers = new int[] { 4, 4, 4 };
+            Func<double, double> activate = (x) => Math.Tanh(x);
           
+
 
             var neuralNetwork = new NeuralNetwork(layers, 0.1, activate);
             neuralNetwork.Train(features, labels, 1);
          
 
-            var input =new double[] { 0, 1};
+            var input = new Tensor(new double[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } });
             var result = neuralNetwork.Predict(input);
 
 
-            Assert.AreEqual(1, result[0],0.2);
+            Assert.AreEqual(7, result[0],0.2);
 
         }
 

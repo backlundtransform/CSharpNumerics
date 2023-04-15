@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Numerics.Objects;
+using System;
 using System.Linq;
 
 public class NeuralNetwork
@@ -74,127 +75,111 @@ public class NeuralNetwork
     }
 
 
-
-    private void ForwardPropagation(double[] featureValues)
+    private void ForwardPropagation(Tensor featureValues)
     {
-
-        int inputCount = layers[0];
-        int hiddenCount = layers[1];
-        int outputCount = layers[2];
-
-
-
-        for (int i = 0; i < inputCount; i++)
+        double[][] inputs = new double[featureValues.values.GetLength(0)][];
+        for (int i = 0; i < featureValues.values.GetLength(0); i++)
         {
             inputs[i] = new double[1];
+            inputs[i][0] = Convert.ToDouble(featureValues.values.GetValue(i));
         }
 
-        for (int i = 0; i < hiddenCount; i++)
+        for (int i = 0; i < hidden.Length; i++)
         {
-            hidden[i] = new double[1];
-        }
-
-        for (int i = 0; i < outputCount; i++)
-        {
-            outputs[i] = new double[1];
-        }
-
-        for (int i = 0; i < inputCount; i++)
-        {
-            inputs[i][0] = featureValues[i];
-        }
-
-        for (int i = 0; i < hiddenCount; i++)
-        {
-            hidden[i][0] = 0;
-
-            for (int j = 0; j < inputCount; j++)
+            double sum = 0;
+            for (int j = 0; j < inputs.Length; j++)
             {
-                hidden[i][0] += inputs[j][0] * hiddenWeights[j][i];
+                sum += inputs[j][0] * hiddenWeights[j][i];
             }
-
-           // hidden[i][0] = activationFunction(hidden[i][0]);
-        }
-        for (int i = 0; i < inputCount; i++)
-        {
-            inputs[i][0] = featureValues[i];
+            hidden[i][0] = activationFunction(sum);
         }
 
-        for (int i = 0; i < hiddenCount; i++)
+  
+        for (int i = 0; i < outputs.Length; i++)
         {
-            hidden[i][0] = 0;
-
-            for (int j = 0; j < inputCount; j++)
+            double sum = 0;
+            for (int j = 0; j < hidden.Length; j++)
             {
-                hidden[i][0] += inputs[j][0] * hiddenWeights[j][i];
+                sum += hidden[j][0] * outputWeights[j][i];
             }
-
-        //    hidden[i][0] = activationFunction(hidden[i][0]);
-        }
-
-        for (int i = 0; i < outputCount; i++)
-        {
-            outputs[i][0] = 0;
-
-            for (int j = 0; j < hiddenCount; j++)
-            {
-                outputs[i][0] += hidden[j][0] * outputWeights[j][i];
-            }
-
-            //outputs[i][0] = activationFunction(outputs[i][0]);
+            outputs[i][0] = activationFunction(sum);
         }
     }
-    private void BackwardPropagation(double[] expectedValues)
+
+
+    public double MeanAbsoluteError(double[][] predictedOutput, double[][] actualOutput)
     {
-        var inputCount = layers[0];
-        var hiddenCount = layers[1];
-        var outputCount = layers[2];
-
-
-      var error = 0.0;
+        int outputCount = predictedOutput.Length;
+        double errorSum = 0;
 
         for (int i = 0; i < outputCount; i++)
         {
-            var delta = expectedValues[i] - outputs[i][0];
-            error += delta * delta;
+            double error = Math.Abs(predictedOutput[i][0] - actualOutput[i][0]);
+            errorSum += error;
         }
-        error /= outputCount;
-        double[] outputError = new double[outputCount];
-        double[] hiddenError = new double[hiddenCount];
 
+        double meanError = errorSum / outputCount;
+        return meanError;
+    }
+
+
+    private void BackwardPropagation(Tensor expectedValues)
+    {
+
+        var values = new double[expectedValues.values.GetLength(0)][];
+
+        int outputCount = layers[2];
+        // Calculate output error
+        double[][] outputError = new double[outputCount][];
         for (int i = 0; i < outputCount; i++)
         {
-            outputError[i] = outputs[i][0] * (1 - outputs[i][0]) * (expectedValues[i] - outputs[i][0]);
+            outputError[i] = new double[1];
+            outputError[i][0] = values[i][0] - outputs[i][0];
         }
 
+        // Calculate output gradient
+        double[][] outputGradient = new double[outputCount][];
+        for (int i = 0; i < outputCount; i++)
+        {
+            outputGradient[i] = new double[1];
+            outputGradient[i][0] = -(2.0 / outputCount) * (values[i][0] - outputs[i][0]) * activationFunction(outputs[i][0]);
+        }
+
+        // Calculate hidden gradient
+        int hiddenCount = layers[1];
+        double[][] hiddenGradient = new double[hiddenCount][];
         for (int i = 0; i < hiddenCount; i++)
         {
-            hiddenError[i] = hidden[i][0] * (1 - hidden[i][0]);
-
+            hiddenGradient[i] = new double[1];
+            double sum = 0;
             for (int j = 0; j < outputCount; j++)
             {
-                hiddenError[i] *= outputError[j] * outputWeights[i][j];
+                sum += outputGradient[j][0] * outputWeights[i][j];
+            }
+            hiddenGradient[i][0] = (1.0 / hiddenCount) * sum * activationFunction(hidden[i][0]);
+        }
+
+        // Update output weights
+        for (int i = 0; i < hiddenCount; i++)
+        {
+            for (int j = 0; j < outputCount; j++)
+            {
+                outputWeights[i][j] -= learningRate * outputGradient[j][0] * hidden[i][0];
             }
         }
 
-        for (int i = 0; i < hiddenCount; i++)
-        {
-            for (int j = 0; j < outputCount; j++)
-            {
-                outputWeights[i][j] += learningRate * outputError[j] * hidden[i][0];
-            }
-        }
-
+        // Update hidden weights
+        int inputCount = layers[0];
         for (int i = 0; i < inputCount; i++)
         {
             for (int j = 0; j < hiddenCount; j++)
             {
-                hiddenWeights[i][j] += learningRate * hiddenError[j] * inputs[i][0];
+                hiddenWeights[i][j] -= learningRate * hiddenGradient[j][0] * inputs[i][0];
             }
         }
     }
 
-    public void Train(double[] features, double[] labels, int epochs)
+    public void Train(Tensor features, Tensor labels, int epochs)
     {
         for (var i = 0; i < epochs; i++)
         {
@@ -203,7 +188,7 @@ public class NeuralNetwork
 
         }
     }
-    public double[] Predict(double[] featureValues)
+    public double[] Predict(Tensor featureValues)
     {
         ForwardPropagation(featureValues);
         return outputs.Select(o => o[0]).ToArray();

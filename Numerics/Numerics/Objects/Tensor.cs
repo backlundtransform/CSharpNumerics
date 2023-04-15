@@ -99,7 +99,7 @@ namespace Numerics.Objects
 
         }
        
-        private bool InnerLoop(int lastIndex, int[] indices, int[] upper, int[] lower)
+        private static bool InnerLoop(int lastIndex, int[] indices, int[] upper, int[] lower)
         {
             for (var i = lastIndex; i > 0; i -= 1)
             {
