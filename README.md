@@ -1,552 +1,276 @@
-  # CSharpNumerics
-A numerical package that deals with scientific computing and mathematical analysis of discretizations and iterative processes
-https://www.nuget.org/packages/CSharpNumerics/
+# 🧮 CSharpNumerics
 
-## Numeric Extensions
+A comprehensive numerical library for **scientific computing**, **mathematical analysis**, and **iterative processes** in C#.
+[NuGet Package](https://www.nuget.org/packages/CSharpNumerics/)
 
-Get the Factorial of int 
+---
 
-`Factorial(this int number)`
+## ✨ Features
 
-E.g 
+* 🔢 Numerical extensions (Factorial, derivatives, integrals, root finding, etc.)
+* 📈 Vectors, matrices, and complex numbers
+* 🌊 Vector fields (Gradient, Divergence, Curl, Laplacian)
+* 🧠 Complex and real function analysis
+* 🔬 Fourier, Laplace, and Monte Carlo transforms
+* 📉 Differential equation solvers (Runge–Kutta, Trapezoidal, etc.)
+* 📊 Statistics and regression tools
+* 🔗 Full integration with LINQ and extension methods
 
-`5.Factorial()`
+---
 
-Outputs 120
+## 📘 Numeric Extensions
 
-Findining roots using  Newton–Raphson method
+### Factorial
 
-`Func<double, double> func = (double x) => Math.Pow(x,2) - 4`
+```csharp
+int result = 5.Factorial(); // 120
+```
 
-`func.NewtonRaphson()`
+### Root Finding (Newton–Raphson)
 
-Outputs 2
+```csharp
+Func<double, double> func = x => Math.Pow(x, 2) - 4;
+double root = func.NewtonRaphson(); // 2
+```
+
+---
 
 ### Derivative
 
-To derivate a function use:
+```csharp
+Func<double, double> f = x => Math.Pow(x, 2);
+Func<double, double> g = x => 4 * x - 3;
+var result = f.Derivate(g, 1);
+```
 
-`Derivate(this Func<double, double> func, double variablevalue, int order=1)`
+Supports **Chain**, **Product**, and **Quotient** rules via:
 
-Calculate higher order derivative by setting the order parameter 
+```csharp
+var result = f.Derivate(g, Numerics.Enums.DerivateOperator.Product);
+```
 
-E.g with Chain rule
+Multiple variables:
 
-`double funcG(double x) => 4 * x - 3`
- 
-`Func<double, double> funcF=(double x) => Math.Pow(x, 2)`
- 
-`var result = funcF.Derivate(funcG,1)`
+```csharp
+Func<double[], double> func = vars => vars[0] * vars[1];
+var dfdx = func.Derivate(new double[] { 2, 3 }, index: 0);
+```
 
-By using Numerics.Enums.DerivateOperator the Chain rule, Product rule, or Quotient rule can be used
+Or with vectors:
 
-`var result = funcF.Derivate(funcG,Numerics.Enums.DerivateOperator.Product)`
+```csharp
+Func<Vector, double> func = v => v.x * v.y;
+var dfdx = func.Derivate(new Vector(2, 3, 0), Cartesian.X);
+```
 
-`var result = funcF.Derivate(funcG,Numerics.Enums.DerivateOperator.Quotient)`
+Derivate series:
 
-If several variables use:
+```csharp
+Func<double, double> displacement = t => 9.81 * Math.Pow(t, 2) / 2;
+var velocity = displacement.GetSeries(0, 10, 1000).Derivate();
+```
 
-`Derivate(this Func<double[], double> func, double[] variables, int index, int order=1)`
+---
 
-Or use the vector (x,y,z)  
+## ∫ Integrals
 
-`Derivate(this Func<Vector, double> func, Vector variables, Cartesian cartesian, int order=1)`
+Trapezoidal rule:
 
-Also possible derivate series
+```csharp
+Func<double, double> f = x => Math.Sin(x);
+double integral = f.Integrate(0, Math.PI);
+```
 
- `Func<double, double> displacement = (double time) => 9.81 * Math.Pow(time, 2) / 2`
- 
- `var velocity = displacement.GetSeries(0, 10, 1000).Derivate()`
+Integrate a series or timeseries:
 
-### Integrals
-
-To integrate a function with Trapezoidal rule use:
-
-`Integrate(this Func<double, double> func, double lowerLimit, double upperLimit)`
-
-To integrate a timeserie 
-
-`Integrate(this List<Numerics.Models.TimeSerie> data)`
-
-TimeSerie is a model with the properties TimeStamp as DateTime and Value as double 
-
-To integrate a serie  
-
-`Integrate(this List<Numerics.Models.Serie> data)`
-
-Serie model is a model with the properties Index as double and Value as double
+```csharp
+List<TimeSerie> ts = ...;
+double total = ts.Integrate();
+```
 
 ### Monte Carlo Integration
 
-To solve double integrals with Monte Carlo method use:
+```csharp
+Func<(double x, double y), double> func = p => p.x * p.y;
+double result = func.Integrate((0, 1), (0, 1));
+```
 
-`Integrate(this Func<(double x, double y), double> func, (double lowerLimit, double upperLimit) xlimit, (double lowerLimit, double upperLimit) ylimit)`
+---
 
-or triple integral
+## 🧩 Complex Numbers
 
-`Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit)`
+```csharp
+var a = new ComplexNumber(3, 2);
+var b = new ComplexNumber(5, 3);
 
+var sum = a + b;
+var product = a * b;
+var power = a.Pow(2); // 5 + 12i
+```
 
+Exponential:
 
-## The complex object
+```csharp
+new ComplexNumber(0, Math.PI).Exponential(); // -1
+```
 
-To work with Complex numbers use this struct: 
+---
 
-`ComplexNumber(double re, double im)`
+## 🧭 Vector
 
-E.g Arithmetics
+```csharp
+var a = new Vector(5, 3, 0);
+var b = new Vector(2, 6, 0);
 
-  `var a = new ComplexNumber(3, 2);`
-  
-   `var b = new ComplexNumber(5, 3);`
-   
-   `var sum= a + b;`
-   
-   `var difference =a-b;`
-   
-   `var product =a*b;`
-   
-   `var quotient= a / b;`
-   
-Power of complex number
-   
-   `var i = new ComplexNumber(3, 2); i.Pow(2);`
-        
-output:  5+12*i
+var dot = a.Dot(b);
+var cross = a.Cross(b);
+```
 
-Calculate Imaginary exponents
+From spherical coordinates:
 
-  `var i = new ComplexNumber(0, Math.PI);
-    i.Exponential()`
+```csharp
+var v = Vector.FromSphericalCoordinates(radius, inclination, azimuth);
+```
 
-output:  -1
+---
 
-## The vector object
+## 🧮 Matrix
 
-To work with vectors use this struct:
+```csharp
+var A = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
+var transpose = A.Transpose();
+var det = A.Determinant();
+var inv = A.Inverse();
+```
 
-  `Vector(double x, double y, double z)`
+Arithmetic:
 
-or from two points
+```csharp
+var B = new Matrix(new double[,] { { 2, 5, 1 }, { 4, 3, 7 } });
+var sum = A + B;
+var product = A * B;
+```
 
-  `Vector((double,double, double) p1, (double, double, double) p2)`
+With vector:
 
-Following methods could be used:
+```csharp
+var x = new Vector(2, 1, 3);
+var y = A * x;
+```
 
-1. Scalar product
+---
 
-  `Dot(Vector b)`
-
-2. Vector product
-
- `Cross(Vector b)`
-
-3. Projection between two vectors
-
-  `Projection(Vector b)`
-
-4. Reflection between two vectors
-
-  `Reflection(Vector b)`
-
- Using Sperical Coordinates
-
-   `var v=Vector.FromSphericalCoordinates(radius, inclination, azimuth)`
-
-or covert to sperical from cartesian
-
-   `v.ToSphericalCoordinates()`
-
-Metods to get radius, inclination, azimuth
-
-   `GetMagnitude(), GetInclination(),GetAzimuth()`
-
-E.g 
-
-  `var a = new Vector(5, 3, 0);`
-
-   `var b = new Vector(2, 6, 0);`
-
-   `var skalar = a.Dot(b);`
-
-   `var vector = a.Cross(b);`
-
-
-E.g Arithmetics
-
-  `var a = new Vector(2, 2, 0);`
-  
-   `var b = new Vector(2, 2, 0);`
-   
-   `var sum= a + b;`
-   
-   `var difference =a-b;`
-
-   `var product =3*b;`
-
-## The matrix object	
-
-To work with matrix use this struct:
-
-  `Matrix(double[,] values)`
-
-E.g 
-
-  `var matrix = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });`
-
-Get Transpose
-
-`var transposematrix = matrix.Transpose();`
-
-Get Inverse
-
-`var inv = matrix.Inverse();`
-
-
-Get Pascal matrix
-
-`var pascalMatrix = new Matrix(new double[6, 6]).Pascal()`
-
-Get Adjugate
-
-`var adj = matrix.Adjugate();`
-
-Get Determinant
-
-` var det = matrix.Determinant()`
-
-output values 
-
-`matrix.values`
-
-or Identity matrix
-
- `matrix.identity`
-
-E.g Arithmetics
-
-  `var a = new Matrix(new double[,] { { 5, 7, 2 }, { -2, 9, 4 } });`
-  
-  `var b = new Matrix(new double[,] {{ 1, 3, 7 }, { 5, 2, 9} });`
-   
-   `var sum= a + b;`
-   
-   `var difference =a-b;`
-   
-   `var product =a*b;`
-   
-Or
-
-  `var b = 3`
-
-  `var product =b*a;`
-
-  `var quotient= a / b;`
-
-
-Or  
-
-   `var a = new Matrix(new double[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }});`
-
-   `var b = new Vector(2, 1, 3);`
-
-   `var product =a*b;`
-
-## The vectorfield object
+## 🌐 Vector Field
 
 ### Gradient
 
-Calculate for one point
-
-  `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
-
-  `var v=func.Gradient((1, -2, 0))`
-
-Calculate for range
-
- `var grad = func.Gradient(-4, -4, -4, 1, 8);`
-
-Where the parameters are minimum value of x,y,z the step size, and the length. The range in this example is -4<=x<=4,-4<=y<=4,-4<=z<=4. 
-This method will return new Dictionary<Vector, Vector> where the key is the point and value is the calculated function value for that point.
-Save the data to csv 
-
-  `grad.Save(@"${path}\${file}.csv");`
+```csharp
+Func<Vector, double> f = p => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);
+var grad = f.Gradient((1, -2, 0));
+```
 
 ### Divergence
 
-Calculate for one point
+```csharp
+var field = new VectorField(p => Math.Sin(p.x * p.y),
+                            p => Math.Cos(p.x * p.y),
+                            p => Math.Exp(p.z));
 
- `double fx(Vector p) => Math.Sin(p.x * p.y);`
-
- `double fy(Vector p) => Math.Cos(p.x * p.y);`
-
- `double fz(Vector p) => Math.Pow(Math.E, p.z);`
-
- `var field = new VectorField(fx, fy, fz);`
-
- `var div = field.Divergence((1, 2, 2))`
+double div = field.Divergence((1, 2, 2));
+```
 
 ### Curl
 
-Calculate for one point
-           
- `double fx(Vector p) => 4*p.z;`
+```csharp
+var field = new VectorField(p => p.y, p => -p.x, p => 0);
+var curl = field.Curl((1, 4, 2));
+```
 
- `double fy(Vector p) => p.y *Math.Pow(p.x,3);`
+---
 
- `double fz(Vector p) => p.z * Math.Pow(p.y,2);`
+## ⚙️ Transform
 
- `var field = new VectorField(fx, fy, fz);`
+### FFT
 
- `var v = field.Curl((1, 4, 2));`
+```csharp
+Func<double, double> f = t => Math.Exp(-t * t / 0.02);
+var freq = f.FastFouriertransform(-0.5, 0.5, 100)
+             .ToFrequencyResolution(100);
+```
 
-Calculate for range. It is done in same way as for gradient E.g save both the vector field and curl to file:
+### Laplace Transform
 
-  `double fx(Vector p) => p.y;`
+```csharp
+double result = f.LaplaceTransform(2.0);
+```
 
-  `double fy(Vector p) => -p.x;`
+---
 
-   `double fz(Vector p) => 0;`
+## 📐 Differential Equations
 
-   `var w = new VectorField(fx, fy, fz);`
-    
-   `var data= w.EvaluateRange(-4,-4,4,1,8);`
-            
-   `var curl = w.Curl(-4, -4, 4, 1, 8);`
+### Runge–Kutta (RK4)
 
-  `data.Save(@"${path}\${file}.csv");`
+```csharp
+Func<(double t, double y), double> f = v => Math.Tan(v.y) + 1;
+var result = f.RungeKutta(1, 1.1, 0.025, 1);
+```
 
-  `curl.Save(@"${path}\${file}.csv");`
+### Linear Systems
 
-### Laplacian
+```csharp
+var result = A.LinearSystemSolver(b);
+var eigenValues = A.EigenValues();
+```
 
-Calculate for one point
+---
 
-  `Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);`
+## 📊 Statistics
 
-  `var v=func.Laplacian((1, -2, 0))`
+```csharp
+var noise = new Random().GenerateNoise(4);
+double median = ts.Median(p => p.Value);
+double std = ts.StandardDeviation(p => p.Value);
+```
 
-## The complex function object
+Regression:
 
-To work with Complex functions use this struct: 
+```csharp
+var (slope, intercept, corr) = serie.LinearRegression(p => (p.Index, p.Value));
+var expFunc = serie.ExponentialRegression(p => (p.Index, p.Value));
+```
 
- `ComplexFunction(Func<(double x, double y), double> re, Func<(double x, double y), double> im)`
+K-nearest neighbors:
 
-E.g:
+```csharp
+var data = new List<(double x, double y, int c)> { (7,7,0), (7,4,0), (3,4,1), (1,4,1) };
+int classification = data.KnearestNeighbors(p => (p.x, p.y, p.c), (3,7), 3);
+```
 
-  `double fx((double x, double y) p) => Math.Pow(Math.E, p.x) * Math.Cos(p.y);`
+---
 
-  `double fy((double x, double y) p) => Math.Pow(Math.E, p.x) * Math.Sin(p.y);`
+## 📎 Tips
 
-   `var fz = new ComplexFunction(fx, fy);`
+* All methods are available as **extension methods** — just `using Numerics.Extensions`.
+* You can **export data** with `.Save(path)` for CSV visualization.
+* Works with LINQ pipelines for composable scientific workflows.
 
-or 
+---
 
-   `ComplexNumber fz(ComplexNumber z) => new ComplexNumber(Math.Pow(Math.E, z.realPart) * Math.Cos(z.imaginaryPart), Math.Pow(Math.E, z.realPart) * Math.Sin(z.imaginaryPart));` 
+## 🧠 Example: Full Workflow
 
- To derivate a complex function use:
-            
-   `Derivate(this ComplexFunction func, ComplexNumber variables, int order = 1)`
+```csharp
+Func<double, double> func = x => Math.Sin(x);
+var integral = func.Integrate(0, Math.PI);
+var derivative = func.Derivate(Math.PI / 4);
+var fft = func.FastFouriertransform(-1, 1, 100);
+```
 
-### Cauchy–Riemann equations
+---
 
-To test if analytic fuction in a point using Cauchy–Riemann equations:
-	
-   `fz.IsAnalytical((x0,y0))`
+## 🧾 License
 
-### Jacobian
+MIT License © 2025 — [CSharpNumerics](https://www.nuget.org/packages/CSharpNumerics)
 
-To get the Jacobian as a Matrix
 
-   `fz.Jacobian((x0,y0))`
-
-
-## Transform
-
-E.g use a lowpass filter to remove noise from a signal
-
-`var result =input.LowPassFilter(output).ToList()`
-
-### Fast Fourier transform
-
-To use a fast fourier transform use extentionsmethods
-from a list of complexnumber 
-
-`FastFouriertransform(this List<ComplexNumber> numbers)`
-
-to calculate the inverse fast fourier transform
-
-`List<ComplexNumber> InverseFastFouriertransform(this List<ComplexNumber> numbers)`
-
-E.g Convert a Gaussian pulse from the time domain to the frequency domain and save result.
-
-`Func<double, double> func = (double t) => 1 / (4 * Math.Sqrt(2 * Math.PI * 0.01)) * (Math.Exp(-t * t / (2 * 0.01)));`
-
-`var timeseries = func.GetSeries(-0.5, 0.5, 100);`
-
-`timeseries.Save(@"\timeserie.csv");`
-
-GetSeries takes the interval and how many values to return
-
-`var frequency = func.FastFouriertransform(-0.5, 0.5, 100).ToFrequencyResolution(100);`
-
-`frequency.Save(@"\frequency.csv");`
-
-
-ToFrequencyResolution takes the sample rate and will return the frequency as index and the magnitude of the complex number as value
-
-### Discrete Fourier transform
-
-Use in the same way as a fast fourier transform 
-
-`DiscreteFourierTransform(this List<ComplexNumber> numbers)`
-
-### LaplaceTransform
-
-Calculate the laplace transform for s value
-
-`LaplaceTransform(this Func<double, double> func, double s)`
-
-or it's invers from t value
-
-`InverseLaplaceTransform(this Func<double, double> func, double t)`
-
-## Differential Equations
-
-### Runge–Kutta
-
-The Runge–Kutta (R4) method uses this extension method 
-
-`RungeKutta(this Func<(double t, double y), double> func, double min, double max, double stepSize, double yInitial)`
-
-E.g yprim =tan(y)+1 with the initial-value problem  y0=1 and 1<= t <= 1.1 and step size 0.025
-
-`Func<(double y, double t), double> func = ((double t, double y) v) => Math.Tan(v.y) +1`
-         
-`var result = func.RungeKutta(1,1.1,0.025,1)`
-
-It is also possible using Explicit Runge–Kutta methods by defining the Runge–Kutta matrix, weights and nodes
-
-`var result = func.RungeKutta(1,1.1,0.025,1,new Matrix(new double[,] { { 0, 0, 0 }, { 0.5, 0, 0 }, { 0, 0.5, 0 }, { 0, 0, 1 } }), new double[] { 1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0 }, new double[] { 0.0, 0.5, 0.5, 1 })`
-
-Or solve ode by using the Trapezoidal rule
-
-`var result = func.TrapezoidalRule(1, 1.1, 0.00025, 1);`
-
-### Matrix differential equation 
-
-Extension methods to solve linear equation system  
-
-`LinearSystemSolver(this Matrix matrix, Vector vector)`
-
-or gauss elimination
-
-`GaussElimination(this Matrix matrix, Vector vector)`
-
-for N values
-
-`GaussElimination(this Matrix matrix, List<double> vector)`
-
-Find eigen values of matrix 
-
-`var result = matrix.EigenValues()`
-
-Find Eigenvector if knowing a eigenvalue of a matrix (in this example 1)
-
-`var result =matrix.EigenVector(1)`
-
-To solve a linear system of differential equations use OdeSolver with initial value y(0)=x(0)=tZero when t=0
-
-`List<Func<double,double>> OdeSolver(this Matrix matrix, double tZero)`
-
-
-## Statistics
-
-Generate zero-mean white noise with a variance of 4 using Random
-
-`var rnd = new Random()`
-
-`rnd.GenerateNoise(4)`
-
-
-To calculate the median use linq in the same way as calculating avarerage, sum, max or min
-
-`timeseries.Median(p => p.Value)`
-
-To calculate the standard deviation
-
-`timeseries.StandardDeviation(p => p.Value)`
-
-To calculate the variance
-
-`timeseries.Variance(p => p.Value)`
-
-To calculate the covariance if model has X,Y properties
-
-`series.Covariance(p => (p.X,p.Y))`
-
-There is also a Statistics class containing static methods
-
-E.g  get normal distribution curve 
-
- `Numerics.Methods.Statistics.NormalDistribution(variance, mean)`
-
-Extension method for calculating cumulative sum of list
-
-`CumulativeSum<T>(this IEnumerable<T> enumerable, Func<T, double> func)`
-
-### Interpolation
-
-Linear interpolation of a timeserie
-
-`LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp)`
-
-Or serie
-
-`LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)`
-
-E.g
-
-`var value = serie.LinearInterpolation(p=>(p.Index, p.Value),1)` 
-
-
-### Regression
-
-Linear regression that will return intercept correlation and slope
-
-`LinearRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)`
-
-E.g
-
-`var serie = new List<Serie>() 
-{ new Serie() { Index = 3.0, Value = 0.62},
-new Serie() { Index = 3.4, Value = 0.93 },
-new Serie() { Index = 3.8, Value = 1.08 }};`
-
-`var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value))`
-
-Exponetial regression that will return a exponetial function
-
-`var func = serie.ExponentialRegression(p => (p.Index, p.Value));`
-
-Logistic regression using slope and intercept
-
- `LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)`
- 
- Calculate Confidence Intervals
- 
- `var (lower,upper) = timeserie.ConfidenceIntervals(p => p.Value, 0.95)`
- 
- Get K nearest neighbors 
- 
-   `var timeserie = new List<(double x, double y, int classification)>() { (7, 7, 0), (7, 4, 0), (3, 4, 1), (1, 4, 1) } `
-   
-   `var classification = timeserie.KnearestNeighbors(p=> (p.x, p.y, p.classification),(3,7),3)`
- 
-
- 
-
-
-
-
-
+Vill du att jag gör en **svensk version av samma README** (t.ex. för GitHub-sidor eller dokumentation i repo:t)?
+Eller ska jag lägga till en **innehållsförteckning (Table of Contents)** med länkar till alla sektioner?
