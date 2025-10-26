@@ -270,7 +270,3 @@ var fft = func.FastFouriertransform(-1, 1, 100);
 ## 🧾 License
 
 MIT License © 2025 — [CSharpNumerics](https://www.nuget.org/packages/CSharpNumerics)
-
-
-Vill du att jag gör en **svensk version av samma README** (t.ex. för GitHub-sidor eller dokumentation i repo:t)?
-Eller ska jag lägga till en **innehållsförteckning (Table of Contents)** med länkar till alla sektioner?
