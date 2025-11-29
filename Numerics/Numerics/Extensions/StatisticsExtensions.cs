@@ -55,6 +55,48 @@ namespace System.Linq
             return xy.Sum(p => (p.x - meanX) * (p.y - meanY)) / (xy.Count() - 1);
         }
 
+        public static double CoefficientOfDetermination(this List<Serie> data)
+        {
+
+            var cov = data.Covariance((p)=> (p.Index, p.Value));
+
+            var stdDev1= data.Select(p => p.Index).StandardDeviation();
+            var stdDev2= data.Select(p => p.Value).StandardDeviation();
+
+
+            if (stdDev1 == 0 || stdDev2 == 0)
+            {
+                return 0.0;
+            }
+
+
+            double correlation = cov / (stdDev1 * stdDev1);
+
+
+            if (correlation < 0)
+            {
+                return 0.0;
+            }
+
+
+            return correlation * correlation;
+        }
+
+
+        public static double StandardDeviation(this IEnumerable<double> values, bool sample = true)
+        {
+            var list = values.ToList();
+            int n = list.Count;
+            if (n == 0 || (sample && n < 2))
+                return 0.0;
+
+            double mean = list.Average();
+            double sumOfSquares = list.Sum(x => Math.Pow(x - mean, 2));
+
+            double divisor = sample ? (n - 1) : n;
+            return Math.Sqrt(sumOfSquares / divisor);
+        }
+
         public static (double lowerValue, double upperValue) ConfidenceIntervals<T>(this IEnumerable<T> enumerable, Func<T, double> func, double confidenceLevel) {
 
             var standardDeviation = enumerable.StandardDeviation(func);
