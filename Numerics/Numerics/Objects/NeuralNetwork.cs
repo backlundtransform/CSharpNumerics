@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-public class NeuralNetwork
+internal class NeuralNetwork
 {
 
     int[] layers;
