@@ -10,7 +10,7 @@
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>Numerics,Statistics</PackageTags>
-		<Version>1.0.3</Version>
+		<Version>1.1.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
