@@ -81,9 +81,7 @@ namespace NumericsTests
             var curl = w.Curl(-4, -4, 0, 0.1, 8);
             Func<Vector, double> func = (Vector p) => Math.Pow(p.x, 2) + Math.Pow(p.y, 3);
             var grad = func.Gradient(-4, -4, 0, 0.1, 8);
-            data.Save(@"\data.csv");
-            curl.Save(@"\curl.csv");
-            grad.Save(@"\grad.csv");
+      
 
             foreach (var vector in curl)
             {

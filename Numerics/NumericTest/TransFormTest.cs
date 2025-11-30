@@ -102,11 +102,11 @@ namespace NumericsTests
             Func<double, double> func = (double t) => 1 / (4 * Math.Sqrt(2 * Math.PI * 0.01)) * (Math.Exp(-t * t / (2 * 0.01)));
             var timeseries = func.GetSeries(-0.5, 0.5, 100);
             Assert.IsTrue(timeseries.Count() == 100);
-            timeseries.Save(@"\timeserie.csv");
+            //timeseries.Save(@"\timeserie.csv");
 
             var frequency = func.FastFourierTransform(-0.5, 0.5, 100).ToFrequencyResolution(100);
             Assert.IsTrue(frequency.Count() == 100);
-            frequency.Save(@"\frequency.csv");
+           // frequency.Save(@"\frequency.csv");
         }
 
         [TestMethod]

@@ -64,7 +64,7 @@ namespace NumericsTests
            
             Assert.IsTrue(Math.Round(normalDistribution.First(p=>p.Value==normalDistribution.Max(c=>c.Value)).Index) == 100);
 
-            normalDistribution.Save(@"\normalDistribution.csv");
+         ;
 
         }
 
@@ -97,6 +97,64 @@ namespace NumericsTests
             var value = serie.LinearInterpolation(p=>(p.Index, p.Value),1);
             Assert.IsTrue(Math.Round(value, 1) == 1.5);
 
+        }
+
+        [TestMethod]
+        public void R2_Uncorrelated()
+        {
+            var data = new[] { (1.0, 5.0), (2.0, 1.0), (3.0, 4.0), (4.0, 6.0) };
+            double r2 = data.CoefficientOfDetermination(p => (p.Item1, p.Item2));
+
+            Assert.IsTrue(r2 < 0.2); // slumpdata → låg förklaringsgrad
+        }
+
+        [TestMethod]
+        public void Covariance_PerfectPositive()
+        {
+            var data = new[] { (1.0, 2.0), (2.0, 4.0), (3.0, 6.0) };
+
+            double cov = data.Covariance(p => (p.Item1, p.Item2));
+
+            Assert.AreEqual(2.0, cov, 1e-10);
+        }
+
+        [TestMethod]
+        public void Covariance_ConstantX()
+        {
+            var data = new[] { (2.0, 1.0), (2.0, 3.0), (2.0, 5.0) };
+
+            double cov = data.Covariance(p => (p.Item1, p.Item2));
+
+            Assert.AreEqual(0.0, cov, 1e-10);
+        }
+
+        [TestMethod]
+        public void StandardDeviation_Simple()
+        {
+            var values = new double[] { 2, 4, 4, 4, 5, 5, 7, 9 };
+            double sd = values.StandardDeviation();
+
+            Assert.AreEqual(2.138089935, sd, 1e-6);
+        }
+
+
+        [TestMethod]
+        public void R2_PerfectNegative()
+        {
+            var data = new[] { (1.0, 10.0), (2.0, 8.0), (3.0, 6.0) };
+            double r2 = data.CoefficientOfDetermination(p => (p.Item1, p.Item2));
+
+            Assert.AreEqual(1.0, r2, 1e-10);
+        }
+
+
+        [TestMethod]
+        public void R2_PerfectPositive()
+        {
+            var data = new[] { (1.0, 2.0), (2.0, 4.0), (3.0, 6.0) };
+            double r2 = data.CoefficientOfDetermination(p => (p.Item1, p.Item2));
+
+            Assert.AreEqual(1.0, r2, 1e-10);
         }
 
 

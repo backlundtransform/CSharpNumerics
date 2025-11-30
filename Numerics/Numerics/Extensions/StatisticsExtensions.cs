@@ -47,7 +47,7 @@ namespace System.Linq
 
         public static double Covariance<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
         {
-            var xy = enumerable.Select(func);
+            var xy = enumerable.Select(func).ToList();
 
             var meanX = xy.Average(p => p.x);
             var meanY = xy.Average(p => p.y);
@@ -55,29 +55,25 @@ namespace System.Linq
             return xy.Sum(p => (p.x - meanX) * (p.y - meanY)) / (xy.Count() - 1);
         }
 
-        public static double CoefficientOfDetermination(this List<Serie> data)
+        public static double CoefficientOfDetermination<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
         {
+            var xy = enumerable.Select(func);
+            var cov = xy.Covariance((p)=> (p.x, p.y));
 
-            var cov = data.Covariance((p)=> (p.Index, p.Value));
-
-            var stdDev1= data.Select(p => p.Index).StandardDeviation();
-            var stdDev2= data.Select(p => p.Value).StandardDeviation();
+            var stdDevX= xy.Select(p => p.x).StandardDeviation();
+            var stdDevY= xy.Select(p => p.y).StandardDeviation();
 
 
-            if (stdDev1 == 0 || stdDev2 == 0)
+            if (stdDevX == 0 || stdDevY == 0)
             {
                 return 0.0;
             }
 
 
-            double correlation = cov / (stdDev1 * stdDev1);
+            double correlation = cov / (stdDevY * stdDevX);
 
 
-            if (correlation < 0)
-            {
-                return 0.0;
-            }
-
+ 
 
             return correlation * correlation;
         }
