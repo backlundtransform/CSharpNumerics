@@ -3,7 +3,7 @@ name: Publish NuGet Package
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'   # Trigger på taggar som v1.0.3, v1.0.4 etc.
 
 jobs:
   publish:
@@ -18,17 +18,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore "Numerics/Numerics/CSharpNumerics.csproj"
 
       - name: Build
         run: dotnet build "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-restore
 
-      - name: Pack
+      - name: Pack NuGet package
         run: dotnet pack "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-build -o out
 
       - name: Publish to NuGet.org
-        run: dotnet nuget push "out/*.nupkg" \
-             --api-key ${{ secrets.NUGET_API_KEY }} \
-             --source https://api.nuget.org/v3/index.json \
-             --skip-duplicate
+        run: dotnet nuget push "out/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
