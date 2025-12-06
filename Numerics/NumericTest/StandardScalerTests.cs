@@ -1,4 +1,4 @@
-﻿using CSharpNumerics.Methods;
+﻿using CSharpNumerics.ML.Scalers;
 
 
 namespace NumericTest

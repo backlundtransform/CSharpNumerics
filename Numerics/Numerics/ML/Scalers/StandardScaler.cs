@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CSharpNumerics.Methods
+namespace CSharpNumerics.ML.Scalers
 {
     public class StandardScaler
     {

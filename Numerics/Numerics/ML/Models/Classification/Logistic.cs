@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSharpNumerics.Classification
+namespace CSharpNumerics.ML.Models.Classification
 {
-    internal class NaiveBayes
+    internal class Logistic
     {
     }
 }

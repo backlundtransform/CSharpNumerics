@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSharpNumerics.Regression
+namespace CSharpNumerics.ML.Models.Regression
 {
     internal class Linear
     {
