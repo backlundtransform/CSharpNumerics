@@ -1,8 +1,10 @@
-﻿using System;
+﻿using CSharpNumerics.ML.Scalers.Interfaces;
+using Numerics.Objects;
+using System;
 
 namespace CSharpNumerics.ML.Scalers
 {
-    public class StandardScaler
+    public class StandardScaler : IScaler
     {
         public double[] Means;
         public double[] StdDevs;
@@ -33,27 +35,27 @@ namespace CSharpNumerics.ML.Scalers
             }
         }
 
-        public double[,] Transform(double[,] data)
+        public Matrix Transform(Matrix X)
         {
-            int rows = data.GetLength(0);
-            int cols = data.GetLength(1);
+            int rows = X.rowLength;
+            int cols = X.columnLength;
             double[,] transformedData = new double[rows, cols];
 
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
                 {
-                    transformedData[i, j] = (data[i, j] - Means[j]) / StdDevs[j];
+                    transformedData[i, j] = (X.values[i, j] - Means[j]) / StdDevs[j];
                 }
             }
 
-            return transformedData;
+            return new Matrix(transformedData);
         }
 
-        public double[,] FitTransform(double[,] data)
+        public Matrix FitTransform(Matrix X)
         {
-            Fit(data);
-            return Transform(data);
+            Fit(X.values);
+            return Transform(X);
         }
     }
 }

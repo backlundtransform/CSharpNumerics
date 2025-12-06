@@ -5,6 +5,7 @@ using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpNumerics.ML;
@@ -38,6 +39,7 @@ public class Pipeline
         Selector = selector;
         SelectorParams = selectorParams ?? [];
     }
+
 
     public void Fit(Matrix X, VectorN y)
     {

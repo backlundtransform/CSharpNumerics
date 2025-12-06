@@ -1,7 +1,9 @@
-﻿using CSharpNumerics.Objects;
+﻿using CSharpNumerics.ML.Models.Interfaces;
+using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CSharpNumerics.ML
 {
@@ -16,6 +18,15 @@ namespace CSharpNumerics.ML
             Pipelines = pipelines;
             X = features;
             Y = labels;
+        }
+
+        public void Validate(List<Pipeline> pipelines, Matrix X, VectorN y)
+        {
+            bool isRegression = pipelines.All(p => p.Model is IRegressionModel);
+            bool isClassification = pipelines.All(p => p.Model is IClassificationModel);
+
+            if (!isRegression && !isClassification)
+                throw new InvalidOperationException("Pipelines blandar Regression och Classification modeller.");
         }
 
         public Dictionary<Pipeline, double> Run(int folds = 5)

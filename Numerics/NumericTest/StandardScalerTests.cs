@@ -1,4 +1,5 @@
 ﻿using CSharpNumerics.ML.Scalers;
+using Numerics.Objects;
 
 
 namespace NumericTest
@@ -68,7 +69,9 @@ namespace NumericTest
             StandardScaler scaler = new StandardScaler();
 
             // Act
-            double[,] transformedData = scaler.FitTransform(data);
+            Matrix transformedDataMatrix = scaler.FitTransform(new Matrix(data));
+
+            var transformedData = transformedDataMatrix.values;
 
             // Assert
             Assert.IsTrue(-1.2247 == Math.Round(transformedData[0, 0], 4));
