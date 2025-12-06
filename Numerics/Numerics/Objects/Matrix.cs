@@ -41,7 +41,18 @@ namespace Numerics.Objects
 
             values = matrix;
         }
+        public Matrix(int rows, int cols)
+        {
+            rowLength = rows;
+            columnLength = cols;
 
+            values = new double[rows, cols];
+
+            identity = new double[rows, cols];
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++)
+                    identity[i, j] = (i == j) ? 1 : 0;
+        }
         public Matrix Inverse()
         {
             var determinant =Determinant();
@@ -174,6 +185,7 @@ namespace Numerics.Objects
         public static Matrix operator /(Matrix a, double b) => a.GetResult(a, 0, 1/b);
         public static Matrix operator -(Matrix a, Matrix b) => a.GetResult(b, -1);
         public static Matrix operator +(Matrix a, Matrix b) => a.GetResult(b, 1);
+        public static VectorN operator *(Matrix a, VectorN b) => a.GetMultiplicationResult(b);
 
         public VectorN RowSlice(int rowIndex)
         {
@@ -308,6 +320,26 @@ namespace Numerics.Objects
                 values[1, 0] * b.x + values[1, 1] * b.y + values[1, 2] * b.z,
                 values[2, 0] * b.x + values[2, 1] * b.y + values[2, 2] * b.z); 
 
+        }
+
+        private VectorN GetMultiplicationResult(VectorN b)
+        {
+            if (columnLength != b.Length)
+                throw new Exception("Matrix column length must match vector length.");
+
+            double[] result = new double[rowLength];
+
+            for (int i = 0; i < rowLength; i++)
+            {
+                double sum = 0.0;
+                for (int j = 0; j < columnLength; j++)
+                {
+                    sum += values[i, j] * b[j];
+                }
+                result[i] = sum;
+            }
+
+            return new VectorN(result);
         }
 
 
