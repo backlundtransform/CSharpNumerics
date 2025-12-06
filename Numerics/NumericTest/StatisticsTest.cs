@@ -79,25 +79,7 @@ namespace NumericsTests
 
         }
 
-        [TestMethod]
-        public void TestLinearInterpolationTimeSerie()
-        {
-            var timeserie = new List<TimeSerie>() { new TimeSerie() { TimeStamp=new DateTime(2020,01,01),  Value = 1.0 }, new TimeSerie() { TimeStamp = new DateTime(2020, 01, 30), Value = 2.0 } };
-
-            var value = timeserie.LinearInterpolationTimeSerie(new DateTime(2020, 01, 15));
-            Assert.IsTrue(Math.Round(value, 1) == 1.5);
-
-        }
-
-        [TestMethod]
-        public void TestlinearInterpolationSerie()
-        {
-            var serie = new List<Serie>() { new Serie() { Index= 0, Value = 1.0 }, new Serie() { Index = 2, Value = 2.0 }, new Serie() { Index = 3, Value = 2.5 } };
-
-            var value = serie.LinearInterpolation(p=>(p.Index, p.Value),1);
-            Assert.IsTrue(Math.Round(value, 1) == 1.5);
-
-        }
+    
 
         [TestMethod]
         public void R2_Uncorrelated()
@@ -105,7 +87,7 @@ namespace NumericsTests
             var data = new[] { (1.0, 5.0), (2.0, 1.0), (3.0, 4.0), (4.0, 6.0) };
             double r2 = data.CoefficientOfDetermination(p => (p.Item1, p.Item2));
 
-            Assert.IsTrue(r2 < 0.2); // slumpdata → låg förklaringsgrad
+            Assert.IsTrue(r2 < 0.2); 
         }
 
         [TestMethod]

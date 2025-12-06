@@ -146,30 +146,6 @@ namespace System.Linq
             return random.NextDouble() * (maximum - minimum) + minimum;
         }
 
-
-        public static double LinearInterpolationTimeSerie(this IEnumerable<TimeSerie> ts, DateTime timeStamp) {
-
-            return ts.LinearInterpolation(p => (p.TimeStamp.Ticks, p.Value), timeStamp.Ticks);
-        }
-
-
-        public static double LinearInterpolation<T>(this IEnumerable<T> ts,  Func<T, (double x, double y)> func, double index)
-        {
-            var prevs = ts.Select(func);
-            var prev = ts.Select(func).LastOrDefault(p => p.x < index);
-            var next = ts.Select(func).FirstOrDefault(p => p.x > index);
-            var previousValue = prev.y;
-            var nextValue = next.y;
-
-            var previousIndex = prev.x;
-            var nextIndex = next.x;
-
-            var currentIndex = index;
-
-            return previousValue + (nextValue - previousValue) * (currentIndex - previousIndex) / (nextIndex - previousIndex);
-        }
-
-
         public static (double slope, double intercept, double correlation) LinearRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
         {
 
