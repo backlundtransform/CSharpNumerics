@@ -1,4 +1,5 @@
 ﻿
+using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -6,11 +7,11 @@ using System.Text;
 
 namespace CSharpNumerics.ML
 {
-    public class CrossValidator(List<Pipeline> pipelines, Matrix Features, double[] Labels)
+    public class CrossValidator(List<Pipeline> pipelines, Matrix Features, VectorN Labels)
     {
         public List<Pipeline> Pipelines { get; } = pipelines;
         public Matrix X { get; } = Features;
-        public double[] Y { get; } = Labels;
+        public VectorN Y { get; } = Labels;
 
         public Dictionary<Pipeline, double> Run(int folds = 5)
         {
@@ -49,7 +50,7 @@ namespace CSharpNumerics.ML
             return totalScore / folds;
         }
 
-        private double Accuracy(double[] pred, double[] actual)
+        private double Accuracy(VectorN pred, VectorN actual)
         {
             int correct = 0;
 
@@ -60,7 +61,7 @@ namespace CSharpNumerics.ML
             return (double)correct / pred.Length;
         }
 
-        private (Matrix, double[], Matrix, double[]) SplitFold(Matrix X, double[] Y, int start, int end)
+        private (Matrix, VectorN, Matrix, VectorN) SplitFold(Matrix X, VectorN Y, int start, int end)
         {
             // Här kan du själv implementera slicing av Matrix
        

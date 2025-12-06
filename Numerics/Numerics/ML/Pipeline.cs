@@ -1,6 +1,7 @@
 ﻿using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.ML.Selector.Interfaces;
+using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ public class Pipeline
         SelectorParams = selectorParams ?? [];
     }
 
-    public void Fit(Matrix X, double[] y)
+    public void Fit(Matrix X, VectorN y)
     {
         // Apply selector
         if (Selector != null)
@@ -55,7 +56,7 @@ public class Pipeline
         _isFitted = true;
     }
 
-    public double[] Predict(Matrix X)
+    public VectorN Predict(Matrix X)
     {
         if (!_isFitted)
             throw new InvalidOperationException("Pipeline has not been fitted.");

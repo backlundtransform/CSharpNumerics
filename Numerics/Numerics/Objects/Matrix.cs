@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CSharpNumerics.Objects;
+using System;
 using System.Collections.Generic;
 
 namespace Numerics.Objects
@@ -173,6 +174,50 @@ namespace Numerics.Objects
         public static Matrix operator /(Matrix a, double b) => a.GetResult(a, 0, 1/b);
         public static Matrix operator -(Matrix a, Matrix b) => a.GetResult(b, -1);
         public static Matrix operator +(Matrix a, Matrix b) => a.GetResult(b, 1);
+
+        public VectorN RowSlice(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= rowLength)
+                throw new ArgumentOutOfRangeException(nameof(rowIndex));
+
+            double[] row = new double[columnLength];
+            for (int j = 0; j < columnLength; j++)
+                row[j] = values[rowIndex, j];
+
+            return new VectorN(row);
+        }
+
+    
+        public VectorN ColumnSlice(int colIndex)
+        {
+            if (colIndex < 0 || colIndex >= columnLength)
+                throw new ArgumentOutOfRangeException(nameof(colIndex));
+
+            double[] col = new double[rowLength];
+            for (int i = 0; i < rowLength; i++)
+                col[i] = values[i, colIndex];
+
+            return new VectorN(col);
+        }
+
+     
+        public Matrix Slice(int rowStart, int rowEnd, int colStart, int colEnd)
+        {
+            if (rowStart < 0 || colStart < 0 ||
+                rowEnd > rowLength || colEnd > columnLength ||
+                rowStart >= rowEnd || colStart >= colEnd)
+                throw new ArgumentException("Invalid slice bounds.");
+
+            int rows = rowEnd - rowStart;
+            int cols = colEnd - colStart;
+
+            var slice = new double[rows, cols];
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++)
+                    slice[i, j] = values[rowStart + i, colStart + j];
+
+            return new Matrix(slice);
+        }
 
 
         private double[,] GetCofactor(double[,] matrix, double[,] temp, int rowIndex, int columnIndex, int length)
