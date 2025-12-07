@@ -1,4 +1,5 @@
-﻿using CSharpNumerics.ML.Selector.Interfaces;
+﻿using CSharpNumerics.ML.Models.Interfaces;
+using CSharpNumerics.ML.Selector.Interfaces;
 using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
@@ -7,15 +8,17 @@ using System.Text;
 
 namespace CSharpNumerics.ML.Selector
 {
-    public class SelectKBest: ISelector
+    public class SelectKBest: ISelector, IHasHyperparameters
     {
-        public int K { get; }
+        public int K { get; set; }
         private int[] selectedIndices;
 
-        public SelectKBest(int k)
+        public void SetHyperParameters(Dictionary<string, object> parameters)
         {
-            if (k <= 0) throw new ArgumentException("K must be positive.");
-            K = k;
+            if (parameters == null) return;
+
+            if (parameters.ContainsKey("K"))
+                K = Convert.ToInt32(parameters["K"]);
         }
 
         /// <summary>

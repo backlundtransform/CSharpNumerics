@@ -38,6 +38,12 @@ public class Pipeline
 
         Selector = selector;
         SelectorParams = selectorParams ?? [];
+
+        if (model is IHasHyperparameters hpModel)
+            hpModel.SetHyperParameters(modelParams);
+
+        if (selector is IHasHyperparameters hpSelector)
+            hpSelector.SetHyperParameters(selectorParams);
     }
 
 

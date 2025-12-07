@@ -90,11 +90,10 @@ namespace NumericTest
             Assert.IsTrue(1.2247 == Math.Round(transformedData[2, 1], 4)); 
             Assert.IsTrue(1.2247 == Math.Round(transformedData[2, 2], 4)); 
         }
-
-        public static void TestCrossValidatorPipeline()
+        [TestMethod]
+        public void TestCrossValidatorPipeline()
         {
-            // 1. Skapa lite fejkdata (enkel linjär relation)
-            // y = 3*x1 + 2*x2 + noise
+           
             int nSamples = 100;
             int nFeatures = 2;
 
@@ -111,15 +110,10 @@ namespace NumericTest
                 y[i] = 3 * x1 + 2 * x2 + rnd.NextDouble() * 0.1;
             }
 
-            // 2. Bygg pipeline (ex: SelectKBest + Linear Regression)
-            var pipeline = new Pipeline(new Linear(), new Dictionary<string, object>(), selector: new SelectKBest(5), selectorParams: new Dictionary<string, object>()
-            {
-                { "k", 2 }
-            });
+            var pipeline = new Pipeline(new Linear(), new() { ["LearningRate"] = 0.01 }, selector: new SelectKBest(), selectorParams: new() { ["K"] = 1 });
 
-            // 3. Skapa CrossValidator
-            var cv = new CrossValidator([pipeline], X, y);
-            var results = cv.Run(folds: 5);
+            var cv = new RollingCrossValidator([pipeline], 5);
+            var results = cv.Run(X, y);
 
 
             // 5. Skriv ut resultat
