@@ -8,7 +8,7 @@ namespace CSharpNumerics.ML.Models.Regression
 
     public class Linear : IRegressionModel
     {
-        private VectorN _weights;   // β-koefficienterna
+        private VectorN _weights;  
         private bool _fitted = false;
 
         public bool FitIntercept { get; }
@@ -23,16 +23,16 @@ namespace CSharpNumerics.ML.Models.Regression
             if (X.rowLength != y.Length)
                 throw new ArgumentException("X.Rows must match y.Length.");
 
-            // 1. Lägg till en kolumn med 1:or om vi vill ha intercept
+        
             Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
 
-            // 2. Normalekvation: β = (XᵀX)^(-1) Xᵀ y
+      
             Matrix Xt = Xdesign.Transpose();
             Matrix XtX = Xt * Xdesign;
-            Matrix XtX_inv = XtX.Inverse();   // Krav: du har en Inverse() i Matrix
-            VectorN XtY = Xt * y;             // Xt (MxN) * y (N) = M
+            Matrix XtX_inv = XtX.Inverse();   
+            VectorN XtY = Xt * y;            
 
-            _weights = XtX_inv * XtY;         // β
+            _weights = XtX_inv * XtY;       
             _fitted = true;
         }
 
@@ -43,7 +43,7 @@ namespace CSharpNumerics.ML.Models.Regression
 
             Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
 
-            return Xdesign * _weights; // ger VectorN
+            return Xdesign * _weights; 
         }
 
         private Matrix AddInterceptColumn(Matrix X)

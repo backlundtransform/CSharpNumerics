@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CSharpNumerics.ML.Models.Interfaces
 {
-    internal interface IRegressionModel
+    public interface IRegressionModel : IModel
     {
     }
 }
