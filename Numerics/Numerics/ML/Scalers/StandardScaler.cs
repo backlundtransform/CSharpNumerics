@@ -57,5 +57,8 @@ namespace CSharpNumerics.ML.Scalers
             Fit(X.values);
             return Transform(X);
         }
+
     }
+
+
 }
