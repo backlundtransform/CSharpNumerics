@@ -1,4 +1,5 @@
 using CSharpNumerics.ML;
+using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
 using CSharpNumerics.Objects;
@@ -106,9 +107,65 @@ namespace NumericTest
         }
 
         [TestMethod]
+        public void LogisticRegression_RollingCV_PerfectSeparation_ShouldHaveHighScore()
+        {
+            
+            double[,] Xdata =
+            {
+        { 0 },
+        { 1 },
+        { 2 },
+        { 3 },
+        { 4 },
+        { 5 },
+        { 6 },
+        { 7 },
+        { 8 },
+        { 9 }
+    };
+
+          
+            double[] ydata =
+            {
+        0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1
+    };
+
+            var X = new Matrix(Xdata);
+            var y = new VectorN(ydata);
+
+            var model = new Logistic(fitIntercept: true);
+
+            var modelParams = new Dictionary<string, object>
+    {
+        { "LearningRate", 0.1 },
+        { "MaxIterations", 2000 }
+    };
+
+            var pipeline = new Pipeline(
+                model: model,
+                modelParams: modelParams
+            );
+
+            var cv = new RollingCrossValidator(
+                pipelines: new List<Pipeline> { pipeline },
+                folds: 5
+            );
+
+         
+            var result = cv.Run(X, y);
+
+            Assert.IsNotNull(result.BestPipeline);
+
+          
+            Assert.IsTrue(result.BestScore > -0.05,
+                $"Expected high classification score, got {result.BestScore}");
+        }
+
+        [TestMethod]
         public void StandardScaler_FitTransform_ShouldZeroMeanAndUnitVariance()
         {
-            // Arrange
+            
             double[,] data =
             {
                 { 1, 2 },
@@ -119,10 +176,10 @@ namespace NumericTest
             var X = new Matrix(data);
             var scaler = new StandardScaler();
 
-            // Act
+        
             var Xscaled = scaler.FitTransform(X);
 
-            // Assert
+     
             int rows = Xscaled.rowLength;
             int cols = Xscaled.columnLength;
 

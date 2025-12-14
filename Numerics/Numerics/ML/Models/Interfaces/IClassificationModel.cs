@@ -4,7 +4,8 @@ using System.Text;
 
 namespace CSharpNumerics.ML.Models.Interfaces
 {
-    internal interface IClassificationModel
+    public interface IClassificationModel: IModel
     {
+
     }
 }

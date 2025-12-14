@@ -21,20 +21,42 @@ public class RollingCrossValidator
     {
         var result = new RollingValidationResult();
 
+        Dictionary<Pipeline, (List<double> pred, List<double> actual)> cache
+            = new();
+
         foreach (var pipe in Pipelines)
         {
-            double score = EvaluatePipelineRolling(pipe, X, y);
+            var preds = new List<double>();
+            var actuals = new List<double>();
+
+            double score = EvaluatePipelineRolling(pipe, X, y, preds, actuals);
+
             result.Scores[pipe] = score;
+            cache[pipe] = (preds, actuals);
         }
 
-  
         result.BestPipeline = result.Scores.OrderByDescending(x => x.Value).First().Key;
         result.BestScore = result.Scores[result.BestPipeline];
+
+        var bestData = cache[result.BestPipeline];
+        result.ActualValues = new VectorN(bestData.actual.ToArray());
+        result.PredictedValues = new VectorN(bestData.pred.ToArray());
+
+        if (!(result.BestPipeline.Model is IRegressionModel))
+        {
+            result.ConfusionMatrix =
+                BuildConfusionMatrix(result.ActualValues, result.PredictedValues);
+        }
 
         return result;
     }
 
-    private double EvaluatePipelineRolling(Pipeline pipe, Matrix X, VectorN y)
+    private double EvaluatePipelineRolling(
+      Pipeline pipe,
+      Matrix X,
+      VectorN y,
+      List<double> allPred,
+      List<double> allActual)
     {
         int n = y.Length;
         int foldSize = n / Folds;
@@ -47,14 +69,22 @@ public class RollingCrossValidator
             int start = fold * foldSize;
             int end = (fold == Folds - 1) ? n : start + foldSize;
 
-          
             var (Xtrain, Ytrain, Xval, Yval) = Split(X, y, start, end);
 
-            var cloned = new Pipeline(pipe.Model,pipe.ModelParams,pipe.Scaler,pipe.ScalerParams, pipe.Selector,pipe.SelectorParams);
+            var cloned = new Pipeline(
+                pipe.Model, pipe.ModelParams,
+                pipe.Scaler, pipe.ScalerParams,
+                pipe.Selector, pipe.SelectorParams);
 
             cloned.Fit(Xtrain, Ytrain);
-
             var pred = cloned.Predict(Xval);
+
+         
+            for (int i = 0; i < pred.Length; i++)
+            {
+                allPred.Add(pred[i]);
+                allActual.Add(Yval[i]);
+            }
 
             double foldScore = Score(cloned, pred, Yval);
 
@@ -64,7 +94,21 @@ public class RollingCrossValidator
 
         return totalScore / totalItems;
     }
+    private Matrix BuildConfusionMatrix(VectorN yTrue, VectorN yPred)
+    {
+        // [[TN, FP],
+        //  [FN, TP]]
+        var cm = new Matrix(2, 2);
 
+        for (int i = 0; i < yTrue.Length; i++)
+        {
+            int actual = (int)yTrue[i];
+            int predicted = (int)Math.Round(yPred[i]);
+            cm.values[actual, predicted]++;
+        }
+
+        return cm;
+    }
     private (Matrix, VectorN, Matrix, VectorN) Split(Matrix X, VectorN y, int start, int end)
     {
         int n = X.rowLength;
@@ -127,5 +171,11 @@ public class RollingValidationResult
     public Dictionary<Pipeline, double> Scores { get; } = new();
     public Pipeline BestPipeline { get; set; }
     public double BestScore { get; set; }
+
+    public Matrix ConfusionMatrix { get; set; } = new Matrix();
+
+    public VectorN ActualValues { get; set; } = new VectorN();
+
+    public VectorN PredictedValues { get; set; } = new VectorN();
 }
 
