@@ -80,11 +80,14 @@ public class Pipeline
 
     private void ApplyHyperparameters(object target, Dictionary<string, object> parameters)
     {
-        var type = target.GetType();
-        foreach (var param in parameters)
+        if(parameters != null)
         {
-            var prop = type.GetProperty(param.Key);
-            prop?.SetValue(target, param.Value);
+            var type = target.GetType();
+            foreach (var param in parameters)
+            {
+                var prop = type.GetProperty(param.Key);
+                prop?.SetValue(target, param.Value);
+            }
         }
     }
 }

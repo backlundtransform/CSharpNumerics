@@ -70,6 +70,8 @@ public class RollingCrossValidator
             int end = (fold == Folds - 1) ? n : start + foldSize;
 
             var (Xtrain, Ytrain, Xval, Yval) = Split(X, y, start, end);
+            if (Yval.Length == 0)
+                continue;
 
             var cloned = new Pipeline(
                 pipe.Model, pipe.ModelParams,
@@ -96,14 +98,22 @@ public class RollingCrossValidator
     }
     private Matrix BuildConfusionMatrix(VectorN yTrue, VectorN yPred)
     {
-        // [[TN, FP],
-        //  [FN, TP]]
-        var cm = new Matrix(2, 2);
+    
+        int numClasses = (int)Math.Max(
+            yTrue.Values.Max(),
+            yPred.Values.Max()
+        ) + 1;
+
+        var cm = new Matrix(numClasses, numClasses);
 
         for (int i = 0; i < yTrue.Length; i++)
         {
             int actual = (int)yTrue[i];
             int predicted = (int)Math.Round(yPred[i]);
+
+            if (predicted < 0 || predicted >= numClasses)
+                continue;
+
             cm.values[actual, predicted]++;
         }
 
