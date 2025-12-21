@@ -483,6 +483,103 @@ namespace NumericTest
             Assert.IsTrue(diag / total > 0.8);
         }
 
+
+        [TestMethod]
+        public void TestRollingCrossValidator_Classification_Search()
+        {
+            // Arrange
+            int nSamples = 120;
+            int nFeatures = 2;
+
+            Matrix X = new Matrix(nSamples, nFeatures);
+            VectorN y = new VectorN(nSamples);
+
+            Random rnd = new Random(123);
+
+            for (int i = 0; i < nSamples; i++)
+            {
+                double x1 = rnd.NextDouble() * 10;
+                double x2 = rnd.NextDouble() * 10;
+
+                X.values[i, 0] = x1;
+                X.values[i, 1] = x2;
+
+                double s = x1 + x2;
+
+                if (s < 7)
+                    y[i] = 0;
+                else if (s < 13)
+                    y[i] = 1;
+                else
+                    y[i] = 2;
+            }
+            var space = new PipelineSearchSpace();
+
+            // Scalers
+            space.Scalers.Add(() => new StandardScaler());
+            space.Scalers.Add(() => null);
+
+            space.Selectors.Add((() => new SelectKBest(), new Dictionary<string, List<object>> { ["K"] = new() { 1, 2 } }));
+
+            space.Selectors.Add((() => null, null));
+
+            // Models
+
+            space.Models.Add((
+    () => new Logistic(fitIntercept: true),
+    new Dictionary<string, List<object>>
+    {
+        ["LearningRate"] = new() { 0.05, 0.1 },
+        ["MaxIterations"] = new() { 1000, 2000 }
+    }
+));
+            space.Models.Add((
+                () => new DecisionTree(),
+                new Dictionary<string, List<object>>
+                {
+                    ["MaxDepth"] = new() { 3, 5, 8 }
+                }
+            ));
+
+            space.Models.Add((
+                () => new RandomForest(),
+                new Dictionary<string, List<object>>
+                {
+                    ["NumTrees"] = new() { 30, 100 }
+                }
+            ));
+
+            var pipelines = space.Expand();
+            var cv = new RollingCrossValidator(pipelines, folds: 5);
+
+            // Act
+            var result = cv.Run(X, y);
+
+            // Assert
+            Assert.IsNotNull(result.BestPipeline);
+            Assert.IsTrue(result.BestScore > 0.8, $"Accuracy too low: {result.BestScore}");
+
+            Assert.IsNotNull(result.ConfusionMatrix);
+            Assert.AreEqual(3, result.ConfusionMatrix.rowLength);
+            Assert.AreEqual(3, result.ConfusionMatrix.columnLength);
+
+            // Sanity check: diagonal dominance
+            double diag = 0;
+            double total = 0;
+
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    double v = result.ConfusionMatrix.values[i, j];
+                    total += v;
+                    if (i == j) diag += v;
+                }
+            }
+
+            Assert.IsTrue(diag / total > 0.8);
+        }
+
     }
 }
 
