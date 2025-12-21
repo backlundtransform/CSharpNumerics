@@ -198,6 +198,10 @@ public class DecisionTree : IClassificationModel, IHasHyperparameters
 
         return (new Matrix(Xl), yl, new Matrix(Xr), yr);
     }
+    internal int PredictRow(Matrix X, int row)
+    {
+        return PredictSample(X, row, _root);
+    }
     internal class TreeNode
     {
         public bool IsLeaf;
