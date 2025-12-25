@@ -134,7 +134,7 @@ namespace NumericTest
             var X = new Matrix(Xdata);
             var y = new VectorN(ydata);
 
-            var model = new Logistic(fitIntercept: true);
+            var model = new Logistic();
 
             var modelParams = new Dictionary<string, object>
     {
@@ -299,7 +299,12 @@ namespace NumericTest
                 y[i] = 3 * x1 + 2 * x2 + rnd.NextDouble() * 0.1;
             }
 
-            var pipeline = new Pipeline(new Linear(), new() { ["LearningRate"] = 0.01 }, selector: new SelectKBest(), selectorParams: new() { ["K"] = 1 });
+            var pipeline = new Pipeline(
+                new Linear(),
+                new Dictionary<string, object> { ["LearningRate"] = 0.01 },
+                selector: new SelectKBest(),
+                selectorParams: (Dictionary<string, object>)new Dictionary<string, object> { ["K"] = 1 }
+            );
 
             var cv = new RollingCrossValidator([pipeline], 5);
             var results = cv.Run(X, y);
@@ -350,14 +355,18 @@ namespace NumericTest
 
             var pipeline = new Pipeline(
                 model: tree,
-                modelParams: null,
+                modelParams: (Dictionary<string, object>)new Dictionary<string, object>
+    {
+        ["MaxDepth"] = 5,
+        ["MinSamplesSplit"] = 2
+    },
                 scaler: null,
                 scalerParams: null,
                 selector: null,
                 selectorParams: null
             );
 
-            var cv = new RollingCrossValidator(new() { pipeline }, folds: 5);
+            var cv = new RollingCrossValidator(new List<Pipeline> { pipeline }, folds: 5);
 
             // Act
             var result = cv.Run(X, y);
@@ -424,7 +433,7 @@ namespace NumericTest
 
             var pipeline1 = new Pipeline(
                 model: tree,
-                modelParams: new()
+                modelParams: (Dictionary<string, object>)new Dictionary<string, object>
                 {
                     ["MaxDepth"] = 5,
                     ["MinSamplesSplit"] = 2
@@ -435,25 +444,39 @@ namespace NumericTest
             var rf = new RandomForest();
 
 
-            var pipeline2 = new Pipeline(rf, new()
-            {
-                ["NumTrees"] = 30,
-                ["MaxDepth"] = 6
-            });
+            var pipeline2 = new Pipeline(
+                rf,
+                (Dictionary<string, object>)new Dictionary<string, object>
+                {
+                    ["NumTrees"] = 30,
+                    ["MaxDepth"] = 6
+                },
+                null,
+                null,
+                null,
+                null
+            );
 
 
 
 
             var pipeline3 = new Pipeline(
-               new Logistic(fitIntercept: true),
-                new()
+                new Logistic(),
+                (Dictionary<string, object>)new Dictionary<string, object>
                 {
                     ["LearningRate"] = 0.1,
                     ["MaxIterations"] = 2000
-                }
+                },
+                null,
+                null,
+                null,
+                null
             );
 
-            var cv = new RollingCrossValidator(new() { pipeline1, pipeline2, pipeline3}, folds: 5);
+            var cv = new RollingCrossValidator(
+    pipelines: new List<Pipeline> { pipeline1, pipeline2, pipeline3 },
+    folds: 5
+);
 
             // Act
             var result = cv.Run(X, y);
@@ -513,44 +536,17 @@ namespace NumericTest
                 else
                     y[i] = 2;
             }
-            var space = new PipelineSearchSpace();
+            var pipelineGrid = new PipelineGrid()
+                .AddScaler<StandardScaler>(g => {})
+                .AddSelector<SelectKBest>(g => g.Add("K", 1, 2))
+                .AddModel<RandomForest>(g => g
+                .Add("NumTrees", 50, 100, 200)
+                .Add("MaxDepth", 5, 10, 8)).AddModel<Logistic>(g=>g.Add("LearningRate",
+        0.05, 0.1).Add("MaxIterations", 1000, 2000))
+                .AddModel<DecisionTree>(g => g.Add("MaxDepth", 3, 5, 8));
 
-            // Scalers
-            space.Scalers.Add(() => new StandardScaler());
-            space.Scalers.Add(() => null);
-
-            space.Selectors.Add((() => new SelectKBest(), new Dictionary<string, List<object>> { ["K"] = new() { 1, 2 } }));
-
-            space.Selectors.Add((() => null, null));
-
-            // Models
-
-            space.Models.Add((
-    () => new Logistic(fitIntercept: true),
-    new Dictionary<string, List<object>>
-    {
-        ["LearningRate"] = new() { 0.05, 0.1 },
-        ["MaxIterations"] = new() { 1000, 2000 }
-    }
-));
-            space.Models.Add((
-                () => new DecisionTree(),
-                new Dictionary<string, List<object>>
-                {
-                    ["MaxDepth"] = new() { 3, 5, 8 }
-                }
-            ));
-
-            space.Models.Add((
-                () => new RandomForest(),
-                new Dictionary<string, List<object>>
-                {
-                    ["NumTrees"] = new() { 30, 100 }
-                }
-            ));
-
-            var pipelines = space.Expand();
-            var cv = new RollingCrossValidator(pipelines, folds: 5);
+         
+            var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
 
             // Act
             var result = cv.Run(X, y);

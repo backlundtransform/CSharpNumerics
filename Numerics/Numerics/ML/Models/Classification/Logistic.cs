@@ -13,15 +13,10 @@ public class Logistic : IClassificationModel, IHasHyperparameters
     private VectorN _weights;
     private bool _fitted = false;
 
-    public bool FitIntercept { get; }
+    public bool FitIntercept { get; private set; } = true;
     public int NumClasses { get; private set; } = 2;
     public double LearningRate { get; private set; } = 0.01;
     public int MaxIterations { get; private set; } = 1000;
-
-    public Logistic(bool fitIntercept = true)
-    {
-        FitIntercept = fitIntercept;
-    }
 
     public void SetHyperParameters(Dictionary<string, object> parameters)
     {
@@ -32,6 +27,9 @@ public class Logistic : IClassificationModel, IHasHyperparameters
 
         if (parameters.ContainsKey("MaxIterations"))
             MaxIterations = Convert.ToInt32(parameters["MaxIterations"]);
+
+        if (parameters.ContainsKey("FitIntercept"))
+            FitIntercept = Convert.ToBoolean(parameters["FitIntercept"]);
     }
 
     public void Fit(Matrix X, VectorN y)

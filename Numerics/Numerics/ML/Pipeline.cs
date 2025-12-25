@@ -24,7 +24,7 @@ public class Pipeline
 
     public Pipeline(
         IModel model,
-        Dictionary<string, object>  modelParams,
+        Dictionary<string, object> modelParams,
         IScaler scaler = null,
          Dictionary<string, object> scalerParams = null,
         ISelector selector = null,
@@ -45,6 +45,8 @@ public class Pipeline
         if (selector is IHasHyperparameters hpSelector)
             hpSelector.SetHyperParameters(selectorParams);
     }
+
+
 
 
     public void Fit(Matrix X, VectorN y)
@@ -80,7 +82,7 @@ public class Pipeline
 
     private void ApplyHyperparameters(object target, Dictionary<string, object> parameters)
     {
-        if(parameters != null)
+        if (parameters != null)
         {
             var type = target.GetType();
             foreach (var param in parameters)
@@ -90,4 +92,5 @@ public class Pipeline
             }
         }
     }
+
 }

@@ -17,6 +17,12 @@ public class RollingCrossValidator
         Folds = folds;
     }
 
+    public RollingCrossValidator(PipelineGrid pipelineGrid, int folds = 5)
+    {
+        Pipelines = [.. pipelineGrid.Expand()];
+        Folds = folds;
+    }
+
     public RollingValidationResult Run(Matrix X, VectorN y)
     {
         var result = new RollingValidationResult();
