@@ -12,7 +12,6 @@ public class DecisionTree : IClassificationModel, IHasHyperparameters
 {
     private TreeNode _root;
     public int NumClasses { get; private set; }
-
     public int MaxDepth { get; private set; } = 10;
     public int MinSamplesSplit { get; private set; } = 2;
 

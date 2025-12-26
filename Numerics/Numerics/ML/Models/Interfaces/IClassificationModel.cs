@@ -1,9 +1,9 @@
 ﻿
 
-namespace CSharpNumerics.ML.Models.Interfaces
+namespace CSharpNumerics.ML.Models.Interfaces;
+
+public interface IClassificationModel: IModel
 {
-    public interface IClassificationModel: IModel
-    {
-        int NumClasses { get; }
-    }
+    int NumClasses { get; }
+
 }

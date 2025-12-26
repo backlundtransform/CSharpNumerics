@@ -12,7 +12,6 @@ public class Logistic : IClassificationModel, IHasHyperparameters
 {
     private VectorN _weights;
     private bool _fitted = false;
-
     public bool FitIntercept { get; private set; } = true;
     public int NumClasses { get; private set; } = 2;
     public double LearningRate { get; private set; } = 0.01;

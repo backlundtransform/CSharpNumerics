@@ -15,7 +15,7 @@ namespace CSharpNumerics.ML.Models.Classification
         private Dictionary<int, double> _priors;
         private int _numFeatures;
         private bool _fitted;
-
+       
         public int NumClasses => throw new NotImplementedException();
 
         public void Fit(Matrix X, VectorN y)

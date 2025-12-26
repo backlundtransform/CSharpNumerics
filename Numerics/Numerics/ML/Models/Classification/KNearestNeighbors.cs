@@ -14,7 +14,7 @@ public class KNearestNeighbors :
 {
     private Matrix _X;
     private VectorN _y;
-
+    
     public int K { get; private set; } = 5;
 
 
