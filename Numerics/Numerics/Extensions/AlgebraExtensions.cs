@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Numerics.Objects;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace System
@@ -47,7 +48,18 @@ namespace System
             return value;
 
         }
+        public static Matrix WithBiasColumn(this Matrix X)
+        {
+            var result = new double[X.rowLength, X.columnLength + 1];
 
+            for (int i = 0; i < X.rowLength; i++)
+            {
+               result[i, 0] = 1.0; 
+                for (int j = 0; j < X.columnLength; j++)
+                     result[i, j + 1] = X.values[i, j];
+            }
 
+                return new Matrix(result);
+        }
     }
 }

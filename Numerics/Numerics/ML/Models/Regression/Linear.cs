@@ -2,70 +2,68 @@
 using CSharpNumerics.Objects;
 using Numerics.Objects;
 
-namespace CSharpNumerics.ML.Models.Regression
+namespace CSharpNumerics.ML.Models.Regression;
+
+using System;
+using System.Collections.Generic;
+
+public class Linear : IRegressionModel, IHasHyperparameters
 {
-    using System;
-    using System.Collections.Generic;
+    private VectorN _weights;  
+    private bool _fitted = false;
 
-    public class Linear : IRegressionModel, IHasHyperparameters
+    public bool FitIntercept { get; }
+    public double LearningRate { get; private set; } = 0.01;
+    public Linear(bool fitIntercept = true)
     {
-        private VectorN _weights;  
-        private bool _fitted = false;
+        FitIntercept = fitIntercept;
+    }
+    public void SetHyperParameters(Dictionary<string, object> parameters)
+    {
+        if (parameters == null) return;
 
-        public bool FitIntercept { get; }
-        public double LearningRate { get; private set; } = 0.01;
-        public Linear(bool fitIntercept = true)
+        if (parameters.ContainsKey("LearningRate"))
+            LearningRate = Convert.ToDouble(parameters["LearningRate"]);
+    }
+
+    public void Fit(Matrix X, VectorN y)
+    {
+        if (X.rowLength != y.Length)
+            throw new ArgumentException("X.Rows must match y.Length.");
+
+    
+        Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
+
+  
+        Matrix Xt = Xdesign.Transpose();
+        Matrix XtX = Xt * Xdesign;
+        Matrix XtX_inv = XtX.Inverse();   
+        VectorN XtY = Xt * y;            
+
+        _weights = XtX_inv * XtY;       
+        _fitted = true;
+    }
+
+    public VectorN Predict(Matrix X)
+    {
+        if (!_fitted)
+            throw new InvalidOperationException("Model has not been fitted.");
+
+        Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
+
+        return Xdesign * _weights; 
+    }
+
+    private Matrix AddInterceptColumn(Matrix X)
+    {
+        Matrix M = new Matrix(X.rowLength, X.columnLength + 1);
+
+        for (int i = 0; i < X.rowLength; i++)
         {
-            FitIntercept = fitIntercept;
+            M.values[i, 0] = 1.0; // bias
+            for (int j = 0; j < X.columnLength; j++)
+                M.values[i, j + 1] = X.values[i, j];
         }
-        public void SetHyperParameters(Dictionary<string, object> parameters)
-        {
-            if (parameters == null) return;
-
-            if (parameters.ContainsKey("LearningRate"))
-                LearningRate = Convert.ToDouble(parameters["LearningRate"]);
-        }
-
-        public void Fit(Matrix X, VectorN y)
-        {
-            if (X.rowLength != y.Length)
-                throw new ArgumentException("X.Rows must match y.Length.");
-
-        
-            Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
-
-      
-            Matrix Xt = Xdesign.Transpose();
-            Matrix XtX = Xt * Xdesign;
-            Matrix XtX_inv = XtX.Inverse();   
-            VectorN XtY = Xt * y;            
-
-            _weights = XtX_inv * XtY;       
-            _fitted = true;
-        }
-
-        public VectorN Predict(Matrix X)
-        {
-            if (!_fitted)
-                throw new InvalidOperationException("Model has not been fitted.");
-
-            Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
-
-            return Xdesign * _weights; 
-        }
-
-        private Matrix AddInterceptColumn(Matrix X)
-        {
-            Matrix M = new Matrix(X.rowLength, X.columnLength + 1);
-
-            for (int i = 0; i < X.rowLength; i++)
-            {
-                M.values[i, 0] = 1.0; // bias
-                for (int j = 0; j < X.columnLength; j++)
-                    M.values[i, j + 1] = X.values[i, j];
-            }
-            return M;
-        }
+        return M;
     }
 }
- 

@@ -1,0 +1,50 @@
+﻿
+using CSharpNumerics.ML.Models.Interfaces;
+using CSharpNumerics.Objects;
+using Numerics.Objects;
+using System;
+using System.Collections.Generic;
+namespace CSharpNumerics.ML.Models.Regression;
+
+public class RidgeRegression : IRegressionModel, IHasHyperparameters
+{
+    public double Alpha { get; set; } = 1.0; 
+    public bool FitIntercept { get; set; } = true;
+
+    private VectorN _weights;
+
+    public bool SupportsScaling => true;
+    public bool SupportsFeatureSelection => true;
+    public bool IsProbabilistic => false;
+
+    public void Fit(Matrix X, VectorN y)
+    {
+        
+        var Xb = X.WithBiasColumn();
+
+        var Xt = Xb.Transpose();
+        var XtX = Xt * Xb;
+
+        // 2. Regularization matrix
+        var reg = new Matrix(XtX.rowLength, XtX.columnLength);
+
+        for (int i = 1; i < reg.rowLength; i++)
+            reg.values[i, i] = Alpha; 
+
+        
+        var inv = (XtX + reg).Inverse();
+        _weights = inv * (Xt * y);
+    }
+
+    public VectorN Predict(Matrix X)
+    {
+        var Xb = X.WithBiasColumn();
+        return Xb * _weights;
+    }
+
+    public void SetHyperParameters(Dictionary<string, object> parameters)
+    {
+        if (parameters.TryGetValue("Alpha", out var alpha))
+            Alpha = (double)alpha;
+    }
+}
