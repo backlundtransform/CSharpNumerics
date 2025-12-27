@@ -12,18 +12,18 @@ public class Linear : IRegressionModel, IHasHyperparameters
     private VectorN _weights;  
     private bool _fitted = false;
 
-    public bool FitIntercept { get; }
+    public bool FitIntercept { get; private set; } = true;
     public double LearningRate { get; private set; } = 0.01;
-    public Linear(bool fitIntercept = true)
-    {
-        FitIntercept = fitIntercept;
-    }
+ 
+
     public void SetHyperParameters(Dictionary<string, object> parameters)
     {
         if (parameters == null) return;
 
         if (parameters.ContainsKey("LearningRate"))
             LearningRate = Convert.ToDouble(parameters["LearningRate"]);
+        if (parameters.ContainsKey("FitIntercept"))
+            FitIntercept = Convert.ToBoolean(parameters["FitIntercept"]);
     }
 
     public void Fit(Matrix X, VectorN y)

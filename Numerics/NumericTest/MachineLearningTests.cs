@@ -38,7 +38,7 @@ namespace NumericTest
             var X = new Matrix(Xdata);
             var y = new VectorN(ydata);
 
-            var model = new Linear(fitIntercept: true);
+            var model = new Linear();
 
             var modelParams = new Dictionary<string, object>
             {
@@ -83,7 +83,7 @@ namespace NumericTest
             var X = new Matrix(Xdata);
             var y = new VectorN(ydata);
 
-            var model = new Linear(fitIntercept: true);
+            var model = new Linear();
 
             var pipeline = new Pipeline(
                 model: model,
@@ -581,6 +581,47 @@ namespace NumericTest
             }
 
             Assert.IsTrue(diag / total > 0.8);
+        }
+
+        [TestMethod]
+        public void TestRollingCrossValidator_Regression_Search()
+        {
+            // Arrange: y = 2x + 1
+            double[,] Xdata =
+            {
+        { 0 }, { 1 }, { 2 }, { 3 }, { 4 },
+        { 5 }, { 6 }, { 7 }, { 8 }, { 9 }
+    };
+
+            double[] ydata = { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 };
+
+            var X = new Matrix(Xdata);
+            var y = new VectorN(ydata);
+
+            var pipelineGrid =
+                new PipelineGrid()
+                    .AddModel<Linear>(g => g
+                        .Add("FitIntercept", true)
+                        .Add("LearningRate", 0.05, 0.1)
+                        .AddScaler<StandardScaler>(s => { }))
+                    .AddModel<Ridge>(g => g
+                        .Add("Alpha", 0.001, 0.01, 0.1)
+                        .AddScaler<StandardScaler>(s => { }));
+
+            var cv = new RollingCrossValidator(pipelineGrid, folds: 3);
+
+            // Act
+            var result = cv.Run(X, y);
+
+            // Assert
+            Assert.IsNotNull(result.BestPipeline);
+
+            var data = result.ActualValues.Values
+                .Select((v, i) => (Pred: result.PredictedValues.Values[i], Actual: v));
+
+            double r2 = data.CoefficientOfDetermination(p => (p.Pred, p.Actual));
+
+            Assert.IsTrue(r2 > 0.99, $"R² too low: {r2}");
         }
 
     }

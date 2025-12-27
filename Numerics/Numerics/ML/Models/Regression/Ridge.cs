@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 namespace CSharpNumerics.ML.Models.Regression;
 
-public class RidgeRegression : IRegressionModel, IHasHyperparameters
+public class Ridge : IRegressionModel, IHasHyperparameters
 {
     public double Alpha { get; set; } = 1.0; 
     public bool FitIntercept { get; set; } = true;
@@ -25,7 +25,7 @@ public class RidgeRegression : IRegressionModel, IHasHyperparameters
         var Xt = Xb.Transpose();
         var XtX = Xt * Xb;
 
-        // 2. Regularization matrix
+      
         var reg = new Matrix(XtX.rowLength, XtX.columnLength);
 
         for (int i = 1; i < reg.rowLength; i++)
