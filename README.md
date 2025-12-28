@@ -15,6 +15,7 @@ A comprehensive numerical library for **scientific computing**, **mathematical a
 * 📉 Differential equation solvers (Runge–Kutta, Trapezoidal, etc.)
 * 📊 Statistics and regression tools
 * ✨ Interpolation methods
+* 🤖 Machine Learning
 * 🔗 Full integration with LINQ and extension methods
 
 ---
@@ -300,6 +301,66 @@ double y = data.Interpolate(
 );
 ```
 
+---
+
+## 🤖 Machine Learning
+
+CSharpNumerics includes a **lightweight, fully numerical machine learning framework** designed for **research, experimentation, and educational use**.
+The focus is on **transparency**, **mathematical clarity**, and **pipeline-based model evaluation** — not black-box automation.
+
+All models are implemented directly on top of the library’s **Matrix** and **Vector** primitives.
+
+
+#### 🧩 Pipelines
+
+Models can be combined with:
+
+* **Scalers** (e.g. StandardScaler)
+* **Feature selectors** (e.g. SelectKBest)
+* **Cross-validation strategies**
+* **Hyperparameter search grids**
+
+```csharp
+var pipelineGrid = new PipelineGrid()
+    .AddScaler<StandardScaler>(s => { })
+    .AddSelector<SelectKBest>(g => g.Add("K", 1, 2))
+    .AddModel<Logistic>(g => g
+        .Add("LearningRate", 0.05, 0.1)
+        .Add("MaxIterations", 1000, 2000))
+    .AddModel<RandomForest>(g => g
+        .Add("NumTrees", 50, 100)
+        .Add("MaxDepth", 5, 10));
+```
+
+Rolling (time-aware) cross validation is supported for both **classification** and **regression** tasks.
+
+```csharp
+var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+var result = cv.Run(X, y);
+
+var bestModel = result.BestPipeline;
+var score = result.BestScore;
+```
+
+####  📊 Classification Models
+
+Supported classifiers include:
+
+* Logistic Regression
+* Decision Tree
+* Random Forest
+* K-Nearest Neighbors
+* Naive Bayes
+
+
+####  📈 Regression Models
+
+Supported regression models:
+
+* Linear Regression
+* Ridge Regression (L2)
+* Lasso Regression (L1)
+* Elastic Net (L1 + L2)
 
 ---
 
@@ -327,3 +388,5 @@ var fft = func.FastFouriertransform(-1, 1, 100);
 ## 🧾 License
 
 MIT License © 2025 — [CSharpNumerics](https://www.nuget.org/packages/CSharpNumerics)
+
+

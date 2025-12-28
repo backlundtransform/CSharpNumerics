@@ -616,12 +616,8 @@ namespace NumericTest
             // Assert
             Assert.IsNotNull(result.BestPipeline);
 
-            var data = result.ActualValues.Values
-                .Select((v, i) => (Pred: result.PredictedValues.Values[i], Actual: v));
 
-            double r2 = data.CoefficientOfDetermination(p => (p.Pred, p.Actual));
-
-            Assert.IsTrue(r2 > 0.99, $"R² too low: {r2}");
+            Assert.IsTrue(result.CoefficientOfDetermination > 0.99, $"R² too low: {result.CoefficientOfDetermination}");
         }
 
     }
