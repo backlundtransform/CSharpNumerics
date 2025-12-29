@@ -547,11 +547,11 @@ namespace NumericTest
                 .Add("MaxIterations", 1000, 2000)
                 .AddScaler<StandardScaler>(s => { })
                 .AddSelector<SelectKBest>(s => s
-                    .Add("K", 1, 2)))
-
+                   .Add("K", 1, 2)))
             .AddModel<DecisionTree>(g => g
-                .Add("MaxDepth", 3, 5, 8));
-
+                .Add("MaxDepth", 3, 5, 8))
+            .AddModel<KNearestNeighbors>(g => g
+                .Add("K", 3, 5, 7));
 
             var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
 
