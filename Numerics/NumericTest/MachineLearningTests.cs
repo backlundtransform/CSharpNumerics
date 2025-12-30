@@ -551,7 +551,11 @@ namespace NumericTest
             .AddModel<DecisionTree>(g => g
                 .Add("MaxDepth", 3, 5, 8))
             .AddModel<KNearestNeighbors>(g => g
-                .Add("K", 3, 5, 7));
+                .Add("K", 3, 5, 7))
+            .AddModel<LinearSVC>(g => g
+                .Add("C", 0.1, 1.0, 10.0)
+                .Add("LearningRate", 0.001, 0.01)
+                .Add("Epochs", 500, 1000));
 
             var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
 

@@ -311,8 +311,6 @@ The focus is on **transparency**, **mathematical clarity**, and **pipeline-based
 All models are implemented directly on top of the library’s **Matrix** and **Vector** primitives.
 
 
-#### 🧩 Pipelines
-
 Models can be combined with:
 
 * **Scalers** (e.g. StandardScaler)
@@ -356,6 +354,7 @@ Supported classifiers include:
 * Random Forest
 * K-Nearest Neighbors
 * Naive Bayes
+* Linear SVC
 
 
 ####  📈 Regression Models
@@ -366,6 +365,7 @@ Supported regression models:
 * Ridge Regression (L2)
 * Lasso Regression (L1)
 * Elastic Net (L1 + L2)
+* Linear SVR 
 
 ---
 
