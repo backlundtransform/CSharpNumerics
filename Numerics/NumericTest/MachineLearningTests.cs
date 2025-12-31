@@ -4,6 +4,7 @@ using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
 using CSharpNumerics.ML.Selector;
 using CSharpNumerics.Objects;
+using Numerics;
 using Numerics.Objects;
 using Xunit.Sdk;
 
@@ -586,6 +587,91 @@ namespace NumericTest
 
             Assert.IsTrue(diag / total > 0.8);
         }
+
+        [TestMethod]
+        public void TestRollingCrossValidator_Classification_SVM()
+        {
+            // Arrange
+            int nSamples = 120;
+            int nFeatures = 2;
+
+            Matrix X = new Matrix(nSamples, nFeatures);
+            VectorN y = new VectorN(nSamples);
+
+            Random rnd = new Random(123);
+
+            for (int i = 0; i < nSamples; i++)
+            {
+                double x1 = rnd.NextDouble() * 10;
+                double x2 = rnd.NextDouble() * 10;
+
+                X.values[i, 0] = x1;
+                X.values[i, 1] = x2;
+
+                double s = x1 + x2;
+
+                if (s < 7)
+                    y[i] = 0;
+                else if (s < 13)
+                    y[i] = 1;
+                else
+                    y[i] = 2;
+            }
+            var pipelineGrid =
+        new PipelineGrid()
+            
+            .AddModel<LinearSVC>(g => g
+                .Add("C", 0.1, 1.0, 10.0)
+                .Add("LearningRate", 0.001, 0.01)
+                .Add("Epochs", 500, 1000));
+
+            var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+
+            // Act
+            var result = cv.Run(X, y);
+
+            // Assert
+            Assert.IsNotNull(result.BestPipeline);
+            Assert.IsTrue(result.BestScore > 0.7, $"Accuracy too low: {result.BestScore}");
+
+            Assert.IsNotNull(result.ConfusionMatrix);
+            Assert.AreEqual(3, result.ConfusionMatrix.rowLength);
+            Assert.AreEqual(3, result.ConfusionMatrix.columnLength);
+
+            // Sanity check: diagonal dominance
+            double diag = 0;
+            double total = 0;
+
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    double v = result.ConfusionMatrix.values[i, j];
+                    total += v;
+                    if (i == j) diag += v;
+                }
+            }
+
+            Assert.IsTrue(diag / total > 0.7);
+
+
+            pipelineGrid =
+                new PipelineGrid()
+                .AddModel<KernelSVC>(g => g
+                    .Add("C", 1.0)
+                    .Add("Gamma", 0.1)
+                    .Add("Kernel", KernelType.RBF));
+                   
+            cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+            // Act
+            result = cv.Run(X, y);
+            // Assert
+            Assert.IsNotNull(result.BestPipeline);
+            Assert.IsTrue(result.BestScore > 0.8, $"Accuracy too low: {result.BestScore}");
+       
+        }
+
+
 
         [TestMethod]
         public void TestRollingCrossValidator_Regression_Search()
