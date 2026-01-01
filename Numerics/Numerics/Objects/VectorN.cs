@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Numerics.Objects;
+using System;
 
 
 namespace CSharpNumerics.Objects
@@ -82,6 +83,30 @@ namespace CSharpNumerics.Objects
             for (int i = 0; i < Length; i++)
                 sum += Values[i] * other[i];
             return sum;
+        }
+        public VectorN Hadamard( VectorN b)
+        {
+            if (Length != b.Length)
+                throw new ArgumentException("Vectors must be of the same length for Hadamard product.");
+
+            var result = new double[Length];
+            for (int i = 0; i < Length; i++)
+                result[i] = Values[i] * b.Values[i];
+            return new VectorN(result);
+            
+        }
+
+        public Matrix Outer(VectorN b)
+        {
+            var result = new double[Length, b.Length];
+            for (int i = 0; i < Length; i++)
+            {
+                for (int j = 0; j < b.Length; j++)
+                {
+                    result[i, j] = Values[i] * b.Values[j];
+                }
+            }
+            return new Matrix { values = result, rowLength = Length, columnLength = b.Length };
         }
 
         public double Norm()
