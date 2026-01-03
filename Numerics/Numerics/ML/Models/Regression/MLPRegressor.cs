@@ -4,6 +4,7 @@ using Numerics;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpNumerics.ML.Models.Regression;
@@ -15,6 +16,12 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
     public int Epochs { get; set; } = 500;
     public int BatchSize { get; set; } = 16;
     public double L2 { get; set; } = 0.0;
+
+    public double ValidationSplit { get; set; } = 0.2;
+    public int Patience { get; set; } = 10;
+    public double MinDelta { get; set; } = 1e-4;
+
+
 
     public ActivationType Activation { get; set; } = ActivationType.ReLU;
 
@@ -84,24 +91,162 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
             _biases[i] -= LearningRate * deltas[i];
         }
     }
-
     public void Fit(Matrix X, VectorN y)
     {
         Initialize(X.columnLength);
 
+        int[] indices = Enumerable.Range(0, X.rowLength).ToArray();
+        var rnd = new Random(42);
+
+
+        int trainSize = (ValidationSplit > 0 && X.rowLength > 5)
+            ? (int)(X.rowLength * (1 - ValidationSplit))
+            : X.rowLength;
+
+        int valSize = X.rowLength - trainSize;
+
+        double bestValLoss = double.MaxValue;
+        int patienceCounter = 0;
+
+      
+        List<Matrix> bestWeights = _weights.Select(m => new Matrix(m.values)).ToList();
+        List<VectorN> bestBiases = _biases.Select(v => new VectorN(v.Values)).ToList();
+
         for (int epoch = 0; epoch < Epochs; epoch++)
         {
-            for (int i = 0; i < X.rowLength; i++)
-            {
-                var xi = X.RowSlice(i);
-                var yi = new VectorN(new[] { y[i] });
+            Shuffle(indices, rnd);
 
-                var yhat = Forward(xi, out var acts);
-                Backward(yi, acts);
+           
+            for (int i = 0; i < trainSize; i += BatchSize)
+            {
+                int currentBatchSize = Math.Min(BatchSize, trainSize - i);
+                var weightGrads = InitGradsLike(_weights);
+                var biasGrads = InitGradsLike(_biases);
+
+                for (int b = 0; b < currentBatchSize; b++)
+                {
+                    int idx = indices[i + b];
+                    var xi = X.RowSlice(idx);
+                    var yi = new VectorN(new[] { y[idx] });
+
+                    var yhat = Forward(xi, out var acts);
+                    ComputeGradients(yi, acts, out var dw, out var db);
+
+                    for (int l = 0; l < _weights.Count; l++)
+                    {
+                        weightGrads[l] += dw[l];
+                        biasGrads[l] += db[l];
+                    }
+                }
+
+                for (int l = 0; l < _weights.Count; l++)
+                {
+                    _weights[l] -= (LearningRate / currentBatchSize) * (weightGrads[l] + L2 * _weights[l]);
+                    _biases[l] -= (LearningRate / currentBatchSize) * biasGrads[l];
+                }
             }
+
+       
+            if (valSize > 0)
+            {
+                double currentValLoss = CalculateValidationLoss(X, y, indices, trainSize);
+
+                if (currentValLoss < bestValLoss - MinDelta)
+                {
+                    bestValLoss = currentValLoss;
+                    patienceCounter = 0;
+                    bestWeights = _weights.Select(m => new Matrix(m.values)).ToList();
+                    bestBiases = _biases.Select(v => new VectorN(v.Values)).ToList();
+                }
+                else
+                {
+                    patienceCounter++;
+                }
+
+                if (patienceCounter >= Patience)
+                {
+                    _weights = bestWeights;
+                    _biases = bestBiases;
+                   
+                    return;
+                }
+            }
+        }
+
+       
+        if (valSize > 0)
+        {
+            _weights = bestWeights;
+            _biases = bestBiases;
         }
     }
 
+
+    private void Shuffle(int[] array, Random rnd)
+    {
+        for (int i = array.Length - 1; i > 0; i--)
+        {
+            int j = rnd.Next(i + 1);
+            (array[i], array[j]) = (array[j], array[i]);
+        }
+    }
+
+    private double CalculateValidationLoss(Matrix X, VectorN y, int[] indices, int trainSize)
+    {
+        double totalLoss = 0;
+        int valCount = indices.Length - trainSize;
+        if (valCount <= 0) return 0;
+
+        for (int i = trainSize; i < indices.Length; i++)
+        {
+            int idx = indices[i];
+            var pred = Forward(X.RowSlice(idx), out _);
+            totalLoss += Math.Pow(pred[0] - y[idx], 2);
+        }
+        return totalLoss / valCount;
+    }
+    private void ComputeGradients(VectorN y, List<VectorN> activations, out List<Matrix> dW, out List<VectorN> dB)
+    {
+        var deltas = new List<VectorN>();
+        var error = activations[^1] - y;
+        deltas.Add(error);
+
+        for (int i = _weights.Count - 2; i >= 0; i--)
+        {
+            var w = _weights[i + 1];
+            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
+            deltas.Add(delta);
+        }
+        deltas.Reverse();
+
+        dW = new List<Matrix>();
+        dB = new List<VectorN>();
+
+        for (int i = 0; i < _weights.Count; i++)
+        {
+            dW.Add(activations[i].Outer(deltas[i]));
+            dB.Add(deltas[i]);
+        }
+    }
+
+    private double CalculateLoss(Matrix X, VectorN y, int start, int end)
+    {
+        double totalLoss = 0;
+        int count = end - start;
+        for (int i = start; i < end; i++)
+        {
+            var pred = Forward(X.RowSlice(i), out _);
+            totalLoss += Math.Pow(pred[0] - y[i], 2);
+        }
+        return totalLoss / count;
+    }
+
+    // Hjälpmetoder för att initiera tomma listor för gradienter
+    private List<Matrix> InitGradsLike(List<Matrix> template) =>
+        template.Select(m => new Matrix { values = new double[m.rowLength, m.columnLength], rowLength = m.rowLength, columnLength = m.columnLength }).ToList();
+
+    private List<VectorN> InitGradsLike(List<VectorN> template) =>
+        template.Select(v => new VectorN(v.Length)).ToList();
     public VectorN Predict(Matrix X)
     {
         var result = new double[X.rowLength];

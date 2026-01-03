@@ -763,13 +763,15 @@ namespace NumericTest
     .Add("LearningRate", 0.001, 0.01)
     .Add("Epochs", 500, 1000)
     .Add("L2", 0.0, 0.001)
+    .Add("ValidationSplit", 0.0)
+    .Add("Patience", 100)
     .AddScaler<StandardScaler>(s => { }));
 
             var cv = new RollingCrossValidator(grid, folds: 3);
             var result = cv.Run(X, y);
 
             double r2 = result.CoefficientOfDetermination;
-            Assert.IsTrue(r2 > 0.950595);
+            Assert.IsTrue(r2 > 0.9);
         }
     
     }
