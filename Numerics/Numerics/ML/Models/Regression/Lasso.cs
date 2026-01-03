@@ -9,7 +9,7 @@ namespace CSharpNumerics.ML.Models.Regression;
 
 
 
-public class Lasso: IModel, IHasHyperparameters, IRegressionModel
+public class Lasso: IHasHyperparameters, IRegressionModel
 {
     private VectorN _weights;
     private double _alpha = 0.1;

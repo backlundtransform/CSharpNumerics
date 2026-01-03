@@ -5,11 +5,11 @@ using Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+
 
 namespace CSharpNumerics.ML.Models.Regression;
 
-public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
+public class MLPRegressor : IHasHyperparameters, IRegressionModel
 {
     public int[] HiddenLayers { get; set; } = new[] { 32, 16 };
     public double LearningRate { get; set; } = 0.01;
@@ -63,34 +63,7 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
         return activations[^1];
     }
 
-    private void Backward(
-    VectorN y,
-    List<VectorN> activations)
-    {
-        var deltas = new List<VectorN>();
 
-       
-        var error = activations[^1] - y;
-        deltas.Add(error);
-
-    
-        for (int i = _weights.Count - 2; i >= 0; i--)
-        {
-            var w = _weights[i + 1];
-            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
-            deltas.Add(delta);
-        }
-
-        deltas.Reverse();
-
-        for (int i = 0; i < _weights.Count; i++)
-        {
-            _weights[i] -= LearningRate *
-                (activations[i].Outer(deltas[i]) + L2 * _weights[i]);
-
-            _biases[i] -= LearningRate * deltas[i];
-        }
-    }
     public void Fit(Matrix X, VectorN y)
     {
         Initialize(X.columnLength);
@@ -181,16 +154,6 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
         }
     }
 
-
-    private void Shuffle(int[] array, Random rnd)
-    {
-        for (int i = array.Length - 1; i > 0; i--)
-        {
-            int j = rnd.Next(i + 1);
-            (array[i], array[j]) = (array[j], array[i]);
-        }
-    }
-
     private double CalculateValidationLoss(Matrix X, VectorN y, int[] indices, int trainSize)
     {
         double totalLoss = 0;
@@ -228,25 +191,6 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
             dB.Add(deltas[i]);
         }
     }
-
-    private double CalculateLoss(Matrix X, VectorN y, int start, int end)
-    {
-        double totalLoss = 0;
-        int count = end - start;
-        for (int i = start; i < end; i++)
-        {
-            var pred = Forward(X.RowSlice(i), out _);
-            totalLoss += Math.Pow(pred[0] - y[i], 2);
-        }
-        return totalLoss / count;
-    }
-
-    // Hjälpmetoder för att initiera tomma listor för gradienter
-    private List<Matrix> InitGradsLike(List<Matrix> template) =>
-        template.Select(m => new Matrix { values = new double[m.rowLength, m.columnLength], rowLength = m.rowLength, columnLength = m.columnLength }).ToList();
-
-    private List<VectorN> InitGradsLike(List<VectorN> template) =>
-        template.Select(v => new VectorN(v.Length)).ToList();
     public VectorN Predict(Matrix X)
     {
         var result = new double[X.rowLength];
@@ -259,6 +203,14 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
 
         return new VectorN(result);
     }
+
+
+
+    private List<Matrix> InitGradsLike(List<Matrix> template) =>
+        template.Select(m => new Matrix { values = new double[m.rowLength, m.columnLength], rowLength = m.rowLength, columnLength = m.columnLength }).ToList();
+
+    private List<VectorN> InitGradsLike(List<VectorN> template) =>
+        template.Select(v => new VectorN(v.Length)).ToList();
 
 
     public void SetHyperParameters(Dictionary<string, object> p)
@@ -323,6 +275,15 @@ public class MLPRegressor : IModel,IHasHyperparameters, IRegressionModel
         }
     }
 
+
+    private void Shuffle(int[] array, Random rnd)
+    {
+        for (int i = array.Length - 1; i > 0; i--)
+        {
+            int j = rnd.Next(i + 1);
+            (array[i], array[j]) = (array[j], array[i]);
+        }
+    }
     private static VectorN ReLU(VectorN v)
     {
         var result = new double[v.Length];

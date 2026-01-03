@@ -8,7 +8,7 @@ using System.Text;
 
 namespace CSharpNumerics.ML.Models.Regression;
 
-public class KernelSVR : IModel,IHasHyperparameters, IRegressionModel
+public class KernelSVR : IHasHyperparameters, IRegressionModel
 {
     public double C { get; set; } = 1.0;
     public double Epsilon { get; set; } = 0.1;

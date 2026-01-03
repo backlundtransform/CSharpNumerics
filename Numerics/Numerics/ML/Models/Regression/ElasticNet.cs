@@ -7,7 +7,7 @@ using System.Text;
 
 namespace CSharpNumerics.ML.Models.Regression;
 
-public class ElasticNet : IModel,IHasHyperparameters, IRegressionModel
+public class ElasticNet :IHasHyperparameters, IRegressionModel
 {
     public double Lambda { get; set; } = 1.0;
     public double L1Ratio { get; set; } = 0.5;
