@@ -133,7 +133,15 @@ From spherical coordinates:
 ```csharp
 var v = Vector.FromSphericalCoordinates(radius, inclination, azimuth);
 ```
+Vector of any length
+```csharp
+double[] ydata =
+        {
+          1,3,5,7,9,11,13,15,17,19
+        };
+var y = new VectorN(ydata);
 
+```
 ---
 
 ## 🧮 Matrix
