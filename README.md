@@ -355,6 +355,8 @@ Supported classifiers include:
 * K-Nearest Neighbors
 * Naive Bayes
 * Linear SVC
+* Kernel SVC
+* MLP Classifier
 
 
 ####  📈 Regression Models
@@ -365,7 +367,9 @@ Supported regression models:
 * Ridge Regression (L2)
 * Lasso Regression (L1)
 * Elastic Net (L1 + L2)
-* Linear SVR 
+* Linear SVR
+* Kernel SVR
+* MLP Regressor
 
 ---
 
