@@ -171,10 +171,9 @@ var y = A * x;
 ## 📦 Tensor (multi-dimensionell)
 
 ```csharp
-// Skapa en 2x3 tensor (fylls med 0 som standard)
+
 var tensor = new Tensor(2, 3);
 
-// Tilldela värden
 tensor[0, 0] = 1;
 tensor[0, 1] = 2;
 tensor[0, 2] = 3;
@@ -182,10 +181,8 @@ tensor[1, 0] = 4;
 tensor[1, 1] = 5;
 tensor[1, 2] = 6;
 
-// Alternativt fyll hela tensor med ett värde
 tensor.Fill(10);
 
-// Operatorer
 var tensorB = new Tensor(2, 3);
 tensorB.Fill(5);
 
@@ -194,7 +191,7 @@ var diff = tensor - tensorB;
 var prod = tensor * tensorB;
 var div = tensor / tensorB;
 
-// Dot-produkt (endast för lika långa tensorer)
+
 var tensor1D = new Tensor(3);
 tensor1D.Values[0] = 1;
 tensor1D.Values[1] = 2;
