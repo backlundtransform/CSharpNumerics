@@ -133,15 +133,17 @@ From spherical coordinates:
 ```csharp
 var v = Vector.FromSphericalCoordinates(radius, inclination, azimuth);
 ```
-Vector of any length
+
+Vector of any length:
+
 ```csharp
 double[] ydata =
-        {
-          1,3,5,7,9,11,13,15,17,19
-        };
+{
+    1,3,5,7,9,11,13,15,17,19
+};
 var y = new VectorN(ydata);
-
 ```
+
 ---
 
 ## 🧮 Matrix
@@ -151,21 +153,59 @@ var A = new Matrix(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
 var transpose = A.Transpose();
 var det = A.Determinant();
 var inv = A.Inverse();
-```
 
 Arithmetic:
 
-```csharp
 var B = new Matrix(new double[,] { { 2, 5, 1 }, { 4, 3, 7 } });
 var sum = A + B;
 var product = A * B;
-```
 
 With vector:
 
-```csharp
 var x = new Vector(2, 1, 3);
 var y = A * x;
+```
+
+---
+
+## 📦 Tensor (multi-dimensionell)
+
+```csharp
+// Skapa en 2x3 tensor (fylls med 0 som standard)
+var tensor = new Tensor(2, 3);
+
+// Tilldela värden
+tensor[0, 0] = 1;
+tensor[0, 1] = 2;
+tensor[0, 2] = 3;
+tensor[1, 0] = 4;
+tensor[1, 1] = 5;
+tensor[1, 2] = 6;
+
+// Alternativt fyll hela tensor med ett värde
+tensor.Fill(10);
+
+// Operatorer
+var tensorB = new Tensor(2, 3);
+tensorB.Fill(5);
+
+var sum = tensor + tensorB;
+var diff = tensor - tensorB;
+var prod = tensor * tensorB;
+var div = tensor / tensorB;
+
+// Dot-produkt (endast för lika långa tensorer)
+var tensor1D = new Tensor(3);
+tensor1D.Values[0] = 1;
+tensor1D.Values[1] = 2;
+tensor1D.Values[2] = 3;
+
+var tensor1D2 = new Tensor(3);
+tensor1D2.Values[0] = 4;
+tensor1D2.Values[1] = 5;
+tensor1D2.Values[2] = 6;
+
+double dot = tensor1D.Dot(tensor1D2); // 1*4 + 2*5 + 3*6 = 32
 ```
 
 ---
