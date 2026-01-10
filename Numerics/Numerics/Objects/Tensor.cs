@@ -1,121 +1,121 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System;
+using System.Linq;
 
 namespace Numerics.Objects
 {
-  public struct Tensor
+    public struct Tensor
     {
+        public double[] Values;
+        public int[] Shape;
+        public int Dimension;
 
-        public Array values;
 
-        public int dimension;
+        public Tensor(params int[] shape)
+        {
+            Dimension = shape.Length;
+            Shape = shape.ToArray(); 
+            int totalLength = 1;
+            foreach (var s in shape) totalLength *= s;
+            Values = new double[totalLength];
+        }
 
-        public int[] shape;
+        public Tensor(double[] values, params int[] shape)
+        {
+            int totalLength = 1;
+            foreach (var s in shape) totalLength *= s;
+            if (values.Length != totalLength)
+                throw new ArgumentException("Values length does not match shape");
+
+            Values = values;
+            Shape = shape.ToArray();
+            Dimension = shape.Length;
+        }
+
+ 
+        private int GetFlatIndex(int[] indices)
+        {
+            if (indices.Length != Dimension)
+                throw new ArgumentException("Incorrect number of indices");
+
+            int index = 0;
+            int multiplier = 1;
+            for (int i = Dimension - 1; i >= 0; i--)
+            {
+                if (indices[i] < 0 || indices[i] >= Shape[i])
+                    throw new IndexOutOfRangeException();
+
+                index += indices[i] * multiplier;
+                multiplier *= Shape[i];
+            }
+            return index;
+        }
+
      
-
-        public Tensor(Array tensor)
+        public double this[params int[] indices]
         {
-            dimension = tensor.Rank;
-            shape = new int[dimension];
-
-            for (var i=0;i < dimension; i++)
-            {
-                shape[i] =tensor.GetLength(i);
-
-            }
-          
-            values = tensor;
-         
+            get => Values[GetFlatIndex(indices)];
+            set => Values[GetFlatIndex(indices)] = value;
         }
 
-        public static Tensor operator +(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x + y);
-        public static Tensor operator -(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x - y);
-        public static Tensor operator *(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x * y);
-        public static Tensor operator /(Tensor a, Tensor b) => a.GetResult(b, (x, y) => x / y);
-
-        public Tensor TensorDot(Tensor b) {
-
-            var result = new List<Array>();
-
-
-            foreach (var index in values)
-            {
-                if (!double.TryParse(index.ToString(), out double convertA))
-                {
-                    throw new ArgumentException("Is not numeric");
-
-                }
-                result.Add(GetResult(b, (x, y) => convertA * y).values);
-            }
-
-            return new Tensor(result.ToArray());
-
-        }
-        public Tensor GetResult(Tensor b, Func<double, double, double> operatoru)
+        private static void CheckShape(Tensor a, Tensor b)
         {
-            
-            var result = Array.CreateInstance(typeof(double), shape);
-          
-            var lastIndex = dimension- 1;
-
-            var indices = new int[dimension];
-            var lower = new int[dimension];
-            var upper = new int[dimension];
-            for (var i = 0; i < dimension; ++i)
-            {
-                indices[i] = lower[i] = values.GetLowerBound(i);
-                upper[i] = values.GetUpperBound(i);
-            }
-            
-            while (true)
-            {
-
-               if (!double.TryParse(values.GetValue(indices).ToString(), out double convertA) || !double.TryParse(b.values.GetValue(indices).ToString(), out double convertB))
-                {
-
-                    throw new ArgumentException("Is not numric");
-
-                }
-
-                var element = operatoru(convertA, convertB);
-                result.SetValue(element, indices);
-             
-                
-                if(!InnerLoop(lastIndex, indices, upper, lower)){
-
-                    continue;
-                }
-
-                if (++indices[0] > upper[0])
-                {
-                    break;
-                }
-
-            }
-
-            return new Tensor(result);
-
+            if (!a.Shape.SequenceEqual(b.Shape))
+                throw new ArgumentException("Shape mismatch");
         }
-       
-        private static bool InnerLoop(int lastIndex, int[] indices, int[] upper, int[] lower)
+
+        public static Tensor operator +(Tensor a, Tensor b)
         {
-            for (var i = lastIndex; i > 0; i -= 1)
-            {
-                if (++indices[i] <= upper[i])
-                {
-
-                    return false;
-                }
-
-                indices[i] = lower[i];
-
-            }
-
-            return true;
+            CheckShape(a, b);
+            var result = new Tensor(a.Shape);
+            for (int i = 0; i < a.Values.Length; i++)
+                result.Values[i] = a.Values[i] + b.Values[i];
+            return result;
         }
 
+        public static Tensor operator -(Tensor a, Tensor b)
+        {
+            CheckShape(a, b);
+            var result = new Tensor(a.Shape);
+            for (int i = 0; i < a.Values.Length; i++)
+                result.Values[i] = a.Values[i] - b.Values[i];
+            return result;
+        }
+
+        public static Tensor operator *(Tensor a, Tensor b)
+        {
+            CheckShape(a, b);
+            var result = new Tensor(a.Shape);
+            for (int i = 0; i < a.Values.Length; i++)
+                result.Values[i] = a.Values[i] * b.Values[i];
+            return result;
+        }
+
+        public static Tensor operator /(Tensor a, Tensor b)
+        {
+            CheckShape(a, b);
+            var result = new Tensor(a.Shape);
+            for (int i = 0; i < a.Values.Length; i++)
+                result.Values[i] = a.Values[i] / b.Values[i];
+            return result;
+        }
+
+        // Dot-produkt för lika långa tensorer
+        public double Dot(Tensor b)
+        {
+            if (Values.Length != b.Values.Length)
+                throw new ArgumentException("Tensor lengths must match for dot product");
+
+            double sum = 0;
+            for (int i = 0; i < Values.Length; i++)
+                sum += Values[i] * b.Values[i];
+            return sum;
+        }
+
+        // Fyll tensor med ett värde
+        public void Fill(double value)
+        {
+            for (int i = 0; i < Values.Length; i++)
+                Values[i] = value;
+        }
     }
-
 }

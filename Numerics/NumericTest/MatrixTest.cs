@@ -194,134 +194,98 @@ namespace NumericsTests
         [TestMethod]
         public void TestTensorRank()
         {
+            var tensor1D = new Tensor(6);         // shape: [6]
+            var tensor2D = new Tensor(2, 3);      // shape: [2,3]
+            var tensor3D = new Tensor(2, 3, 3);   // shape: [2,3,3]
+            var tensor4D = new Tensor(2, 3, 3, 3);// shape: [2,3,3,3]
 
-            var tensor1D = new Tensor(new double[] { 1, 3, 7, 5, 2, 9 });
-
-            var tensor2D = new Tensor(new double[,] { { 1, 3, 7 }, { 5, 2, 9 } });
-
-            var tensor3D = new Tensor(new double[,,] { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } });
-
-            var tensor4D = new Tensor(new double[,,,] { { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } }, { { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } }, { { 1, 3, 7 }, { 1, 3, 7 }, { 1, 3, 7 } } } });
-
-            Assert.IsTrue(tensor1D.dimension == 1);
-            Assert.IsTrue(tensor2D.dimension == 2);
-            Assert.IsTrue(tensor3D.dimension == 3);
-            Assert.IsTrue(tensor4D.dimension == 4);
+            Assert.AreEqual(1, tensor1D.Dimension);
+            Assert.AreEqual(2, tensor2D.Dimension);
+            Assert.AreEqual(3, tensor3D.Dimension);
+            Assert.AreEqual(4, tensor4D.Dimension);
         }
-
 
         [TestMethod]
         public void TestTensorShape()
         {
+            var tensor1D = new Tensor(6);
+            var tensor3D = new Tensor(2, 3, 3);
 
-
-            var tensor1D = new Tensor(new double[] { 1, 3, 7, 5, 2, 9 });
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } }, { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } } });
-
-            Assert.IsTrue(tensor1D.shape[0] == 6);
-
-            Assert.IsTrue(tensor3D.shape[0] == 2);
-
-            Assert.IsTrue(tensor3D.shape[1] == 3);
-
-            Assert.IsTrue(tensor3D.shape[2] == 3);
-
-
+            Assert.AreEqual(6, tensor1D.Shape[0]);
+            Assert.AreEqual(2, tensor3D.Shape[0]);
+            Assert.AreEqual(3, tensor3D.Shape[1]);
+            Assert.AreEqual(3, tensor3D.Shape[2]);
         }
 
         [TestMethod]
         public void TestTensorAddition()
         {
+            var tensor = new Tensor(2, 3);
+            tensor.Fill(1.0);
+            var result = tensor + tensor;
 
-
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
-                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
-
-            var result = tensor3D + tensor3D;
-
-            CollectionAssert.AreEqual(result.values, new double[,,] { { { 2, 4, 6 }, { 8, 10, 12}, { 14, 16, 18 } },
-                { { 22, 24, 26}, { 28, 30, 32 }, { 34, 36, 38 } },  { { 42, 44, 46 }, { 48, 50, 52}, { 54, 56, 58 } } });
-
+            foreach (var val in result.Values)
+                Assert.AreEqual(2.0, val);
         }
 
         [TestMethod]
         public void TestTensorSubstraction()
         {
+            var tensor = new Tensor(2, 3);
+            tensor.Fill(1.0);
+            var result = tensor - tensor;
 
-
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
-                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
-
-            var result = tensor3D - tensor3D;
-
-            CollectionAssert.AreEqual(result.values, new double[,,] { { { 0, 0, 0 }, { 0, 0, 0}, { 0, 0, 0 } },
-                { { 0,0, 0}, { 0, 0,0 }, { 0, 0, 0 } },  { { 0, 0, 0}, { 0, 0,0}, { 0, 0, 0 } } });
-
+            foreach (var val in result.Values)
+                Assert.AreEqual(0.0, val);
         }
-
-
-        [TestMethod]
-        public void TestTensorDivision()
-        {
-
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
-                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
-
-            var result = tensor3D / tensor3D;
-
-            CollectionAssert.AreEqual(result.values, new double[,,] { { { 1, 1, 1 }, { 1, 1, 1}, { 1, 1, 1 } },
-                { { 1,1, 1}, { 1, 1,1 }, { 1, 1, 1 } },  { { 1, 1, 1}, { 1, 1, 1}, { 1, 1, 1} } });
-
-        }
-
 
         [TestMethod]
         public void TestTensorMultiplication()
         {
+            var tensor = new Tensor(2, 3);
+            for (int i = 0; i < tensor.Values.Length; i++)
+                tensor.Values[i] = i + 1; // 1,2,3,4,5,6
 
+            var result = tensor * tensor;
+            for (int i = 0; i < tensor.Values.Length; i++)
+                Assert.AreEqual((i + 1) * (i + 1), result.Values[i]);
+        }
 
-            var tensor3D = new Tensor(new double[,,] { { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
-                { { 11, 12, 13 }, { 14, 15, 16 }, { 17, 18, 19 } },  { { 21, 22, 23 }, { 24, 25, 26}, { 27, 28, 29 } }  });
+        [TestMethod]
+        public void TestTensorDivision()
+        {
+            var tensor = new Tensor(2, 3);
+            for (int i = 0; i < tensor.Values.Length; i++)
+                tensor.Values[i] = i + 1;
 
-            var result = tensor3D * tensor3D;
-
-            CollectionAssert.AreEqual(result.values, new double[,,] { { { 1*1, 2*2, 3*3 }, { 4*4, 5*5, 6*6 }, { 7*7, 8*8, 9*9 } },
-                { { 11*11, 12*12, 13*13 }, { 14*14, 15*15, 16*16 }, { 17*17, 18*18, 19*19 } },  { { 21*21, 22*22, 23*23 }, { 24*24, 25*25, 26*26}, { 27*27, 28*28, 29*29 } }  });
-
+            var result = tensor / tensor;
+            foreach (var val in result.Values)
+                Assert.AreEqual(1.0, val);
         }
 
 
         [TestMethod]
         public void TestTensorAdditionFail()
         {
-
-            try
-            {
-                var tensor3D = new Tensor(new string[,] { { "WDWD" } });
-
-                var result = tensor3D + tensor3D;
-                Assert.Fail("no exception thrown");
-            }
-            catch (Exception ex)
-            {
-                Assert.IsTrue(ex is ArgumentException);
-            }
-
+            var a = new Tensor(2, 3);
+            var b = new Tensor(3, 2); 
+            Assert.ThrowsException<ArgumentException>(() => { var c = a + b; });
         }
 
 
         [TestMethod]
         public void TestTensorDot()
         {
+            var tensorX = new Tensor(2);
+            tensorX.Values[0] = 1;
+            tensorX.Values[1] = 2;
 
-            var tensor1Dx = new Tensor(new double[] { 1, 2 });
-            var tensor1Dy = new Tensor(new double[] { 3, 4 });
-            var result = tensor1Dx.TensorDot(tensor1Dy);
+            var tensorY = new Tensor(2);
+            tensorY.Values[0] = 3;
+            tensorY.Values[1] = 4;
 
-            Assert.AreEqual(result.values.GetValue(0).ToString(), new double[2] { 3, 4 }.ToString());
-            Assert.AreEqual(result.values.GetValue(1).ToString(), new double[2] { 6, 8 }.ToString());
-
-
+            double result = tensorX.Dot(tensorY);
+            Assert.AreEqual(1 * 3 + 2 * 4, result); 
         }
 
 
