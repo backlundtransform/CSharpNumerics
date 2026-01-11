@@ -1,10 +1,10 @@
 using CSharpNumerics.ML;
+using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
 using CSharpNumerics.ML.Selector;
 using CSharpNumerics.Objects;
-using Numerics;
 using Numerics.Objects;
 using Xunit.Sdk;
 

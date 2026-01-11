@@ -1,4 +1,4 @@
-﻿namespace Numerics
+﻿namespace CSharpNumerics.Numerics.Enums
 {
   public enum Cartesian
     {

@@ -1,4 +1,4 @@
-﻿namespace Numerics.Enums
+﻿namespace CSharpNumerics.Numerics.Enums
 {
      public enum DerivateOperator
     {

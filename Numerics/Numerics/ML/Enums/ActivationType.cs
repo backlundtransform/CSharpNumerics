@@ -1,4 +1,4 @@
-﻿namespace Numerics;
+﻿namespace CSharpNumerics.ML.Enums;
 
 public enum ActivationType
 {

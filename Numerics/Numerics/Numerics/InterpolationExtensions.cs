@@ -1,4 +1,4 @@
-﻿using CSharpNumerics.Enums;
+﻿using CSharpNumerics.Numerics.Enums;
 using Numerics.Models;
 using System.Collections.Generic;
 

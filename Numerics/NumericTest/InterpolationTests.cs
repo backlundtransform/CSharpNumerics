@@ -1,6 +1,4 @@
-﻿
-
-using CSharpNumerics.Enums;
+﻿using CSharpNumerics.Numerics.Enums;
 using Numerics.Models;
 
 namespace NumericTest

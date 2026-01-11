@@ -1,6 +1,4 @@
-﻿
-
-namespace CSharpNumerics.Enums;
+﻿namespace CSharpNumerics.Numerics.Enums;
 
     public enum InterpolationType
     {

@@ -1,12 +1,12 @@
-﻿using CSharpNumerics.ML.Models.Interfaces;
+﻿using CSharpNumerics.ML.Enums;
+using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Objects;
-using Numerics;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-    namespace CSharpNumerics.ML.Models.Classification;
+namespace CSharpNumerics.ML.Models.Classification;
 
     public class MLPClassifier : IClassificationModel, IHasHyperparameters
     {

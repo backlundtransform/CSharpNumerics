@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CSharpNumerics.Numerics.Enums;
+using System;
 using System.Collections.Generic;
 
 namespace Numerics.Objects
