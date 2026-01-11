@@ -1,4 +1,4 @@
-﻿namespace CSharpNumerics.Constants;
+﻿namespace CSharpNumerics.Physics.Constants;
 
 public static class PhysicsConstants
 {

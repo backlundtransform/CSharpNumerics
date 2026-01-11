@@ -14,7 +14,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Extensions\NumericExtensions.cs~RF43b9e4.TMP" />
+		<None Remove="Numerics\NumericExtensions.cs~RF43b9e4.TMP" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -22,5 +22,9 @@
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	</ItemGroup>
 </Project>

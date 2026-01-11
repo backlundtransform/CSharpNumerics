@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Numerics.Methods
+namespace CSharpNumerics.Statistics.Methods
 {
     public class Statistics
     {

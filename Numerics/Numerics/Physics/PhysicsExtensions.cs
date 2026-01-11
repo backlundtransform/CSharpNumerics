@@ -1,7 +1,8 @@
-﻿using CSharpNumerics.Constants;
+﻿using CSharpNumerics.Physics.Constants;
 using Numerics;
+using System;
 
-namespace System;
+namespace CSharpNumerics.Physics;
 public static class PhysicsExtensions
 {
     /// <summary>

@@ -1,4 +1,4 @@
-﻿using Numerics.Methods;
+﻿using CSharpNumerics.Statistics.Methods;
 using Numerics.Models;
 using System.Collections.Generic;
 
