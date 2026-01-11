@@ -1,6 +1,6 @@
 ﻿using Xunit.Sdk;
-using Numerics.Methods;
 using Numerics.Models;
+using CSharpNumerics.Statistics.Methods;
 
 
 namespace NumericsTests
