@@ -1,4 +1,4 @@
-# 🧮 CSharpNumerics
+[<img src="https://github.com/backlundtransform/CSharpNumerics/blob/master/CharpNumerics.png" height="350"/>](https://github.com/backlundtransform/CSharpNumerics/blob/master/CharpNumerics.png)
 
 A comprehensive numerical library for **scientific computing**, **mathematical analysis**, and **iterative processes** in C#.
 [NuGet Package](https://www.nuget.org/packages/CSharpNumerics/)
@@ -269,12 +269,11 @@ var result = A.LinearSystemSolver(b);
 var eigenValues = A.EigenValues();
 ```
 ```csharp
+var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
 
-   var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
+var vector = new VectorN(new double[] { 7, -5, 4 });
 
-  var vector = new VectorN(new double[] { 7, -5, 4 });
-
-  var result = matrix.LinearSystemSolver(vector);
+var result = matrix.LinearSystemSolver(vector);
 
 ```
 ---
