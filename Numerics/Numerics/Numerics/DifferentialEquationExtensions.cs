@@ -1,4 +1,5 @@
-﻿using Numerics.Objects;
+﻿using CSharpNumerics.Objects;
+using Numerics.Objects;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -78,6 +79,14 @@ namespace System
         }
 
         public static Vector LinearSystemSolver(this Matrix matrix, Vector vector)
+        {
+            var values = matrix.Inverse() * vector;
+
+
+            return values;
+        }
+
+        public static VectorN LinearSystemSolver(this Matrix matrix, VectorN vector)
         {
             var values = matrix.Inverse() * vector;
 
