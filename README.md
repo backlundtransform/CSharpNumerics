@@ -268,7 +268,15 @@ var result = f.RungeKutta(1, 1.1, 0.025, 1);
 var result = A.LinearSystemSolver(b);
 var eigenValues = A.EigenValues();
 ```
+```csharp
 
+   var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
+
+  var vector = new VectorN(new double[] { 7, -5, 4 });
+
+  var result = matrix.LinearSystemSolver(vector);
+
+```
 ---
 
 ## 📊 Statistics
