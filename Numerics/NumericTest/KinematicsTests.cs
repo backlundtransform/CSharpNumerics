@@ -75,5 +75,34 @@ namespace NumericTest
             // s = (1,0,0) + (2,0,0)*4 = (9,0,0)
             Assert.AreEqual(9, s.x, 6);
         }
+
+        [TestMethod]
+        public void FreeFallVelocity_Vector_DefaultDirection()
+        {
+            var v = 10.0.FreeFallVelocity(); 
+            var vVec = 10.0.FreeFallVelocity(new Vector(0, 0, -1));
+
+        
+            Assert.AreEqual(v, vVec.GetMagnitude(), 6);
+
+          
+            Assert.AreEqual(0, vVec.x, 6);
+            Assert.AreEqual(0, vVec.y, 6);
+            Assert.AreEqual(-1, vVec.z / vVec.GetMagnitude(), 6); // unit vector
+        }
+
+        [TestMethod]
+        public void CentripetalAcceleration_Vector()
+        {
+            var velocity = new Vector(2, 0, 0);
+            var radius = new Vector(0, 3, 0); 
+
+            var a = velocity.CentripetalAcceleration(radius);
+
+            var expected = -(2 * 2 / 3.0); 
+            Assert.AreEqual(expected, a.y, 6);
+            Assert.AreEqual(0, a.x, 6);
+            Assert.AreEqual(0, a.z, 6);
+        }
     }
 }

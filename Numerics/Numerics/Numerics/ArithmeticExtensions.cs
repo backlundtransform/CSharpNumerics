@@ -89,4 +89,11 @@ public static class ArithmeticExtensions
         }
         return decimalPlaces;
     }
+
+
+    public static double Abs(this double value)
+    {
+      
+        return Math.Abs(value);
+    }
 }

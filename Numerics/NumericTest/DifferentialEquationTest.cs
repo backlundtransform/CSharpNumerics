@@ -1,4 +1,5 @@
-﻿using Numerics.Objects;
+﻿using CSharpNumerics.Objects;
+using Numerics.Objects;
 using Xunit.Sdk;
 
 namespace NumericsTests
@@ -44,6 +45,20 @@ namespace NumericsTests
             Assert.IsTrue(result.x == 2);
             Assert.IsTrue(result.y == -1);
             Assert.IsTrue(result.z== 1);
+        }
+
+
+        [TestMethod]
+        public void TestLinearSystemN()
+        {
+            var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
+
+            var vector = new VectorN(new double[] { 7, -5, 4 });
+
+            var result = matrix.LinearSystemSolver(vector);
+            Assert.IsTrue(result[0] == 2);
+            Assert.IsTrue(result[1] == -1);
+            Assert.IsTrue(result[2] == 1);
         }
 
         [TestMethod]
