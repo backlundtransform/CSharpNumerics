@@ -10,9 +10,12 @@
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>Numerics,Statistics</PackageTags>
-		<Version>2.0.3</Version>
+		<Version>2.0.4</Version>
+ 		<PackageIcon>logo.png</PackageIcon>  
 	</PropertyGroup>
-
+        <ItemGroup>
+  	<None Include="logo.png" Pack="true" PackagePath="" />
+	</ItemGroup>
 	<ItemGroup>
 		<None Remove="Numerics\NumericExtensions.cs~RF43b9e4.TMP" />
 	</ItemGroup>
