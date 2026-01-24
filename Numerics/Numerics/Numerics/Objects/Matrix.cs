@@ -231,6 +231,20 @@ public struct Matrix
         return new Matrix(slice);
     }
 
+    public Matrix WithBiasColumn()
+    {
+        var result = new double[rowLength, columnLength + 1];
+
+        for (int i = 0; i < rowLength; i++)
+        {
+            result[i, 0] = 1.0;
+            for (int j = 0; j < columnLength; j++)
+                result[i, j + 1] = values[i, j];
+        }
+
+        return new Matrix(result);
+    }
+
 
     private double[,] GetCofactor(double[,] matrix, double[,] temp, int rowIndex, int columnIndex, int length)
     {
