@@ -1,4 +1,5 @@
 using CSharpNumerics.ML;
+using CSharpNumerics.ML.CrossValidators;
 using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
