@@ -244,6 +244,14 @@ public struct Matrix
 
         return new Matrix(result);
     }
+    public Matrix SliceRows(int[] rowIndices)
+    {
+        var slice = new double[rowIndices.Length, columnLength];
+        for (int i = 0; i < rowIndices.Length; i++)
+            for (int j = 0; j < columnLength; j++)
+                slice[i, j] = values[rowIndices[i], j];
+        return new Matrix(slice);
+    }
 
 
     private double[,] GetCofactor(double[,] matrix, double[,] temp, int rowIndex, int columnIndex, int length)

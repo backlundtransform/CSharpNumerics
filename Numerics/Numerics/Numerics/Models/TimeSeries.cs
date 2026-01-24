@@ -2,16 +2,60 @@
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 
-namespace CSharpNumerics.Numerics.Models;
+namespace Numerics.Models;
 
-public class TimeSeries(DateTime[] time, double[][] data)
+public class TimeSeries
 {
-    public DateTime[] Time { get; } = time;
-    public double[][] Data { get; } = data;
+    public DateTime[] Time { get; }
+    public double[][] Data { get; }
+    public string[] Cols { get; }
 
-    public static TimeSeries FromTimeSerie(List<TimeSerie> serie)
+    public int RowCount => Time.Length;
+    public int ColumnCount => Data.Length;
+
+    public TimeSeries(DateTime[] time, double[][] data, string[] cols)
+    {
+        if (data.Length != cols.Length)
+            throw new ArgumentException("Data columns must match Cols");
+
+        if (data.Any(c => c.Length != time.Length))
+            throw new ArgumentException("All columns must match Time length");
+
+        Time = time;
+        Data = data;
+        Cols = cols;
+    }
+
+
+    public Matrix ToMatrix(int? excludeCol = null)
+    {
+        int rows = Time.Length;
+        int cols = Data.Length;
+
+        var values = new double[rows, cols];
+
+        int cNew = 0;
+        for (int c = 0; c < Data.Length; c++)
+        {
+            if (c == excludeCol) continue;
+
+            var column = Data[c];
+            for (int r = 0; r < rows; r++)
+                values[r, cNew] = column[r];
+
+            cNew++;
+        }
+
+
+        return new Matrix(values);
+    }
+    public static TimeSeries FromTimeSerie(
+    List<TimeSerie> serie,
+    string columnName = "Value")
     {
         var time = new DateTime[serie.Count];
         var values = new double[serie.Count];
@@ -24,27 +68,44 @@ public class TimeSeries(DateTime[] time, double[][] data)
 
         return new TimeSeries(
             time,
-            new[] { values }
+            [values],
+            [columnName]
         );
     }
 
-    public Matrix ToMatrix()
+    public static TimeSeries FromCsv(string path, char sep = ',')
     {
-        int rows = Time.Length;
-        int cols = Data.Length;
+        var lines = File.ReadAllLines(path);
 
-        var values = new double[rows, cols];
+        var header = lines[0].Split(sep);
+        if (header.Length < 2)
+            throw new InvalidOperationException("CSV must have at least one feature column");
 
-        for (int c = 0; c < cols; c++)
+        var cols = header.Skip(1).ToArray();
+        int featureCount = cols.Length;
+        int rowCount = lines.Length - 1;
+
+        var time = new DateTime[rowCount];
+        var data = new double[featureCount][];
+
+        for (int c = 0; c < featureCount; c++)
+            data[c] = new double[rowCount];
+
+        for (int r = 0; r < rowCount; r++)
         {
-            var column = Data[c];
-             
-            for (int r = 0; r < rows; r++)
+            var parts = lines[r + 1].Split(sep);
+
+            time[r] = DateTime.Parse(parts[0]);
+
+            for (int c = 0; c < featureCount; c++)
             {
-                values[r, c] = column[r];
+                data[c][r] = double.Parse(
+                    parts[c + 1],
+                    CultureInfo.InvariantCulture
+                );
             }
         }
 
-        return new Matrix(values);
+        return new TimeSeries(time, data, cols);
     }
 }

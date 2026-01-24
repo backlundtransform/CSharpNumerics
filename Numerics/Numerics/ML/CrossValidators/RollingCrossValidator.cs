@@ -1,4 +1,5 @@
 ﻿using CSharpNumerics.ML;
+using CSharpNumerics.ML.CrossValidators.Result;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Objects;
 using Numerics.Objects;
@@ -6,6 +7,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+namespace CSharpNumerics.ML.CrossValidators;
 
 public class RollingCrossValidator
 {
@@ -67,7 +69,7 @@ public class RollingCrossValidator
         if (!(result.BestPipeline.Model is IRegressionModel))
         {
             result.ConfusionMatrix =
-                BuildConfusionMatrix(result.ActualValues, result.PredictedValues);
+                result.ActualValues.BuildConfusionMatrix(result.PredictedValues);
         }
 
         return result;
@@ -116,35 +118,6 @@ public class RollingCrossValidator
         }
 
         return totalScore / totalItems;
-    }
-
-    private Matrix BuildConfusionMatrix(VectorN yTrue, VectorN yPred)
-    {
-        double maxTrue = yTrue.Values[0];
-        double maxPred = yPred.Values[0];
-
-        
-        for (int i = 1; i < yTrue.Length; i++)
-        {
-            if (yTrue.Values[i] > maxTrue)
-                maxTrue = yTrue.Values[i];
-            if (yPred.Values[i] > maxPred)
-                maxPred = yPred.Values[i];
-        }
-
-        int numClasses = (int)Math.Max(maxTrue, maxPred) + 1;
-        var cm = new Matrix(numClasses, numClasses);
-
-        for (int i = 0; i < yTrue.Length; i++)
-        {
-            int actual = (int)yTrue.Values[i];
-            int predicted = (int)Math.Round(yPred.Values[i]);
-
-            if (predicted >= 0 && predicted < numClasses)
-                cm.values[actual, predicted]++;
-        }
-
-        return cm;
     }
 
     private (Matrix, VectorN, Matrix, VectorN) SplitOptimized(Matrix X, VectorN y, int start, int end)
@@ -220,18 +193,4 @@ public class RollingCrossValidator
     }
 }
 
-public class RollingValidationResult
-{
-    public Dictionary<Pipeline, double> Scores { get; } = new();
-    public Pipeline BestPipeline { get; set; }
-    public double BestScore { get; set; }
-
-    public double CoefficientOfDetermination { get; set; } = 0;
-
-    public Matrix ConfusionMatrix { get; set; } = new Matrix();
-
-    public VectorN ActualValues { get; set; } = new VectorN();
-
-    public VectorN PredictedValues { get; set; } = new VectorN();
-}
 

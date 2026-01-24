@@ -125,7 +125,44 @@ namespace CSharpNumerics.Objects
             return this / norm;
         }
 
-     
+        public VectorN Slice(int[] indices)
+        {
+            var slice = new double[indices.Length];
+            for (int i = 0; i < indices.Length; i++)
+                slice[i] = Values[indices[i]];
+            return new VectorN(slice);
+        }
+
+        public Matrix BuildConfusionMatrix( VectorN yPred)
+        {
+            double maxTrue =Values[0];
+            double maxPred = yPred.Values[0];
+
+
+            for (int i = 1; i < Length; i++)
+            {
+                if (Values[i] > maxTrue)
+                    maxTrue = Values[i];
+                if (yPred.Values[i] > maxPred)
+                    maxPred = yPred.Values[i];
+            }
+
+            int numClasses = (int)Math.Max(maxTrue, maxPred) + 1;
+            var cm = new Matrix(numClasses, numClasses);
+
+            for (int i = 0; i < Length; i++)
+            {
+                int actual = (int)Values[i];
+                int predicted = (int)Math.Round(yPred.Values[i]);
+
+                if (predicted >= 0 && predicted < numClasses)
+                    cm.values[actual, predicted]++;
+            }
+
+            return cm;
+        }
+
+
         public override string ToString()
         {
             return "[" + string.Join(", ", Values) + "]";

@@ -110,9 +110,6 @@ namespace System.Linq
 
             double correlation = cov / (stdDevY * stdDevX);
 
-
- 
-
             return correlation * correlation;
         }
 
