@@ -14,3 +14,6 @@ A comprehensive numerical library for **scientific computing**, **mathematical a
 * 🤖 [Machine Learning](https://github.com/backlundtransform/CSharpNumerics/wiki/Machine-Learning)
 
 * ⚛️ [Physics](https://github.com/backlundtransform/CSharpNumerics/wiki/physics)
+
+## ❤️ Support the project
+If C# Numerics saves you time or enables your work, consider sponsoring to support continued development.
