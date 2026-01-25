@@ -1,5 +1,6 @@
 ﻿using Numerics.Objects;
 using System;
+using System.Collections.Generic;
 
 
 namespace CSharpNumerics.Objects
@@ -160,6 +161,27 @@ namespace CSharpNumerics.Objects
             }
 
             return cm;
+        }
+
+        public VectorN SubVector( IReadOnlyList<int> indices)
+        {
+           
+            if (indices is null) throw new ArgumentNullException(nameof(indices));
+
+            var src = Values;
+            var dst = new double[indices.Count];
+
+            for (int i = 0; i < indices.Count; i++)
+            {
+                int srcIndex = indices[i];
+                if ((uint)srcIndex >= (uint)Length)
+                    throw new ArgumentOutOfRangeException(nameof(indices), $"Index {srcIndex} is out of range [0, {Length - 1}].");
+
+                dst[i] = src[srcIndex];
+            }
+
+            return new VectorN(dst);
+
         }
 
 

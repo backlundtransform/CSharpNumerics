@@ -253,6 +253,30 @@ public struct Matrix
         return new Matrix(slice);
     }
 
+    public Matrix SubMatrix( IReadOnlyList<int> rowIndices)
+    {
+ 
+        if (rowIndices is null) throw new ArgumentNullException(nameof(rowIndices));
+
+        int newRows = rowIndices.Count;
+        int cols = columnLength;
+
+        var sub = new Matrix(newRows, cols);
+
+        for (int r = 0; r < newRows; r++)
+        {
+            int srcRow = rowIndices[r];
+            if ((uint)srcRow >= (uint)rowLength)
+                throw new ArgumentOutOfRangeException(nameof(rowIndices), $"Row index {srcRow} is out of range [0, {rowLength - 1}].");
+
+            for (int c = 0; c < cols; c++)
+                sub.values[r, c] = values[srcRow, c];
+        }
+
+        return sub;
+    }
+
+
 
     private double[,] GetCofactor(double[,] matrix, double[,] temp, int rowIndex, int columnIndex, int length)
     {

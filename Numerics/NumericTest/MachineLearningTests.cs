@@ -52,7 +52,7 @@ namespace NumericTest
                 modelParams: modelParams
             );
 
-            var cv = new RollingCrossValidator(
+            var cv = new KFoldCrossValidator(
                 pipelines: new List<Pipeline> { pipeline },
                 folds: 5
             );
@@ -149,7 +149,7 @@ namespace NumericTest
                 modelParams: modelParams
             );
 
-            var cv = new RollingCrossValidator(
+            var cv = new KFoldCrossValidator(
                 pipelines: new List<Pipeline> { pipeline },
                 folds: 5
             );
@@ -308,7 +308,7 @@ namespace NumericTest
                 selectorParams: (Dictionary<string, object>)new Dictionary<string, object> { ["K"] = 1 }
             );
 
-            var cv = new RollingCrossValidator([pipeline], 5);
+            var cv = new KFoldCrossValidator([pipeline], 5);
             var results = cv.Run(X, y);
 
 
@@ -368,7 +368,7 @@ namespace NumericTest
                 selectorParams: null
             );
 
-            var cv = new RollingCrossValidator(new List<Pipeline> { pipeline }, folds: 5);
+            var cv = new KFoldCrossValidator(new List<Pipeline> { pipeline }, folds: 5);
 
             // Act
             var result = cv.Run(X, y);
@@ -475,7 +475,7 @@ namespace NumericTest
                 null
             );
 
-            var cv = new RollingCrossValidator(
+            var cv = new KFoldCrossValidator(
     pipelines: new List<Pipeline> { pipeline1, pipeline2, pipeline3 },
     folds: 5
 );
@@ -559,7 +559,7 @@ namespace NumericTest
                 .Add("LearningRate", 0.001, 0.01)
                 .Add("Epochs", 500, 1000));
 
-            var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+            var cv = new KFoldCrossValidator(pipelineGrid, folds: 5);
 
             // Act
             var result = cv.Run(X, y);
@@ -699,7 +699,7 @@ namespace NumericTest
                         .Add("Alpha", 0.001, 0.01, 0.1)
                         .AddScaler<StandardScaler>(s => { }));
 
-            var cv = new RollingCrossValidator(pipelineGrid, folds: 3);
+            var cv = new KFoldCrossValidator(pipelineGrid, folds: 3);
 
             // Act
             var result = cv.Run(X, y);
@@ -735,7 +735,7 @@ namespace NumericTest
                     .Add("Epsilon", 0.01)
                     .AddScaler<StandardScaler>(s => { }));
 
-            var cv = new RollingCrossValidator(grid, folds: 3);
+            var cv = new KFoldCrossValidator(grid, folds: 3);
             var result = cv.Run(X, y);
 
             double r2 = result.CoefficientOfDetermination;

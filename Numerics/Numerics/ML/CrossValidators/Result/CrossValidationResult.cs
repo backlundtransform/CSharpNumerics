@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace CSharpNumerics.ML.CrossValidators.Result;
 
-public class RollingValidationResult {
+public class CrossValidationResult {
     public Dictionary<Pipeline, double> Scores { get; } = new();
     public Pipeline BestPipeline { get; set; }
     public double BestScore { get; set; } 
