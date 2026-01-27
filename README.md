@@ -30,6 +30,8 @@ We are continuously working to improve CsharpNumerics and plan to focus on the f
 
 4. **Classical Quantum Circuit Simulation**  
    Implementing CPU-based quantum circuit simulations for educational purposes, enabling students and developers to explore quantum algorithms without access to quantum hardware.
+
+Contributions are welcome — see CONTRIBUTING.md for details.
    
 ## ❤️ Support the project
 If C# Numerics saves you time or enables your work, consider sponsoring to support continued development.
