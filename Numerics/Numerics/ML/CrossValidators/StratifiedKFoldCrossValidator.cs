@@ -42,6 +42,13 @@ public class StratifiedKFoldCrossValidator : ICrossValidator
 
         foreach (var pipe in Pipelines)
         {
+
+            if (!(pipe.Model is IClassificationModel))
+                throw new InvalidOperationException(
+                    $"Pipeline {pipe.Model.GetType().Name} is not a classification model. " +
+                    "StratifiedKFoldCrossValidator can only be used with classification models."
+                );
+
             var preds = ArrayPool<double>.Shared.Rent(n);
             var actuals = ArrayPool<double>.Shared.Rent(n);
             int predCount = 0;
