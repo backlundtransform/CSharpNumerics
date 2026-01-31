@@ -3,6 +3,7 @@ using CSharpNumerics.ML.CrossValidators.Grouping;
 using CSharpNumerics.ML.CrossValidators.Interfaces;
 using CSharpNumerics.ML.CrossValidators.Result;
 using CSharpNumerics.ML.Models.Interfaces;
+using CSharpNumerics.Numerics.Models;
 using CSharpNumerics.Objects;
 using Numerics.Models;
 using Numerics.Objects;
@@ -12,7 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 namespace CSharpNumerics.ML.CrossValidators;
 
-public class RollingCrossValidator: ICrossValidator
+public class RollingCrossValidator: ICrossValidator, ITimeSeriesCrossValidator, ISeriesCrossValidator
 {
     public List<Pipeline> Pipelines { get; }
    
@@ -45,6 +46,24 @@ public class RollingCrossValidator: ICrossValidator
             : Enumerable.Range(0, y.Length).ToArray();
 
         return RunInternal(X, y, groups);
+    }
+
+    public CrossValidationResult Run(Series serie, string targetColumn)
+    {
+
+        var colIndex = Array.IndexOf(serie.Cols, targetColumn);
+        if (colIndex < 0)
+            throw new ArgumentException("Target column not found");
+
+        var X = serie.ToMatrix(colIndex);
+        var y = new VectorN(serie.Data[colIndex]);
+
+
+        var groups = serie.Groups ?? Enumerable.Range(0, serie.Data.Length).ToArray();
+
+        return RunInternal(X, y, groups);
+
+
     }
 
     public CrossValidationResult Run(Matrix X, VectorN y)
