@@ -11,5 +11,7 @@ public interface IModel
 {
     void Fit(Matrix X, VectorN y);
     VectorN Predict(Matrix X);
+
+    IModel Clone();
   
 }

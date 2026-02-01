@@ -61,4 +61,14 @@ public class KNearestNeighbors :
 
         return preds;
     }
+
+    public IModel Clone()
+    {
+        var clone = new KNearestNeighbors();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["K"] = K
+        });
+        return clone;
+    }
 }

@@ -172,10 +172,7 @@ public class RollingCrossValidator: ICrossValidator, ITimeSeriesCrossValidator, 
             var Xval = X.SubMatrix(valIdx);
             var yVal = y.SubVector(valIdx);
 
-            var cloned = new Pipeline(
-                pipe.Model, pipe.ModelParams,
-                pipe.Scaler, pipe.ScalerParams,
-                pipe.Selector, pipe.SelectorParams);
+            var cloned = pipe.Clone();
 
             cloned.Fit(Xtrain, yTrain);
             var pred = cloned.Predict(Xval);

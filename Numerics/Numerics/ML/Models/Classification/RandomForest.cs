@@ -101,4 +101,16 @@ public class RandomForest : IClassificationModel, IHasHyperparameters
                 best = i;
         return best;
     }
+
+    public IModel Clone()
+    {
+        var clone = new RandomForest();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["NumTrees"] = NumTrees,
+            ["MaxDepth"] = MaxDepth,
+            ["MinSamplesSplit"] = MinSamplesSplit
+        });
+        return clone;
+    }
 }

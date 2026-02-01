@@ -45,7 +45,7 @@ namespace CSharpNumerics.ML.Scalers
             {
                 for (int j = 0; j < cols; j++)
                 {
-                    transformedData[i, j] = (X.values[i, j] - Means[j]) / StdDevs[j];
+                    transformedData[i, j] = (X.values[i, j] - Means[j]) / (StdDevs[j] + 1e-12);
                 }
             }
 
@@ -56,6 +56,15 @@ namespace CSharpNumerics.ML.Scalers
         {
             Fit(X.values);
             return Transform(X);
+        }
+
+        public IScaler Clone()
+        {
+            return new StandardScaler
+            {
+                Means = Means == null ? null : (double[])Means.Clone(),
+                StdDevs = StdDevs == null ? null : (double[])StdDevs.Clone()
+            };
         }
 
     }

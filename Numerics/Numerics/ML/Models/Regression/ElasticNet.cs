@@ -71,4 +71,14 @@ public class ElasticNet :IHasHyperparameters, IRegressionModel
     private static double SoftThreshold(double z, double g)
         => Math.Sign(z) * Math.Max(Math.Abs(z) - g, 0.0);
 
+    public IModel Clone()
+    {
+        return new ElasticNet
+        {
+            Lambda = Lambda,
+            L1Ratio = L1Ratio,
+            MaxIterations = MaxIterations
+        };
+    }
+
 }

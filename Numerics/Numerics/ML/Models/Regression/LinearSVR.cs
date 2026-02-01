@@ -66,4 +66,15 @@ public class LinearSVR : IRegressionModel, IHasHyperparameters
         if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
         if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
     }   
+
+    public IModel Clone()
+    {
+        return new LinearSVR
+        {
+            C = C,
+            Epsilon = Epsilon,
+            LearningRate = LearningRate,
+            Epochs = Epochs
+        };
+    }
 }

@@ -15,31 +15,38 @@ using System.Linq;
 
 namespace CSharpNumerics.ML.CrossValidators;
 
-public class LeaveOneOutCrossValidator: ICrossValidator, ITimeSeriesCrossValidator, ISeriesCrossValidator
+public class LeaveOneOutCrossValidator : ICrossValidator, ITimeSeriesCrossValidator, ISeriesCrossValidator
 {
-        public List<Pipeline> Pipelines { get; }
-
-   
-       public LeaveOneOutCrossValidator(List<Pipeline> pipelines)
-        {
-            Pipelines = pipelines;
-         
-        }
-
-        public CrossValidationResult Run(TimeSeries ts, string targetColumn, ITimeGrouping grouping = null)
-        {
-            
-            var colIndex = Array.IndexOf(ts.Cols, targetColumn);
-            if (colIndex < 0)
-                throw new ArgumentException("Target column not found");
-
-            var X = ts.ToMatrix(colIndex);
-            var y = new VectorN(ts.Data[colIndex]);
+    public List<Pipeline> Pipelines { get; }
 
 
-           var groups = grouping?.GetGroups(ts.Time) ?? Enumerable.Range(0, ts.Time.Length).ToArray();
+    public LeaveOneOutCrossValidator(List<Pipeline> pipelines)
+    {
+        Pipelines = pipelines;
 
-            return RunInternal(X, y, groups);
+    }
+
+
+    public LeaveOneOutCrossValidator(PipelineGrid pipelineGrid)
+    {
+        Pipelines = [.. pipelineGrid.Expand()];
+
+    }
+
+    public CrossValidationResult Run(TimeSeries ts, string targetColumn, ITimeGrouping grouping = null)
+    {
+
+        var colIndex = Array.IndexOf(ts.Cols, targetColumn);
+        if (colIndex < 0)
+            throw new ArgumentException("Target column not found");
+
+        var X = ts.ToMatrix(colIndex);
+        var y = new VectorN(ts.Data[colIndex]);
+
+
+        var groups = grouping?.GetGroups(ts.Time) ?? Enumerable.Range(0, ts.Time.Length).ToArray();
+
+        return RunInternal(X, y, groups);
 
 
     }
@@ -55,7 +62,7 @@ public class LeaveOneOutCrossValidator: ICrossValidator, ITimeSeriesCrossValidat
         var y = new VectorN(serie.Data[colIndex]);
 
 
-        var groups = serie.Groups ?? Enumerable.Range(0, serie.Index .Length).ToArray();
+        var groups = serie.Groups ?? Enumerable.Range(0, serie.Index.Length).ToArray();
 
         return RunInternal(X, y, groups);
 
@@ -107,10 +114,7 @@ public class LeaveOneOutCrossValidator: ICrossValidator, ITimeSeriesCrossValidat
                 var yTrain = y.Slice(trainIdx);
                 var yTest = y.Slice(testIdx);
 
-                var cloned = new Pipeline(
-                    pipe.Model, pipe.ModelParams,
-                    pipe.Scaler, pipe.ScalerParams,
-                    pipe.Selector, pipe.SelectorParams);
+                var cloned = pipe.Clone();
 
                 cloned.Fit(Xtrain, yTrain);
                 var pred = cloned.Predict(Xtest);
@@ -157,27 +161,27 @@ public class LeaveOneOutCrossValidator: ICrossValidator, ITimeSeriesCrossValidat
     }
 
     private double EvaluateScore(bool isRegression, VectorN pred, VectorN y)
+    {
+        if (isRegression)
         {
-            if (isRegression)
+            double sum = 0;
+            var predVals = pred.Values;
+            var yVals = y.Values;
+            for (int i = 0; i < pred.Length; i++)
             {
-                double sum = 0;
-                var predVals = pred.Values;
-                var yVals = y.Values;
-                for (int i = 0; i < pred.Length; i++)
-                {
-                    double diff = predVals[i] - yVals[i];
-                    sum += diff * diff;
-                }
-                return -sum / pred.Length;
+                double diff = predVals[i] - yVals[i];
+                sum += diff * diff;
             }
-            else
-            {
-                int correct = 0;
-                var predVals = pred.Values;
-                var yVals = y.Values;
-                for (int i = 0; i < pred.Length; i++)
-                    if (Math.Round(predVals[i]) == yVals[i]) correct++;
-                return (double)correct / pred.Length;
-            }
+            return -sum / pred.Length;
         }
+        else
+        {
+            int correct = 0;
+            var predVals = pred.Values;
+            var yVals = y.Values;
+            for (int i = 0; i < pred.Length; i++)
+                if (Math.Round(predVals[i]) == yVals[i]) correct++;
+            return (double)correct / pred.Length;
+        }
+    }
 }

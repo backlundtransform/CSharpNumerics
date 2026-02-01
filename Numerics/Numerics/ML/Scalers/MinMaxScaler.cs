@@ -52,4 +52,12 @@ public class MinMaxScaler : IScaler
 
         return new Matrix(result);
     }
+
+    public IScaler Clone()
+    {
+        var clone = new MinMaxScaler();
+        if (min != null) clone.min = (double[])min.Clone();
+        if (max != null) clone.max = (double[])max.Clone();
+        return clone;
+    }
 }

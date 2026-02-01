@@ -8,4 +8,6 @@ public interface ISelector
 {
     Matrix FitTransform(Matrix X, VectorN y);
     Matrix Transform(Matrix X);
+
+    ISelector Clone();
 }

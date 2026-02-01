@@ -258,6 +258,22 @@ public class MLPRegressor : IHasHyperparameters, IRegressionModel
             _ => 1.0
         };
     }
+
+    public IModel Clone()
+    {
+        return new MLPRegressor
+        {
+            HiddenLayers = HiddenLayers == null ? null : (int[])HiddenLayers.Clone(),
+            LearningRate = LearningRate,
+            Epochs = Epochs,
+            BatchSize = BatchSize,
+            L2 = L2,
+            ValidationSplit = ValidationSplit,
+            Patience = Patience,
+            MinDelta = MinDelta,
+            Activation = Activation
+        };
+    }
     private VectorN Activate(VectorN v)
     {
         switch (Activation)

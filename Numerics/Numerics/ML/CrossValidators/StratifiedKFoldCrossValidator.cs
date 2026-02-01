@@ -24,7 +24,7 @@ public class StratifiedKFoldCrossValidator : ICrossValidator
 
     public StratifiedKFoldCrossValidator(PipelineGrid pipelineGrid, int folds = 5)
     {
-        Pipelines = pipelineGrid.Expand().ToList();
+        Pipelines = [.. pipelineGrid.Expand()];
         Folds = folds;
     }
 
@@ -79,10 +79,7 @@ public class StratifiedKFoldCrossValidator : ICrossValidator
                 var Xval = X.SubMatrix(testIdx);
                 var Yval = new VectorN(testIdx.Select(i => y.Values[i]).ToArray());
 
-                var cloned = new Pipeline(
-                    pipe.Model, pipe.ModelParams,
-                    pipe.Scaler, pipe.ScalerParams,
-                    pipe.Selector, pipe.SelectorParams);
+                var cloned = pipe.Clone();
 
                 cloned.Fit(Xtrain, Ytrain);
                 var foldPred = cloned.Predict(Xval);

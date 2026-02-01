@@ -46,5 +46,16 @@ public class Ridge : IRegressionModel, IHasHyperparameters
     {
         if (parameters.TryGetValue("Alpha", out var alpha))
             Alpha = (double)alpha;
+        if (parameters.TryGetValue("FitIntercept", out object value))
+            FitIntercept = Convert.ToBoolean(value);
+    }
+
+    public IModel Clone()
+    {
+        return new Ridge
+        {
+            Alpha = Alpha,
+            FitIntercept = FitIntercept
+        };
     }
 }

@@ -97,5 +97,17 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
             _ => throw new NotSupportedException()
         };
     }
+
+    public IModel Clone()
+    {
+        return new KernelSVR
+        {
+            C = C,
+            Epsilon = Epsilon,
+            Kernel = Kernel,
+            Gamma = Gamma,
+            Degree = Degree
+        };
+    }
 }
 

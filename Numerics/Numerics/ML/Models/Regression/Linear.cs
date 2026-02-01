@@ -20,10 +20,10 @@ public class Linear : IRegressionModel, IHasHyperparameters
     {
         if (parameters == null) return;
 
-        if (parameters.ContainsKey("LearningRate"))
-            LearningRate = Convert.ToDouble(parameters["LearningRate"]);
-        if (parameters.ContainsKey("FitIntercept"))
-            FitIntercept = Convert.ToBoolean(parameters["FitIntercept"]);
+        if (parameters.TryGetValue("LearningRate", out object value))
+            LearningRate = Convert.ToDouble(value);
+        if (parameters.TryGetValue("FitIntercept", out object value1))
+            FitIntercept = Convert.ToBoolean(value1);
     }
 
     public void Fit(Matrix X, VectorN y)
@@ -65,5 +65,16 @@ public class Linear : IRegressionModel, IHasHyperparameters
                 M.values[i, j + 1] = X.values[i, j];
         }
         return M;
+    }
+
+    public IModel Clone()
+    {
+        var clone = new Linear();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["LearningRate"] = LearningRate,
+            ["FitIntercept"] = FitIntercept
+        });
+        return clone;
     }
 }

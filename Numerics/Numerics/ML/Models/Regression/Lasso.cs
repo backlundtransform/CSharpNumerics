@@ -69,4 +69,15 @@ public class Lasso: IHasHyperparameters, IRegressionModel
         return 0;
     }
 
+    public IModel Clone()
+    {
+        var clone = new Lasso();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["Alpha"] = _alpha,
+            ["MaxIterations"] = _iterations
+        });
+        return clone;
+    }
+
 }

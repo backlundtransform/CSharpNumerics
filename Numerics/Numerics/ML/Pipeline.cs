@@ -79,6 +79,17 @@ public class Pipeline
 
         return Model.Predict(X);
     }
+    public Pipeline Clone()
+    {
+        return new Pipeline(
+            Model.Clone(),
+            ModelParams,
+            Scaler?.Clone(),
+            ScalerParams,
+            Selector?.Clone(),
+            SelectorParams
+        );
+    }
 
     private void ApplyHyperparameters(object target, Dictionary<string, object> parameters)
     {

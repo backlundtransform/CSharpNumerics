@@ -67,6 +67,11 @@ namespace CSharpNumerics.ML.Selector
             return Transform(X);
         }
 
+        public ISelector Clone()
+        {
+            return new SelectKBest { K = K };
+        }
+
       
         private double Correlation(VectorN a, VectorN b)
         {

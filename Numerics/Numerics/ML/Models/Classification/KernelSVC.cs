@@ -48,6 +48,8 @@ public class KernelSVC :
                         decision += alpha[j] * ytrain[j] *
                             KernelFunc(Xtrain.RowSlice(j), Xtrain.RowSlice(i));
                     }
+
+ 
                 }
 
                 if (ytrain[i] * decision < 1)
@@ -56,6 +58,18 @@ public class KernelSVC :
                 }
             }
         }
+    }
+    public IModel Clone()
+    {
+        return new KernelSVC
+        {
+            C = C,
+            Epochs = Epochs,
+            LearningRate = LearningRate,
+            Kernel = Kernel,
+            Gamma = Gamma,
+            Degree = Degree
+        };
     }
 
     public VectorN Predict(Matrix X)
@@ -107,7 +121,10 @@ public class KernelSVC :
         if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
         if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
         if (p.TryGetValue("Kernel", out var k)) Kernel = (KernelType)k;
-        
+        if (p.TryGetValue("Gamma", out var g)) Gamma = (double)g;
+        if (p.TryGetValue("Degree", out var d)) Degree = (int)d;
+
+
     }
 }
 

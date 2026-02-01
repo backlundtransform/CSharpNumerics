@@ -70,5 +70,15 @@ namespace CSharpNumerics.ML.Models.Classification
             if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
             if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
         }
+
+        public IModel Clone()
+        {
+            return new LinearSVC
+            {
+                C = C,
+                Epochs = Epochs,
+                LearningRate = LearningRate
+            };
+        }
     }
 }

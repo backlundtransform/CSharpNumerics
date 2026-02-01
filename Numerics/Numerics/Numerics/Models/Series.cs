@@ -11,7 +11,7 @@ namespace CSharpNumerics.Numerics.Models;
 public class Series(int[] index, double[][] data, string[] cols, int[] groups = null)
 {
 
- 
+
     public int[] Index { get; } = index;
     public double[][] Data { get; } = data;
     public int[] Groups { get; } = groups;
@@ -30,7 +30,7 @@ public class Series(int[] index, double[][] data, string[] cols, int[] groups = 
 
         return new Series(
             index,
-            new[] { values },               
+            new[] { values },
             new[] { "Value" }
 
         );
@@ -60,18 +60,18 @@ public class Series(int[] index, double[][] data, string[] cols, int[] groups = 
     }
 
     public static Series FromCsv(
-string path,
-char sep = ',',
-string targetColumn = null,
-string groupColumn = null)
+        string path,
+        char sep = ',',
+        string targetColumn = null,
+        string groupColumn = null)
     {
         var lines = File.ReadAllLines(path);
         var header = lines[0].Split(sep);
-     
+
         if (header.Length < 2)
             throw new InvalidOperationException("CSV must have at least one feature column");
 
-       
+
         int targetIdx = targetColumn != null
             ? Array.IndexOf(header, targetColumn)
             : -1;
@@ -114,6 +114,6 @@ string groupColumn = null)
         }
 
         var index = Enumerable.Range(0, rows).ToArray();
-        return new Series(index, data, header.Skip(1).ToArray(), groups);
+        return new Series(index, data, [.. header.Skip(1)], groups);
     }
 }

@@ -90,6 +90,11 @@ namespace CSharpNumerics.ML.Models.Classification
 
             return preds;
         }
+
+        public IModel Clone()
+        {
+            return new NaiveBayes();
+        }
     }
 
 }

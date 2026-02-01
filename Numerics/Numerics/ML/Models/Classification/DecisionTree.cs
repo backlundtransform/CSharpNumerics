@@ -212,4 +212,15 @@ public class DecisionTree : IClassificationModel, IHasHyperparameters
         public TreeNode Left;
         public TreeNode Right;
     }
+
+    public IModel Clone()
+    {
+        var clone = new DecisionTree();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["MaxDepth"] = MaxDepth,
+            ["MinSamplesSplit"] = MinSamplesSplit
+        });
+        return clone;
+    }
 }

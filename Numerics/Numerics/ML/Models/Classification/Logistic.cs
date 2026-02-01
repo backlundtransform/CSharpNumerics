@@ -83,4 +83,16 @@ public class Logistic : IClassificationModel, IHasHyperparameters
         }
         return M;
     }
+
+    public IModel Clone()
+    {
+        var clone = new Logistic();
+        clone.SetHyperParameters(new Dictionary<string, object>
+        {
+            ["LearningRate"] = LearningRate,
+            ["MaxIterations"] = MaxIterations,
+            ["FitIntercept"] = FitIntercept
+        });
+        return clone;
+    }
 }
