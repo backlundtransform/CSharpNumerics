@@ -10,7 +10,7 @@
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>Numerics,Statistics</PackageTags>
-		<Version>2.0.4</Version>
+		<Version>2.0.5</Version>
  		<PackageIcon>logo.png</PackageIcon>  
 	</PropertyGroup>
         <ItemGroup>
@@ -21,7 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\license.txt">
+		<None Include="LICENSE">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
