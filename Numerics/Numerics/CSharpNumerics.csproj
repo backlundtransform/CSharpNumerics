@@ -5,29 +5,30 @@
 		<Authors>Göran Bäcklund</Authors>
 		<Company>Backlundtransform</Company>
 		<Description>Numeric package</Description>
-		<PackageProjectUrl>https://github.com/backlundtransform/CSharpNumerics</PackageProjectUrl>
-		<PackageLicenseFile>license.txt</PackageLicenseFile>
+		<PackageProjectUrl>https://github.com/backlundtransform/CSharpNumerics/wiki</PackageProjectUrl>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>Numerics,Statistics</PackageTags>
-		<Version>2.0.7</Version>
- 		<PackageIcon>logo.png</PackageIcon>  
+		<PackageTags>Numerics,Statistics,Machine Learning,Physics</PackageTags>
+		<Version>2.0.8</Version>
+		<PackageIcon>logo.png</PackageIcon>
 	</PropertyGroup>
-        <ItemGroup>
-  	<None Include="logo.png" Pack="true" PackagePath="" />
+
+	<ItemGroup>
+		<None Include="logo.png" Pack="true" PackagePath="" />
 	</ItemGroup>
+
+	<!-- Exkludera tempfil -->
 	<ItemGroup>
 		<None Remove="Numerics\NumericExtensions.cs~RF43b9e4.TMP" />
 	</ItemGroup>
 
+	<!-- LICENSE filen -->
 	<ItemGroup>
-		<None Include="..\..\LICENSE">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	</ItemGroup>
 </Project>
