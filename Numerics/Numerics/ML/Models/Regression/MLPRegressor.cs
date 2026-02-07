@@ -229,7 +229,7 @@ public class MLPRegressor : IHasHyperparameters, IRegressionModel
         var values = new double[rows, cols];
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                values[i, j] = rnd.NextDouble() * 2 - 1; // Uniform [-1, 1]
+                values[i, j] = rnd.NextDouble() * 2 - 1;
         return new Matrix { values = values, rowLength = rows, columnLength = cols };
     }
 
@@ -248,11 +248,9 @@ public class MLPRegressor : IHasHyperparameters, IRegressionModel
         {
             ActivationType.ReLU => x > 0 ? 1.0 : 0.0,
 
-           
-            ActivationType.Sigmoid => Math.Exp(-x) / Math.Pow(1.0 + Math.Exp(-x), 2),
+            ActivationType.Sigmoid => x * (1.0 - x),
 
-          
-            ActivationType.Tanh => 1.0 - Math.Pow(Math.Abs(Math.Tanh(x)), 2),
+            ActivationType.Tanh => 1.0 - x * x,
 
             ActivationType.Linear => 1.0,
             _ => 1.0

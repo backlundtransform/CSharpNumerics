@@ -54,10 +54,13 @@ namespace CSharpNumerics.ML.CrossValidators
             Random rng = RandomState.HasValue ? new Random(RandomState.Value) : new Random();
             Dictionary<Pipeline, (double[] pred, double[] actual)> cache = new(Pipelines.Count);
 
+            int testCount = Math.Max(1, (int)(TestSize * n));
+            int totalExpected = N_Splits * testCount;
+
             foreach (var pipe in Pipelines)
             {
-                var preds = ArrayPool<double>.Shared.Rent(n);
-                var actuals = ArrayPool<double>.Shared.Rent(n);
+                var preds = ArrayPool<double>.Shared.Rent(totalExpected);
+                var actuals = ArrayPool<double>.Shared.Rent(totalExpected);
                 int predCount = 0;
                 double totalScore = 0;
 
@@ -67,7 +70,6 @@ namespace CSharpNumerics.ML.CrossValidators
                     var indices = Enumerable.Range(0, n).ToArray();
                     indices = indices.OrderBy(i => rng.Next()).ToArray();
 
-                    int testCount = (int)(TestSize * n);
                     int trainCount = (int)(TrainSize * n);
 
                     var testIdx = indices.Take(testCount).ToArray();

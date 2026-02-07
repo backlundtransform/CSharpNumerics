@@ -19,33 +19,33 @@ public class Ridge : IRegressionModel, IHasHyperparameters
 
     public void Fit(Matrix X, VectorN y)
     {
-        
-        var Xb = X.WithBiasColumn();
+
+        var Xb = FitIntercept ? X.WithBiasColumn() : X;
 
         var Xt = Xb.Transpose();
         var XtX = Xt * Xb;
 
-      
-        var reg = new Matrix(XtX.rowLength, XtX.columnLength);
 
-        for (int i = 1; i < reg.rowLength; i++)
+        var reg = new Matrix(XtX.rowLength, XtX.columnLength);
+        int start = FitIntercept ? 1 : 0;
+        for (int i = start; i < reg.rowLength; i++)
             reg.values[i, i] = Alpha; 
 
-        
+
         var inv = (XtX + reg).Inverse();
         _weights = inv * (Xt * y);
     }
 
     public VectorN Predict(Matrix X)
     {
-        var Xb = X.WithBiasColumn();
+        var Xb = FitIntercept ? X.WithBiasColumn() : X;
         return Xb * _weights;
     }
 
     public void SetHyperParameters(Dictionary<string, object> parameters)
     {
         if (parameters.TryGetValue("Alpha", out var alpha))
-            Alpha = (double)alpha;
+            Alpha = Convert.ToDouble(alpha);
         if (parameters.TryGetValue("FitIntercept", out object value))
             FitIntercept = Convert.ToBoolean(value);
     }

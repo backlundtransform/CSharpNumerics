@@ -61,11 +61,11 @@ public class LinearSVR : IRegressionModel, IHasHyperparameters
 
     public void SetHyperParameters(Dictionary<string, object> p)
     {
-        if (p.TryGetValue("C", out var c)) C = (double)c;
-        if (p.TryGetValue("Epsilon", out var e)) Epsilon = (double)e;
-        if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
-        if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
-    }   
+        if (p.TryGetValue("C", out var c)) C = Convert.ToDouble(c);
+        if (p.TryGetValue("Epsilon", out var e)) Epsilon = Convert.ToDouble(e);
+        if (p.TryGetValue("LearningRate", out var lr)) LearningRate = Convert.ToDouble(lr);
+        if (p.TryGetValue("Epochs", out var it)) Epochs = Convert.ToInt32(it);
+    }
 
     public IModel Clone()
     {

@@ -20,7 +20,7 @@ namespace CSharpNumerics.ML.Models.Classification;
         public double MinDelta { get; set; } = 1e-4;
         public ActivationType Activation { get; set; } = ActivationType.ReLU;
 
-    public int NumClasses => throw new NotImplementedException();
+    public int NumClasses { get; private set; }
   
 
     private List<Matrix> _weights;
@@ -76,6 +76,7 @@ namespace CSharpNumerics.ML.Models.Classification;
         public void Fit(Matrix X, VectorN y)
         {
             var numClasses = (int)y.Values.Max() + 1;
+            NumClasses = numClasses;
             Initialize(X.columnLength, numClasses);
 
             int[] indices = Enumerable.Range(0, X.rowLength).ToArray();
@@ -243,11 +244,9 @@ namespace CSharpNumerics.ML.Models.Classification;
             {
                 ActivationType.ReLU => x > 0 ? 1.0 : 0.0,
 
+                ActivationType.Sigmoid => x * (1.0 - x),
 
-                ActivationType.Sigmoid => Math.Exp(-x) / Math.Pow(1.0 + Math.Exp(-x), 2),
-
-
-                ActivationType.Tanh => 1.0 - Math.Pow(Math.Abs(Math.Tanh(x)), 2),
+                ActivationType.Tanh => 1.0 - x * x,
 
                 ActivationType.Linear => 1.0,
                 _ => 1.0

@@ -21,7 +21,7 @@ public class KernelSVC :
     public double Gamma { get; set; } = 0.5; 
     public int Degree { get; set; } = 3;
 
-    public int NumClasses => throw new NotImplementedException();
+    public int NumClasses { get; private set; }
 
     private Matrix Xtrain;
     private VectorN ytrain;
@@ -29,6 +29,7 @@ public class KernelSVC :
 
     public void Fit(Matrix X, VectorN y)
     {
+        NumClasses = (int)y.Values.Max() + 1;
         Xtrain = X;
         ytrain = new VectorN([.. y.Values.Select(v => v == 0 ? -1 : 1)]);
         int n = X.rowLength;
@@ -108,7 +109,7 @@ public class KernelSVC :
                 Math.Pow(Gamma * xi.Dot(xj) + 1, Degree),
 
             KernelType.RBF =>
-                Math.Exp(-Gamma * Math.Sqrt((xi - xj).Norm())),
+                Math.Exp(-Gamma * Math.Pow((xi - xj).Norm(), 2)),
 
             _ => throw new NotSupportedException()
         };
@@ -117,12 +118,12 @@ public class KernelSVC :
     public void SetHyperParameters(Dictionary<string, object> p)
     {
 
-        if (p.TryGetValue("C", out var c)) C = (double)c;
-        if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
-        if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
+        if (p.TryGetValue("C", out var c)) C = Convert.ToDouble(c);
+        if (p.TryGetValue("LearningRate", out var lr)) LearningRate = Convert.ToDouble(lr);
+        if (p.TryGetValue("Epochs", out var it)) Epochs = Convert.ToInt32(it);
         if (p.TryGetValue("Kernel", out var k)) Kernel = (KernelType)k;
-        if (p.TryGetValue("Gamma", out var g)) Gamma = (double)g;
-        if (p.TryGetValue("Degree", out var d)) Degree = (int)d;
+        if (p.TryGetValue("Gamma", out var g)) Gamma = Convert.ToDouble(g);
+        if (p.TryGetValue("Degree", out var d)) Degree = Convert.ToInt32(d);
 
 
     }

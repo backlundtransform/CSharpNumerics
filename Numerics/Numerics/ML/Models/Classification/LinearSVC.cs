@@ -4,6 +4,7 @@ using CSharpNumerics.Objects;
 using Numerics.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpNumerics.ML.Models.Classification
@@ -14,13 +15,14 @@ namespace CSharpNumerics.ML.Models.Classification
         public int Epochs { get; set; } = 1000;
         public double LearningRate { get; set; } = 0.01;
 
-        public int NumClasses => throw new NotImplementedException();
+        public int NumClasses { get; private set; }
 
         private VectorN _weights;
         private double _bias;
 
         public void Fit(Matrix X, VectorN y)
         {
+            NumClasses = (int)y.Values.Max() + 1;
             int nSamples = X.rowLength;
             int nFeatures = X.columnLength;
 
@@ -66,9 +68,9 @@ namespace CSharpNumerics.ML.Models.Classification
 
         public void SetHyperParameters(Dictionary<string, object> p)
         {
-            if (p.TryGetValue("C", out var c)) C = (double)c;
-            if (p.TryGetValue("LearningRate", out var lr)) LearningRate = (double)lr;
-            if (p.TryGetValue("Epochs", out var it)) Epochs = (int)it;
+            if (p.TryGetValue("C", out var c)) C = Convert.ToDouble(c);
+            if (p.TryGetValue("LearningRate", out var lr)) LearningRate = Convert.ToDouble(lr);
+            if (p.TryGetValue("Epochs", out var it)) Epochs = Convert.ToInt32(it);
         }
 
         public IModel Clone()

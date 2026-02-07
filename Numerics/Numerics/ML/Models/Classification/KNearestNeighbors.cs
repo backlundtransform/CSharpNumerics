@@ -18,7 +18,7 @@ public class KNearestNeighbors :
     public int K { get; private set; } = 5;
 
 
-    public int NumClasses => throw new NotImplementedException();
+    public int NumClasses { get; private set; }
 
     public void SetHyperParameters(Dictionary<string, object> parameters)
     {
@@ -30,6 +30,7 @@ public class KNearestNeighbors :
     {
         _X = X;
         _y = y;
+        NumClasses = (int)y.Values.Max() + 1;
     }
 
     public VectorN Predict(Matrix X)

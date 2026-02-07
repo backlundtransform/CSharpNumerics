@@ -12,6 +12,8 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
 {
     public double C { get; set; } = 1.0;
     public double Epsilon { get; set; } = 0.1;
+    public double LearningRate { get; set; } = 0.01;
+    public int Epochs { get; set; } = 500;
 
     public KernelType Kernel { get; set; } = KernelType.RBF;
     public double Gamma { get; set; } = 0.5;
@@ -27,10 +29,7 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
         int n = X.rowLength;
         _alpha = new VectorN(n);
 
-        double lr = 0.01;
-        int epochs = 500;
-
-        for (int epoch = 0; epoch < epochs; epoch++)
+        for (int epoch = 0; epoch < Epochs; epoch++)
         {
             for (int i = 0; i < n; i++)
             {
@@ -43,7 +42,7 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
 
                 if (Math.Abs(error) > Epsilon)
                 {
-                    _alpha[i] -= lr * (
+                    _alpha[i] -= LearningRate * (
                         Math.Sign(error) * C
                     );
                 }
@@ -75,11 +74,13 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
 
     public void SetHyperParameters(Dictionary<string, object> parameters)
     {
-        if (parameters.TryGetValue("C", out var c)) C = (double)c;
-        if (parameters.TryGetValue("Epsilon", out var e)) Epsilon = (double)e;
-        if (parameters.TryGetValue("Gamma", out var g)) Gamma = (double)g;
-        if (parameters.TryGetValue("Degree", out var d)) Degree = (int)d;
+        if (parameters.TryGetValue("C", out var c)) C = Convert.ToDouble(c);
+        if (parameters.TryGetValue("Epsilon", out var e)) Epsilon = Convert.ToDouble(e);
+        if (parameters.TryGetValue("Gamma", out var g)) Gamma = Convert.ToDouble(g);
+        if (parameters.TryGetValue("Degree", out var d)) Degree = Convert.ToInt32(d);
         if (parameters.TryGetValue("Kernel", out var k)) Kernel = (KernelType)k;
+        if (parameters.TryGetValue("LearningRate", out var lr)) LearningRate = Convert.ToDouble(lr);
+        if (parameters.TryGetValue("Epochs", out var ep)) Epochs = Convert.ToInt32(ep);
     }
     private double KernelFunc(VectorN x1, VectorN x2)
     {
@@ -88,7 +89,7 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
             KernelType.Linear => x1.Dot(x2),
 
             KernelType.RBF =>
-                Math.Exp(-Gamma * Math.Sqrt((x1 - x2).Norm())),
+                Math.Exp(-Gamma * Math.Pow((x1 - x2).Norm(), 2)),
 
 
             KernelType.Polynomial =>
@@ -106,7 +107,9 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
             Epsilon = Epsilon,
             Kernel = Kernel,
             Gamma = Gamma,
-            Degree = Degree
+            Degree = Degree,
+            LearningRate = LearningRate,
+            Epochs = Epochs
         };
     }
 }
