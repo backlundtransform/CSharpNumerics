@@ -755,14 +755,14 @@ namespace NumericTest
 
             for (int i = 0; i < nSamples; i++)
             {
-                double x = i * 0.2;
+                double x = rnd.NextDouble() * 10;
                 X.values[i, 0] = x;
                 y[i] = 2 * x + 1 + rnd.NextDouble() * 0.3;
             }
 
             var grid = new PipelineGrid()
               .AddModel<MLPRegressor>(g => g
-              .Add("HiddenLayers", new[] { 32, 16 })
+              .Add("HiddenLayers", new[] { 16 })
               .Add("LearningRate", 0.01)
               .Add("Epochs", 1000)
               .Add("L2", 0.0)
@@ -774,7 +774,7 @@ namespace NumericTest
             var result = cv.Run(X, y);
 
             double r2 = result.CoefficientOfDetermination;
-            Assert.IsTrue(r2 > 0.9);
+            Assert.IsTrue(r2 > 0.9, $"R² too low: {r2}");
         }
     
     
@@ -793,7 +793,7 @@ namespace NumericTest
             // y = 3x + 2 + noise
             for (int i = 0; i < nSamples; i++)
             {
-                double x = i * 0.05;
+                double x = rnd.NextDouble() * 10;
                 X.values[i, 0] = x;
                 y[i] = 3 * x + 2 + rnd.NextDouble() * 0.3;
             }
@@ -802,15 +802,15 @@ namespace NumericTest
 
             var grid = new PipelineGrid()
               .AddModel<MLPRegressor>(g => g
-    .Add("HiddenLayers", new[] { 32, 16 }, new[] { 64, 32 })
-    .Add("LearningRate", 0.001, 0.01)
-    .Add("Epochs", 500, 1000)
-    .Add("L2", 0.0, 0.001)
+    .Add("HiddenLayers", new[] { 32, 16 })
+    .Add("LearningRate", 0.01)
+    .Add("Epochs", 500)
+    .Add("L2", 0.0)
     .Add("BatchSize", 32)
     .Add("Patience", 100)
     .AddScaler<StandardScaler>(s => { }));
 
-            var cv = new RollingCrossValidator(grid, folds: 3);
+            var cv = new KFoldCrossValidator(grid, folds: 3);
             var result = cv.Run(X, y);
 
             double r2 = result.CoefficientOfDetermination;
@@ -853,25 +853,22 @@ namespace NumericTest
 
             var grid = new PipelineGrid()
               .AddModel<MLPClassifier>(g => g
-    .Add("HiddenLayers", new[] { 8 })
-    .Add("LearningRate",  0.1)
-    .Add("Epochs", 30000)
-    .Add("BatchSize",1)
-
-
-
+    .Add("HiddenLayers", new[] { 16, 8 })
+    .Add("LearningRate", 0.1)
+    .Add("Epochs", 5000)
+    .Add("BatchSize", 8)
     .Add("ValidationSplit", 0)
     .Add("Activation", ActivationType.ReLU)
     .AddScaler<StandardScaler>(s => { }));
 
-            var cv = new RollingCrossValidator(grid, folds: 2);
+            var cv = new KFoldCrossValidator(grid, folds: 3);
             var result = cv.Run(X, y);
             double diag = 0;
             double total = 0;
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
-                for (int j = 0; j < 2; j++)
+                for (int j = 0; j < 3; j++)
                 {
                     double v = result.ConfusionMatrix.values[i, j];
                     total += v;

@@ -23,7 +23,7 @@ public class RollingCrossValidator: ICrossValidator, ITimeSeriesCrossValidator, 
   
     }
 
-    public RollingCrossValidator(PipelineGrid pipelineGrid, int folds = 5)
+    public RollingCrossValidator(PipelineGrid pipelineGrid)
     {
         Pipelines = [.. pipelineGrid.Expand()];
       
