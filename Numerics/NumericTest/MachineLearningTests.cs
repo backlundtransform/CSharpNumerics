@@ -626,7 +626,7 @@ namespace NumericTest
                 .Add("LearningRate", 0.001, 0.01)
                 .Add("Epochs", 500, 1000));
 
-            var cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+            var cv = new RollingCrossValidator(pipelineGrid);
 
             // Act
             var result = cv.Run(X, y);
@@ -663,7 +663,7 @@ namespace NumericTest
                     .Add("Gamma", 0.1)
                     .Add("Kernel", KernelType.RBF));
 
-            cv = new RollingCrossValidator(pipelineGrid, folds: 5);
+            cv = new RollingCrossValidator(pipelineGrid);
             // Act
             result = cv.Run(X, y);
             // Assert
