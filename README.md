@@ -1,3 +1,5 @@
+[<img src="https://github.com/backlundtransform/CSharpNumerics/blob/master/CharpNumerics.png" height="200"/>](https://github.com/backlundtransform/CSharpNumerics/blob/master/CharpNumerics.png)
+
 
 **CsharpNumerics** is a lightweight yet powerful .NET library for numerical computing, machine learning, statistics, and physics simulations — built entirely in pure C#.
 
@@ -9,4 +11,5 @@ It provides a clean, modular API with robust building blocks for scientific and 
 * **Physics** — kinematics and astronomy
 
 📦 Available on **NuGet**: [https://www.nuget.org/packages/CSharpNumerics/](https://www.nuget.org/packages/CSharpNumerics/)
+
 📘 Documentation: [https://csnumerics.com/docs/Charpnumerics/](https://csnumerics.com/docs/Charpnumerics/)
