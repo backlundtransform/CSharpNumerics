@@ -6,11 +6,40 @@
 ```csharp
 int result = 5.Factorial(); // 120
 ```
+
 **Root Finding (Newton–Raphson)**
 
 ```csharp
 Func<double, double> func = x => Math.Pow(x, 2) - 4;
 double root = func.NewtonRaphson(); // 2
+```
+
+**Number Theory**
+
+```csharp
+bool prime = 79.IsPrime();                  // true
+int[] factors = 78.GetPrimeFactors();       // [2, 3, 13]
+bool happy = 19.IsHappy();                  // true
+bool perfect = 6.IsPerfectNumber();         // true
+int decimals = 0.01.GetDecimalPlaces();     // 2
+```
+
+**Trigonometry**
+
+```csharp
+double rad = 180.0.DegreeToRadians(); // π
+```
+
+---
+
+## lim Limits
+
+```csharp
+Func<double, double> f = x => Math.Sin(x) / x;
+
+double left  = f.LeftLimit(0);   // f(0 - ε)
+double right = f.RightLimit(0);  // f(0 + ε)
+double limit = f.Limit(0);       // two-sided: returns value if left == right, else NaN
 ```
 
 ---
@@ -54,25 +83,59 @@ var velocity = displacement.GetSeries(0, 10, 1000).Derivate();
 
 ## ∫ Integrals
 
-Trapezoidal rule:
+**Trapezoidal Rule**
 
 ```csharp
 Func<double, double> f = x => Math.Sin(x);
 double integral = f.Integrate(0, Math.PI);
 ```
 
-Integrate a series or timeseries:
+**Simpson's 1/3 Rule** — O(h⁴) accuracy
+
+```csharp
+double result = f.IntegrateSimpson(0, Math.PI, subintervals: 200);
+```
+
+**Simpson's 3/8 Rule** — cubic interpolation, O(h⁴)
+
+```csharp
+double result = f.IntegrateSimpson38(0, Math.PI, subintervals: 999);
+```
+
+**Gauss-Legendre Quadrature** — 5-point per subinterval, very high accuracy
+
+```csharp
+double result = f.IntegrateGaussLegendre(0, Math.PI, subintervals: 10);
+```
+
+**Romberg Integration** — Richardson extrapolation for rapid convergence
+
+```csharp
+double result = f.IntegrateRomberg(0, Math.PI, maxLevel: 10);
+```
+
+**Adaptive Simpson** — recursive subdivision with error control
+
+```csharp
+double result = f.IntegrateAdaptive(0, Math.PI, tolerance: 1e-12);
+```
+
+**Monte Carlo Integration** — double and triple integrals
+
+```csharp
+Func<(double x, double y), double> func2d = p => p.x * p.y;
+double result2d = func2d.Integrate((0, 1), (0, 1));
+
+Func<Vector, double> func3d = v => v.x + v.y + v.z;
+double result3d = func3d.Integrate(new Vector(-2, -2, -2), new Vector(2, 2, 2));
+```
+
+**Series / Time Series Integration**
 
 ```csharp
 List<TimeSerie> ts = ...;
 double total = ts.Integrate();
-```
-
-**Monte Carlo Integration**
-
-```csharp
-Func<(double x, double y), double> func = p => p.x * p.y;
-double result = func.Integrate((0, 1), (0, 1));
+double bounded = ts.Integrate(startDate, endDate);
 ```
 
 ---
@@ -194,6 +257,13 @@ Func<Vector, double> f = p => Math.Pow(p.x, 2) * Math.Pow(p.y, 3);
 var grad = f.Gradient((1, -2, 0));
 ```
 
+**Laplacian**
+
+```csharp
+Func<Vector, double> f = p => p.x * p.x + p.y * p.y + p.z * p.z;
+double laplacian = f.Laplacian((1, 2, 3)); // ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z²
+```
+
 **Divergence**
 
 ```csharp
@@ -215,18 +285,35 @@ var curl = field.Curl((1, 4, 2));
 
 ## ⚙️ Transform
 
-**FFT**
+**FFT / DFT**
 
 ```csharp
 Func<double, double> f = t => Math.Exp(-t * t / 0.02);
-var freq = f.FastFouriertransform(-0.5, 0.5, 100)
+var freq = f.FastFourierTransform(-0.5, 0.5, 100)
              .ToFrequencyResolution(100);
+
+// DFT from real or complex samples
+var dft = samples.DiscreteFourierTransform();
+```
+
+**Inverse FFT / DFT**
+
+```csharp
+var timeDomain = freqDomain.InverseFastFourierTransform();
+var timeDomain2 = freqDomain.InverseDiscreteFourierTransform();
 ```
 
 **Laplace Transform**
 
 ```csharp
 double result = f.LaplaceTransform(2.0);
+double inverse = F.InverseLaplaceTransform(1.0);
+```
+
+**Low-Pass Filter**
+
+```csharp
+var filtered = input.LowPassFilter(output, alpha: 0.25);
 ```
 
 ---
@@ -240,20 +327,107 @@ Func<(double t, double y), double> f = v => Math.Tan(v.y) + 1;
 var result = f.RungeKutta(1, 1.1, 0.025, 1);
 ```
 
+**Euler Method**
+
+```csharp
+var result = f.EulerMetod(min: 0, max: 1, stepSize: 0.01, yInitial: 1);
+```
+
+**Trapezoidal Rule (ODE)**
+
+```csharp
+var result = f.TrapezoidalRule(min: 0, max: 1, stepSize: 0.01, yInitial: 1);
+```
+
+**Custom Butcher Tableau**
+
+```csharp
+var result = f.RungeKutta(min, max, stepSize, yInitial,
+    rungeKuttaMatrix, weights, nodes);
+```
+
+**ODE System Solver**
+
+```csharp
+var solutions = matrix.OdeSolver(new List<double> { 1, 0, 0 });
+double x_t = solutions[0](t);
+double y_t = solutions[1](t);
+```
+
+---
+
 ## 📏 Linear Systems
 
 ```csharp
 var result = A.LinearSystemSolver(b);
 var eigenValues = A.EigenValues();
+var eigenVector = A.EigenVector(eigenValue);
+var dominant = A.DominantEigenVector();
 ```
+
+**Gauss Elimination**
+
 ```csharp
-var matrix = new Matrix(new double[,] { { 1, -2, 3 }, { -1, 1, -2 }, { 2, -1, -1 } });
-
-var vector = new VectorN(new double[] { 7, -5, 4 });
-
-var result = matrix.LinearSystemSolver(vector);
-
+var solution = matrix.GaussElimination(vector);
 ```
+
+---
+
+## 📈 Interpolation
+
+```csharp
+var linear = data.LinearInterpolation(p => (p.X, p.Y), xValue);
+var logLog = data.LogarithmicInterpolation(p => (p.X, p.Y), xValue);
+var linLog = data.LinLogInterpolation(p => (p.X, p.Y), xValue);
+var logLin = data.LogLinInterpolation(p => (p.X, p.Y), xValue);
+
+// Or with enum:
+var result = data.Interpolate(p => (p.X, p.Y), xValue, InterpolationType.Linear);
+
+// Time series interpolation:
+double value = timeSeries.LinearInterpolationTimeSerie(dateTime);
+```
+
+---
+
+## 📊 Statistics
+
+**Descriptive**
+
+```csharp
+double median = data.Median(p => p.Value);
+double variance = data.Variance(p => p.Value);
+double stdDev = data.StandardDeviation(p => p.Value);
+double covariance = data.Covariance(p => (p.X, p.Y));
+double r2 = data.CoefficientOfDetermination(p => (p.Predicted, p.Actual));
+```
+
+**Confidence Intervals**
+
+```csharp
+var (lower, upper) = data.ConfidenceIntervals(p => p.Value, 0.95);
+```
+
+**Cumulative Sum**
+
+```csharp
+var cumsum = data.CumulativeSum(p => p.Value);
+```
+
+**Simple Regression**
+
+```csharp
+var (slope, intercept, correlation) = data.LinearRegression(p => (p.X, p.Y));
+var expFunc = data.ExponentialRegression(p => (p.X, p.Y));
+```
+
+**Normal Distribution**
+
+```csharp
+var pdf = Statistics.NormalDistribution(standardDeviation: 1, mean: 0);
+double density = pdf(0.5);
+```
+
 
 
 

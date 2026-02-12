@@ -5,12 +5,12 @@
 		<Authors>Göran Bäcklund</Authors>
 		<Company>Backlundtransform</Company>
 		<Description>Numeric package</Description>
-		<PackageProjectUrl>https://github.com/backlundtransform/CSharpNumerics/wiki</PackageProjectUrl>
+		<PackageProjectUrl>https://csnumerics.com/</PackageProjectUrl>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>Numerics,Statistics,Machine Learning,Physics</PackageTags>
-		<Version>2.1.0</Version>
+		<PackageTags>Numerics,Statistics,Machine Learning,Physics,Math,Calculus,Linear Algebra,Matrix,Vector,FFT,Interpolation,Differential Equations,Regression,Classification,Cross Validation,Astronomy,Kinematics,Integration,Complex Numbers,Tensor</PackageTags>
+		<Version>2.2.0</Version>
 		<PackageIcon>logo.png</PackageIcon>
 	</PropertyGroup>
 
