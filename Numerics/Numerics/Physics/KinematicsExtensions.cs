@@ -242,5 +242,132 @@ namespace CSharpNumerics.Physics
             return -(vMag * vMag / r) * radiusVector.GetUnitVector(); // acceleration toward center
         }
         #endregion
+
+        #region Projectile Motion
+
+        /// <summary>
+        /// Creates an initial velocity vector from launch speed and angle in the XZ plane.
+        /// v₀ = (v·cos(θ), 0, v·sin(θ)).
+        /// </summary>
+        /// <param name="speed">Launch speed in m/s.</param>
+        /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
+        public static Vector ProjectileVelocityFromAngle(this double speed, double launchAngleRadians)
+        {
+            return new Vector(
+                speed * Math.Cos(launchAngleRadians),
+                0,
+                speed * Math.Sin(launchAngleRadians)
+            );
+        }
+
+        /// <summary>
+        /// Computes the position vector of a projectile at time t.
+        /// Assumes gravity acts along -Z: r(t) = v₀·t + ½g·t² with g = (0, 0, -g).
+        /// </summary>
+        /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
+        /// <param name="time">Time elapsed since launch in seconds.</param>
+        /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
+        public static Vector ProjectilePosition(this Vector initialVelocity, double time, double initialHeight = 0.0)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            return new Vector(
+                initialVelocity.x * time,
+                initialVelocity.y * time,
+                initialHeight + initialVelocity.z * time - 0.5 * g * time * time
+            );
+        }
+
+        /// <summary>
+        /// Computes the velocity vector of a projectile at time t.
+        /// v(t) = v₀ + g·t where g = (0, 0, -g).
+        /// </summary>
+        /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
+        /// <param name="time">Time elapsed since launch in seconds.</param>
+        public static Vector ProjectileVelocity(this Vector initialVelocity, double time)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            return new Vector(
+                initialVelocity.x,
+                initialVelocity.y,
+                initialVelocity.z - g * time
+            );
+        }
+
+        /// <summary>
+        /// Computes the total time of flight for a projectile until it returns to ground (z = 0).
+        /// T = (v₀z + √(v₀z² + 2g·h₀)) / g.
+        /// </summary>
+        /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
+        /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
+        public static double ProjectileTimeOfFlight(this Vector initialVelocity, double initialHeight = 0.0)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            double vz = initialVelocity.z;
+            return (vz + Math.Sqrt(vz * vz + 2 * g * initialHeight)) / g;
+        }
+
+        /// <summary>
+        /// Computes the maximum height reached by a projectile: H = h₀ + v₀z² / (2g).
+        /// </summary>
+        /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
+        /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
+        public static double ProjectileMaxHeight(this Vector initialVelocity, double initialHeight = 0.0)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            double vz = initialVelocity.z;
+            return initialHeight + (vz * vz) / (2 * g);
+        }
+
+        /// <summary>
+        /// Computes the horizontal range of a projectile (distance in XY plane when z returns to 0).
+        /// Range = √(v₀x² + v₀y²) · T.
+        /// </summary>
+        /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
+        /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
+        public static double ProjectileRange(this Vector initialVelocity, double initialHeight = 0.0)
+        {
+            double T = initialVelocity.ProjectileTimeOfFlight(initialHeight);
+            double horizontalSpeed = Math.Sqrt(
+                initialVelocity.x * initialVelocity.x + initialVelocity.y * initialVelocity.y);
+            return horizontalSpeed * T;
+        }
+
+        /// <summary>
+        /// Computes time of flight for a projectile from speed and angle: T = 2v₀sin(θ)/g.
+        /// Assumes launch and landing at the same height.
+        /// </summary>
+        /// <param name="speed">Launch speed in m/s.</param>
+        /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
+        public static double ProjectileTimeOfFlight(this double speed, double launchAngleRadians)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            return 2 * speed * Math.Sin(launchAngleRadians) / g;
+        }
+
+        /// <summary>
+        /// Computes the maximum height of a projectile: H = v₀²sin²(θ) / (2g).
+        /// </summary>
+        /// <param name="speed">Launch speed in m/s.</param>
+        /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
+        public static double ProjectileMaxHeight(this double speed, double launchAngleRadians)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            double vz = speed * Math.Sin(launchAngleRadians);
+            return (vz * vz) / (2 * g);
+        }
+
+        /// <summary>
+        /// Computes the horizontal range of a projectile: R = v₀²sin(2θ) / g.
+        /// Assumes launch and landing at the same height.
+        /// </summary>
+        /// <param name="speed">Launch speed in m/s.</param>
+        /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
+        public static double ProjectileRange(this double speed, double launchAngleRadians)
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            return (speed * speed * Math.Sin(2 * launchAngleRadians)) / g;
+        }
+
+        #endregion
     }
 }

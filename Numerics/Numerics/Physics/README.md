@@ -76,6 +76,43 @@ Vector radius = new Vector(0, 3, 0);
 Vector ac = velocity.CentripetalAcceleration(radius); // vector, towards center
 ```
 
+**Projectile Motion**
+
+Create an initial velocity vector from speed and launch angle:
+
+```csharp
+// 20 m/s at 45° → v₀ = (v·cos(θ), 0, v·sin(θ))
+Vector v0 = 20.0.ProjectileVelocityFromAngle(Math.PI / 4);
+```
+
+Position and velocity at any time:
+
+```csharp
+Vector pos = v0.ProjectilePosition(time: 1.5);
+Vector vel = v0.ProjectileVelocity(time: 1.5);
+
+// With initial height (e.g. launched from a 10m cliff)
+Vector pos2 = v0.ProjectilePosition(time: 1.5, initialHeight: 10);
+```
+
+Time of flight, maximum height, and range:
+
+```csharp
+// Vector versions (support initial height)
+double T = v0.ProjectileTimeOfFlight();
+double H = v0.ProjectileMaxHeight();
+double R = v0.ProjectileRange();
+
+// With elevated launch
+double T2 = v0.ProjectileTimeOfFlight(initialHeight: 10);
+double R2 = v0.ProjectileRange(initialHeight: 10);
+
+// Scalar versions (speed + angle, same-height launch)
+double T3 = 20.0.ProjectileTimeOfFlight(Math.PI / 4);   // T = 2v₀sin(θ)/g
+double H3 = 20.0.ProjectileMaxHeight(Math.PI / 4);      // H = v₀²sin²(θ)/(2g)
+double R3 = 20.0.ProjectileRange(Math.PI / 4);           // R = v₀²sin(2θ)/g
+```
+
 ---
 
 ## 🔭 Astronomy Extensions
