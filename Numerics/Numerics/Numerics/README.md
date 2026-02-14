@@ -320,20 +320,20 @@ var filtered = input.LowPassFilter(output, alpha: 0.25);
 
 ## 📐 Differential Equations
 
-**Runge–Kutta (RK4)**
+**Scalar ODE — Runge–Kutta (RK4)**
 
 ```csharp
 Func<(double t, double y), double> f = v => Math.Tan(v.y) + 1;
 var result = f.RungeKutta(1, 1.1, 0.025, 1);
 ```
 
-**Euler Method**
+**Scalar ODE — Euler Method**
 
 ```csharp
 var result = f.EulerMetod(min: 0, max: 1, stepSize: 0.01, yInitial: 1);
 ```
 
-**Trapezoidal Rule (ODE)**
+**Scalar ODE — Trapezoidal Rule**
 
 ```csharp
 var result = f.TrapezoidalRule(min: 0, max: 1, stepSize: 0.01, yInitial: 1);
@@ -346,7 +346,44 @@ var result = f.RungeKutta(min, max, stepSize, yInitial,
     rungeKuttaMatrix, weights, nodes);
 ```
 
-**ODE System Solver**
+**Vector ODE (3D)** — solve y' = f(t, y) where y is a Vector
+
+```csharp
+// Exponential decay in 3D
+Func<(double t, Vector y), Vector> decay = v => -1.0 * v.y;
+Vector result = decay.RungeKutta(0, 1, 0.001, new Vector(1, 2, 3));
+
+// Euler method
+Vector result2 = decay.EulerMethod(0, 1, 0.001, new Vector(1, 2, 3));
+
+// Full trajectory
+var trajectory = decay.RungeKuttaTrajectory(0, 1, 0.01, new Vector(1, 2, 3));
+foreach (var (t, y) in trajectory) { /* ... */ }
+```
+
+**System ODE (VectorN)** — arbitrary-dimensional systems for dynamics
+
+```csharp
+// Free fall: state = [x, y, z, vx, vy, vz]
+double g = 9.80665;
+Func<(double t, VectorN y), VectorN> dynamics = v =>
+    new VectorN([v.y[3], v.y[4], v.y[5], 0, 0, -g]);
+
+var y0 = new VectorN([0, 0, 0, 10, 0, 10]);
+VectorN result = dynamics.RungeKutta(0, 2, 0.001, y0);
+
+// Euler method
+VectorN result2 = dynamics.EulerMethod(0, 2, 0.001, y0);
+
+// Full trajectory
+var orbit = dynamics.RungeKuttaTrajectory(0, period, 1.0, y0);
+double energy = orbit.Last().y.Dot(orbit.Last().y); // use VectorN operations
+```
+
+`double[]` convenience overloads are also available — they delegate to `VectorN` internally:
+```
+
+**Linear ODE System Solver** — eigenvalue-based analytical solution
 
 ```csharp
 var solutions = matrix.OdeSolver(new List<double> { 1, 0, 0 });

@@ -115,6 +115,232 @@ namespace System
             return y;
         }
 
+        #region Vector ODE Solvers
+
+        /// <summary>
+        /// Solves a 3D vector ODE y' = f(t, y) using the classical 4th order Runge-Kutta method.
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y) returning a Vector derivative.</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial value y(tMin).</param>
+        /// <returns>Approximate y(tMax) computed by RK4.</returns>
+        public static Vector RungeKutta(
+            this Func<(double t, Vector y), Vector> func,
+            double tMin, double tMax, double stepSize, Vector y0)
+        {
+            var y = new Vector(y0.x, y0.y, y0.z);
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                var k1 = func((t, y));
+                var k2 = func((t + 0.5 * h, y + 0.5 * h * k1));
+                var k3 = func((t + 0.5 * h, y + 0.5 * h * k2));
+                var k4 = func((t + h, y + h * k3));
+
+                y = y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Solves a 3D vector ODE y' = f(t, y) using the explicit Euler method.
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y) returning a Vector derivative.</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial value y(tMin).</param>
+        /// <returns>Approximate y(tMax) computed by Euler's method.</returns>
+        public static Vector EulerMethod(
+            this Func<(double t, Vector y), Vector> func,
+            double tMin, double tMax, double stepSize, Vector y0)
+        {
+            var y = new Vector(y0.x, y0.y, y0.z);
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+                y = y + h * func((t, y));
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Solves a 3D vector ODE and returns the full trajectory as a list of (time, state) pairs.
+        /// Uses the classical 4th order Runge-Kutta method.
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y).</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial value y(tMin).</param>
+        /// <returns>Full trajectory as a list of (t, y) pairs.</returns>
+        public static List<(double t, Vector y)> RungeKuttaTrajectory(
+            this Func<(double t, Vector y), Vector> func,
+            double tMin, double tMax, double stepSize, Vector y0)
+        {
+            var trajectory = new List<(double t, Vector y)>();
+            var y = new Vector(y0.x, y0.y, y0.z);
+            trajectory.Add((tMin, y));
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                var k1 = func((t, y));
+                var k2 = func((t + 0.5 * h, y + 0.5 * h * k1));
+                var k3 = func((t + 0.5 * h, y + 0.5 * h * k2));
+                var k4 = func((t + h, y + h * k3));
+
+                y = y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+                trajectory.Add((t + h, y));
+            }
+
+            return trajectory;
+        }
+
+        #endregion
+
+        #region System ODE Solvers (VectorN)
+
+        /// <summary>
+        /// Solves a system of ODEs y' = f(t, y) using the classical 4th order Runge-Kutta method.
+        /// Supports arbitrary dimensions — use for dynamics by packing state as [x, y, z, vx, vy, vz].
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y) returning the derivative vector.</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial state vector y(tMin).</param>
+        /// <returns>Approximate y(tMax) computed by RK4.</returns>
+        public static VectorN RungeKutta(
+            this Func<(double t, VectorN y), VectorN> func,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var y = new VectorN(y0.Values);
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                var k1 = func((t, y));
+                var k2 = func((t + 0.5 * h, y + 0.5 * h * k1));
+                var k3 = func((t + 0.5 * h, y + 0.5 * h * k2));
+                var k4 = func((t + h, y + h * k3));
+
+                y = y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Solves a system of ODEs y' = f(t, y) using the explicit Euler method.
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y) returning the derivative vector.</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial state vector y(tMin).</param>
+        /// <returns>Approximate y(tMax) computed by Euler's method.</returns>
+        public static VectorN EulerMethod(
+            this Func<(double t, VectorN y), VectorN> func,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var y = new VectorN(y0.Values);
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+                y = y + h * func((t, y));
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Solves a system of ODEs and returns the full trajectory.
+        /// Uses the classical 4th order Runge-Kutta method.
+        /// </summary>
+        /// <param name="func">Right-hand side function f(t, y).</param>
+        /// <param name="tMin">Initial time.</param>
+        /// <param name="tMax">Final time.</param>
+        /// <param name="stepSize">Time step size.</param>
+        /// <param name="y0">Initial state vector y(tMin).</param>
+        /// <returns>Full trajectory as a list of (t, y) pairs.</returns>
+        public static List<(double t, VectorN y)> RungeKuttaTrajectory(
+            this Func<(double t, VectorN y), VectorN> func,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var trajectory = new List<(double t, VectorN y)>();
+            var y = new VectorN(y0.Values);
+            trajectory.Add((tMin, new VectorN(y.Values)));
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                var k1 = func((t, y));
+                var k2 = func((t + 0.5 * h, y + 0.5 * h * k1));
+                var k3 = func((t + 0.5 * h, y + 0.5 * h * k2));
+                var k4 = func((t + h, y + h * k3));
+
+                y = y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+                trajectory.Add((t + h, new VectorN(y.Values)));
+            }
+
+            return trajectory;
+        }
+
+        /// <summary>
+        /// Convenience overload: solves a system of ODEs using double[] via VectorN RK4.
+        /// </summary>
+        public static double[] RungeKutta(
+            this Func<(double t, double[] y), double[]> func,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(func((v.t, v.y.Values)));
+
+            return wrapped.RungeKutta(tMin, tMax, stepSize, new VectorN(y0)).Values;
+        }
+
+        /// <summary>
+        /// Convenience overload: solves a system of ODEs using double[] via VectorN Euler.
+        /// </summary>
+        public static double[] EulerMethod(
+            this Func<(double t, double[] y), double[]> func,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(func((v.t, v.y.Values)));
+
+            return wrapped.EulerMethod(tMin, tMax, stepSize, new VectorN(y0)).Values;
+        }
+
+        /// <summary>
+        /// Convenience overload: solves a system of ODEs and returns trajectory using double[] via VectorN RK4.
+        /// </summary>
+        public static List<(double t, double[] y)> RungeKuttaTrajectory(
+            this Func<(double t, double[] y), double[]> func,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(func((v.t, v.y.Values)));
+
+            return wrapped.RungeKuttaTrajectory(tMin, tMax, stepSize, new VectorN(y0))
+                .Select(p => (p.t, p.y.Values))
+                .ToList();
+        }
+
+        #endregion
+
         /// <summary>
         /// Solves a linear system A x = b by computing x = A^{-1} b.
         /// </summary>
