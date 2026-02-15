@@ -2,6 +2,75 @@
 
 The `KinematicsExtensions` class provides a set of extension methods for performing common kinematic calculations in both **scalar** and **vector** form. It covers free fall, constant velocity, constant acceleration, time-independent SUVAT equations, and circular motion.
 
+---
+
+## ⚡ Dynamics Extensions
+
+The `DynamicsExtensions` class provides extension methods for particle dynamics — **forces, momentum, energy, work, power, and collisions**. This is Phase 1.1 of the [physics roadmap](../../ROADMAP.md).
+
+**Newton's Laws**
+
+```csharp
+// Newton's 2nd law: a = F/m
+var force = new Vector(10, 0, 0);
+Vector acceleration = force.Acceleration(mass: 5);    // (2, 0, 0)
+
+// F = ma
+Vector F = 10.0.Force(new Vector(0, 0, -9.8));        // (0, 0, -98)
+
+// Sum of forces
+Vector net = f1.NetForce(f2, f3);
+
+// Weight (default direction: -Z)
+Vector W = 80.0.Weight();                              // (0, 0, -784.5)
+```
+
+**Momentum & Impulse**
+
+```csharp
+Vector p = 5.0.Momentum(new Vector(3, 4, 0));         // (15, 20, 0)
+Vector J = force.Impulse(duration: 0.5);               // F·Δt
+Vector J2 = mass.ImpulseFromVelocityChange(vBefore, vAfter); // m·Δv
+Vector vNew = impulse.ApplyImpulse(mass: 5, v0);       // v + J/m
+```
+
+**Energy**
+
+```csharp
+double ke = 4.0.KineticEnergy(new Vector(3, 4, 0));   // ½mv² = 50 J
+double pe = 10.0.PotentialEnergy(height: 5);           // mgh
+double U  = m1.GravitationalPotentialEnergy(m2, r);    // -Gm₁m₂/r
+double E  = mass.MechanicalEnergy(velocity, height);   // KE + PE
+double v  = mass.SpeedFromKineticEnergy(ke);            // √(2·KE/m)
+```
+
+**Work & Power**
+
+```csharp
+double W = force.Work(displacement);                   // F·d (dot product)
+double W2 = 10.0.Work(5, angleRadians: Math.PI / 3);  // F·d·cos(θ) = 25 J
+double P = force.Power(velocity);                      // F·v (instantaneous)
+double P2 = 100.0.AveragePower(duration: 5);           // W/Δt = 20 W
+double ΔKE = mass.WorkEnergyTheorem(vBefore, vAfter);  // ½m(v₂² - v₁²)
+```
+
+**Elastic & Inelastic Collisions**
+
+```csharp
+// 1D elastic collision — both momentum and energy conserved
+var (v1f, v2f) = m1.ElasticCollision(v1, m2, v2);
+
+// Perfectly inelastic (sticky) collision
+double vf = m1.InelasticCollisionVelocity(v1, m2, v2);
+Vector vf3d = m1.InelasticCollisionVelocity(v1Vec, m2, v2Vec);   // 3D version
+double loss = m1.InelasticCollisionEnergyLoss(v1, m2, v2);
+
+// Coefficient of restitution: e = 1 (elastic), e = 0 (perfectly inelastic)
+double e = v1Before.CoefficientOfRestitution(v2Before, v1After, v2After);
+```
+
+---
+
 **Free Fall**
 
 Compute the velocity or time of a freely falling object:
