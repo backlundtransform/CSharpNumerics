@@ -9,8 +9,8 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>Numerics,Statistics,Machine Learning,Physics,Math,Calculus,Linear Algebra,Matrix,Vector,FFT,Interpolation,Differential Equations,Regression,Classification,Cross Validation,Astronomy,Kinematics,Integration,Complex Numbers,Tensor</PackageTags>
-		<Version>2.2.0</Version>
+		<PackageTags>Numerics,Statistics,ML,Physics,Math,Calculus,Matrix,Vector,FFT,Interpolation,ODE,Regression,Classification,CrossValidation,Astronomy,Kinematics,Dynamics,Integration,Tensor</PackageTags>
+		<Version>2.2.1</Version>
 		<PackageIcon>logo.png</PackageIcon>
 	</PropertyGroup>
 
