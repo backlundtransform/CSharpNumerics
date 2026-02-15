@@ -1,5 +1,6 @@
 using CSharpNumerics.Physics;
 using CSharpNumerics.Physics.Constants;
+using CSharpNumerics.Physics.Objects;
 using Numerics.Objects;
 
 namespace NumericTest
@@ -400,6 +401,376 @@ namespace NumericTest
 
             double e = v1.CoefficientOfRestitution(v2, vf, vf); // both stick together
             Assert.AreEqual(0, e, 1e-10);
+        }
+
+        #endregion
+
+        #region RigidBody
+
+        [TestMethod]
+        public void RigidBody_CreateSolidSphere_CorrectInertia()
+        {
+            double mass = 10, radius = 2;
+            var body = RigidBody.CreateSolidSphere(mass, radius);
+
+            double expected = 2.0 / 5.0 * mass * radius * radius; // 16
+            Assert.AreEqual(expected, body.InertiaTensorBody.values[0, 0], 1e-10);
+            Assert.AreEqual(expected, body.InertiaTensorBody.values[1, 1], 1e-10);
+            Assert.AreEqual(expected, body.InertiaTensorBody.values[2, 2], 1e-10);
+            Assert.AreEqual(0, body.InertiaTensorBody.values[0, 1], 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_CreateSolidBox_CorrectInertia()
+        {
+            double mass = 12, w = 2, h = 3, d = 4;
+            var body = RigidBody.CreateSolidBox(mass, w, h, d);
+
+            double Ix = mass / 12.0 * (h * h + d * d); // 12/12*(9+16) = 25
+            double Iy = mass / 12.0 * (w * w + d * d); // 12/12*(4+16) = 20
+            double Iz = mass / 12.0 * (w * w + h * h); // 12/12*(4+9) = 13
+
+            Assert.AreEqual(Ix, body.InertiaTensorBody.values[0, 0], 1e-10);
+            Assert.AreEqual(Iy, body.InertiaTensorBody.values[1, 1], 1e-10);
+            Assert.AreEqual(Iz, body.InertiaTensorBody.values[2, 2], 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_CreateSolidCylinder_CorrectInertia()
+        {
+            double mass = 6, radius = 1, height = 4;
+            var body = RigidBody.CreateSolidCylinder(mass, radius, height);
+
+            double Iaxis = 0.5 * mass * radius * radius; // 3
+            double Idiameter = mass / 12.0 * (3 * radius * radius + height * height); // 6/12*(3+16) = 9.5
+
+            Assert.AreEqual(Idiameter, body.InertiaTensorBody.values[0, 0], 1e-10);
+            Assert.AreEqual(Idiameter, body.InertiaTensorBody.values[1, 1], 1e-10);
+            Assert.AreEqual(Iaxis, body.InertiaTensorBody.values[2, 2], 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_CreateHollowSphere_GreaterThanSolid()
+        {
+            double mass = 5, radius = 3;
+            var solid = RigidBody.CreateSolidSphere(mass, radius);
+            var hollow = RigidBody.CreateHollowSphere(mass, radius);
+
+            Assert.IsTrue(hollow.InertiaTensorBody.values[0, 0] >
+                          solid.InertiaTensorBody.values[0, 0]);
+        }
+
+        [TestMethod]
+        public void RigidBody_CreateStatic_ZeroInverseMass()
+        {
+            var body = RigidBody.CreateStatic(new Vector(0, 5, 0));
+
+            Assert.IsTrue(body.IsStatic);
+            Assert.AreEqual(0, body.InverseMass, 1e-10);
+            Assert.AreEqual(5, body.Position.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_ApplyForce_AccumulatesAndAccelerates()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            body.ApplyForce(new Vector(20, 0, 0));
+            body.ApplyForce(new Vector(0, 10, 0));
+
+            Assert.AreEqual(20, body.AccumulatedForce.x, 1e-10);
+            Assert.AreEqual(10, body.AccumulatedForce.y, 1e-10);
+
+            var a = body.LinearAcceleration;
+            Assert.AreEqual(2, a.x, 1e-10);
+            Assert.AreEqual(1, a.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_ApplyForceAtPoint_GeneratesTorque()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            body.Position = new Vector(0, 0, 0);
+
+            // Force along +X at point (0, 1, 0) → torque along +Z
+            body.ApplyForceAtPoint(new Vector(10, 0, 0), new Vector(0, 1, 0));
+
+            // τ = r × F = (0,1,0) × (10,0,0) = (0,0,-10)
+            Assert.AreEqual(0, body.AccumulatedTorque.x, 1e-10);
+            Assert.AreEqual(0, body.AccumulatedTorque.y, 1e-10);
+            Assert.AreEqual(-10, body.AccumulatedTorque.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_ClearForces_ResetsAccumulators()
+        {
+            var body = RigidBody.CreateSolidSphere(5, 1);
+            body.ApplyForce(new Vector(100, 200, 300));
+            body.ApplyTorque(new Vector(1, 2, 3));
+            body.ClearForces();
+
+            Assert.AreEqual(0, body.AccumulatedForce.GetMagnitude(), 1e-10);
+            Assert.AreEqual(0, body.AccumulatedTorque.GetMagnitude(), 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_KineticEnergy_TranslationalAndRotational()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 2);
+            body.Velocity = new Vector(3, 0, 0);
+            body.AngularVelocity = new Vector(0, 0, 5);
+
+            double keTranslational = 0.5 * 10 * 9; // 45
+            double I = 2.0 / 5.0 * 10 * 4; // 16
+            double keRotational = 0.5 * I * 25; // 200
+
+            Assert.AreEqual(keTranslational + keRotational, body.KineticEnergy, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_LinearMomentum_EqualsM_Times_V()
+        {
+            var body = RigidBody.CreateSolidBox(5, 1, 1, 1);
+            body.Velocity = new Vector(4, 0, 0);
+
+            var p = body.LinearMomentum;
+            Assert.AreEqual(20, p.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_AngularAcceleration_CorrectForSphere()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            // I = 2/5*10*1 = 4, I_inv = 1/4 = 0.25
+            body.ApplyTorque(new Vector(0, 0, 8));
+
+            var alpha = body.AngularAcceleration;
+            Assert.AreEqual(0, alpha.x, 1e-10);
+            Assert.AreEqual(0, alpha.y, 1e-10);
+            Assert.AreEqual(2, alpha.z, 1e-10); // 8 * 0.25 = 2
+        }
+
+        [TestMethod]
+        public void RigidBody_Static_NoAcceleration()
+        {
+            var body = RigidBody.CreateStatic(new Vector(0, 0, 0));
+            body.ApplyForce(new Vector(1000, 0, 0));
+            body.ApplyTorque(new Vector(0, 0, 500));
+
+            var a = body.LinearAcceleration;
+            Assert.AreEqual(0, a.GetMagnitude(), 1e-10);
+        }
+
+        #endregion
+
+        #region Moment of Inertia (Scalar)
+
+        [TestMethod]
+        public void MomentOfInertia_SolidSphere()
+        {
+            double I = 10.0.MomentOfInertiaSolidSphere(2);
+            Assert.AreEqual(2.0 / 5.0 * 10 * 4, I, 1e-10);
+        }
+
+        [TestMethod]
+        public void MomentOfInertia_HollowGreaterThanSolid()
+        {
+            double solid = 5.0.MomentOfInertiaSolidSphere(3);
+            double hollow = 5.0.MomentOfInertiaHollowSphere(3);
+            Assert.IsTrue(hollow > solid);
+        }
+
+        [TestMethod]
+        public void MomentOfInertia_ThinRodEnd_FourTimesCenter()
+        {
+            // I_end = mL²/3, I_center = mL²/12 → I_end = 4·I_center
+            // Also: I_end = I_center + m*(L/2)² via parallel axis
+            double mass = 6, length = 4;
+            double Icenter = mass.MomentOfInertiaThinRod(length);
+            double Iend = mass.MomentOfInertiaThinRodEnd(length);
+
+            Assert.AreEqual(4 * Icenter, Iend, 1e-10);
+        }
+
+        [TestMethod]
+        public void ParallelAxis_Scalar_ThinRod()
+        {
+            double mass = 6, length = 4;
+            double Icm = mass.MomentOfInertiaThinRod(length);
+            double Iend = Icm.ParallelAxis(mass, length / 2.0);
+
+            Assert.AreEqual(mass.MomentOfInertiaThinRodEnd(length), Iend, 1e-10);
+        }
+
+        [TestMethod]
+        public void MomentOfInertia_SolidCylinder()
+        {
+            double I = 8.0.MomentOfInertiaSolidCylinder(3);
+            Assert.AreEqual(0.5 * 8 * 9, I, 1e-10);
+        }
+
+        [TestMethod]
+        public void MomentOfInertia_SolidBox()
+        {
+            double I = 12.0.MomentOfInertiaSolidBox(3, 4);
+            Assert.AreEqual(12.0 / 12.0 * (9 + 16), I, 1e-10);
+        }
+
+        #endregion
+
+        #region Inertia Tensor (3×3)
+
+        [TestMethod]
+        public void InertiaTensor_SolidSphere_IsotropicDiagonal()
+        {
+            var I = 10.0.InertiaTensorSolidSphere(2);
+            double expected = 2.0 / 5.0 * 10 * 4;
+
+            Assert.AreEqual(expected, I.values[0, 0], 1e-10);
+            Assert.AreEqual(expected, I.values[1, 1], 1e-10);
+            Assert.AreEqual(expected, I.values[2, 2], 1e-10);
+            Assert.AreEqual(0, I.values[0, 1], 1e-10);
+        }
+
+        [TestMethod]
+        public void InertiaTensor_SolidBox_DifferentAxes()
+        {
+            var I = 12.0.InertiaTensorSolidBox(1, 2, 3);
+
+            // Ix = m/12*(h²+d²) = 12/12*(4+9) = 13
+            // Iy = m/12*(w²+d²) = 12/12*(1+9) = 10
+            // Iz = m/12*(w²+h²) = 12/12*(1+4) = 5
+            Assert.AreEqual(13, I.values[0, 0], 1e-10);
+            Assert.AreEqual(10, I.values[1, 1], 1e-10);
+            Assert.AreEqual(5, I.values[2, 2], 1e-10);
+        }
+
+        [TestMethod]
+        public void InertiaTensor_SolidCylinder_AxisLessThanDiameter()
+        {
+            var I = 6.0.InertiaTensorSolidCylinder(2, 4);
+
+            // Iz (axis) = ½mr² = 12
+            // Ix = Iy (diameter) = m/12*(3r²+h²) = 6/12*(12+16) = 14
+            Assert.AreEqual(14, I.values[0, 0], 1e-10);
+            Assert.AreEqual(14, I.values[1, 1], 1e-10);
+            Assert.AreEqual(12, I.values[2, 2], 1e-10);
+        }
+
+        [TestMethod]
+        public void ParallelAxis_Tensor_SphereOffset()
+        {
+            double mass = 5, radius = 1;
+            var Icm = mass.InertiaTensorSolidSphere(radius);
+            var offset = new Vector(3, 0, 0);
+            var Inew = Icm.ParallelAxis(mass, offset);
+
+            // Ixx should stay the same (axis through offset direction)
+            // Iyy, Izz should increase by m*d² = 5*9 = 45
+            double Icm_val = 2.0 / 5.0 * mass * radius * radius;
+            Assert.AreEqual(Icm_val, Inew.values[0, 0], 1e-10);
+            Assert.AreEqual(Icm_val + 45, Inew.values[1, 1], 1e-10);
+            Assert.AreEqual(Icm_val + 45, Inew.values[2, 2], 1e-10);
+
+            // Off-diagonal: -m*dx*dy = 0 since offset is (3,0,0)
+            Assert.AreEqual(0, Inew.values[0, 1], 1e-10);
+        }
+
+        #endregion
+
+        #region Torque & Rotational Dynamics
+
+        [TestMethod]
+        public void Torque_Vector_CrossProduct()
+        {
+            var r = new Vector(0, 1, 0);
+            var F = new Vector(10, 0, 0);
+
+            var tau = r.Torque(F);
+
+            // (0,1,0) × (10,0,0) = (0,0,-10)
+            Assert.AreEqual(0, tau.x, 1e-10);
+            Assert.AreEqual(0, tau.y, 1e-10);
+            Assert.AreEqual(-10, tau.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void Torque_Scalar_PerpendicularForce()
+        {
+            double tau = 20.0.Torque(momentArm: 3);
+            Assert.AreEqual(60, tau, 1e-10);
+        }
+
+        [TestMethod]
+        public void Torque_Scalar_WithAngle()
+        {
+            // τ = F·r·sin(30°) = 20·3·0.5 = 30
+            double tau = 20.0.Torque(3, Math.PI / 6);
+            Assert.AreEqual(30, tau, 1e-10);
+        }
+
+        [TestMethod]
+        public void AngularMomentum_Matrix_TimesOmega()
+        {
+            var I = 10.0.InertiaTensorSolidSphere(1); // diag(4, 4, 4)
+            var omega = new Vector(0, 0, 5);
+
+            var L = I.AngularMomentum(omega);
+
+            Assert.AreEqual(0, L.x, 1e-10);
+            Assert.AreEqual(0, L.y, 1e-10);
+            Assert.AreEqual(4 * 5, L.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void AngularMomentum_Scalar()
+        {
+            double I = 10.0.MomentOfInertiaSolidSphere(1);
+            double L = I.AngularMomentum(5);
+            Assert.AreEqual(I * 5, L, 1e-10);
+        }
+
+        [TestMethod]
+        public void AngularAcceleration_FromInverseInertia()
+        {
+            var I = 10.0.InertiaTensorSolidSphere(1);
+            var Iinv = I.Inverse();
+            var torque = new Vector(0, 0, 8);
+
+            var alpha = Iinv.AngularAcceleration(torque);
+
+            Assert.AreEqual(2, alpha.z, 1e-10); // 8/4 = 2
+        }
+
+        [TestMethod]
+        public void RotationalKineticEnergy_Matrix()
+        {
+            var I = 10.0.InertiaTensorSolidSphere(2); // diag(16,16,16)
+            var omega = new Vector(0, 0, 3);
+
+            double KE = I.RotationalKineticEnergy(omega);
+            Assert.AreEqual(0.5 * 16 * 9, KE, 1e-10); // 72
+        }
+
+        [TestMethod]
+        public void RotationalKineticEnergy_Scalar()
+        {
+            double I = 16;
+            double KE = I.RotationalKineticEnergy(3);
+            Assert.AreEqual(0.5 * 16 * 9, KE, 1e-10);
+        }
+
+        [TestMethod]
+        public void RigidBody_AngularMomentum_MatchesExtension()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 2);
+            body.AngularVelocity = new Vector(1, 2, 3);
+
+            var LBody = body.AngularMomentum;
+            var LExtension = body.InertiaTensorBody.AngularMomentum(body.AngularVelocity);
+
+            Assert.AreEqual(LExtension.x, LBody.x, 1e-10);
+            Assert.AreEqual(LExtension.y, LBody.y, 1e-10);
+            Assert.AreEqual(LExtension.z, LBody.z, 1e-10);
         }
 
         #endregion

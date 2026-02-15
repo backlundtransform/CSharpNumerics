@@ -333,5 +333,212 @@ namespace CSharpNumerics.Physics
         }
 
         #endregion
+
+        #region Moment of Inertia (Scalar)
+
+        /// <summary>
+        /// Moment of inertia of a solid sphere: I = 2/5·mr².
+        /// </summary>
+        public static double MomentOfInertiaSolidSphere(this double mass, double radius)
+            => 2.0 / 5.0 * mass * radius * radius;
+
+        /// <summary>
+        /// Moment of inertia of a hollow sphere (thin shell): I = 2/3·mr².
+        /// </summary>
+        public static double MomentOfInertiaHollowSphere(this double mass, double radius)
+            => 2.0 / 3.0 * mass * radius * radius;
+
+        /// <summary>
+        /// Moment of inertia of a solid cylinder about its symmetry axis: I = ½mr².
+        /// </summary>
+        public static double MomentOfInertiaSolidCylinder(this double mass, double radius)
+            => 0.5 * mass * radius * radius;
+
+        /// <summary>
+        /// Moment of inertia of a hollow cylinder about its symmetry axis: I = ½m(r₁²+r₂²).
+        /// </summary>
+        public static double MomentOfInertiaHollowCylinder(this double mass, double innerRadius, double outerRadius)
+            => 0.5 * mass * (innerRadius * innerRadius + outerRadius * outerRadius);
+
+        /// <summary>
+        /// Moment of inertia of a thin rod about its center: I = mL²/12.
+        /// </summary>
+        public static double MomentOfInertiaThinRod(this double mass, double length)
+            => mass * length * length / 12.0;
+
+        /// <summary>
+        /// Moment of inertia of a thin rod about one end: I = mL²/3.
+        /// </summary>
+        public static double MomentOfInertiaThinRodEnd(this double mass, double length)
+            => mass * length * length / 3.0;
+
+        /// <summary>
+        /// Moment of inertia of a solid box about an axis through the center perpendicular to face (a×b):
+        /// I = m/12·(a²+b²).
+        /// </summary>
+        public static double MomentOfInertiaSolidBox(this double mass, double sideA, double sideB)
+            => mass / 12.0 * (sideA * sideA + sideB * sideB);
+
+        /// <summary>
+        /// Parallel axis theorem (scalar): I_new = I_cm + m·d².
+        /// </summary>
+        /// <param name="momentOfInertia">Moment of inertia about center of mass.</param>
+        /// <param name="mass">Mass in kg.</param>
+        /// <param name="distance">Distance from CM to new axis in meters.</param>
+        public static double ParallelAxis(this double momentOfInertia, double mass, double distance)
+            => momentOfInertia + mass * distance * distance;
+
+        #endregion
+
+        #region Inertia Tensor (3×3 Matrix)
+
+        /// <summary>
+        /// 3×3 inertia tensor of a solid sphere: I = diag(2/5·mr²).
+        /// </summary>
+        public static Matrix InertiaTensorSolidSphere(this double mass, double radius)
+        {
+            double I = 2.0 / 5.0 * mass * radius * radius;
+            return new Matrix(new double[,] { { I, 0, 0 }, { 0, I, 0 }, { 0, 0, I } });
+        }
+
+        /// <summary>
+        /// 3×3 inertia tensor of a hollow sphere: I = diag(2/3·mr²).
+        /// </summary>
+        public static Matrix InertiaTensorHollowSphere(this double mass, double radius)
+        {
+            double I = 2.0 / 3.0 * mass * radius * radius;
+            return new Matrix(new double[,] { { I, 0, 0 }, { 0, I, 0 }, { 0, 0, I } });
+        }
+
+        /// <summary>
+        /// 3×3 inertia tensor of a solid box (cuboid) about its center.
+        /// </summary>
+        /// <param name="mass">Mass in kg.</param>
+        /// <param name="width">Width along X.</param>
+        /// <param name="height">Height along Y.</param>
+        /// <param name="depth">Depth along Z.</param>
+        public static Matrix InertiaTensorSolidBox(this double mass, double width, double height, double depth)
+        {
+            double w2 = width * width, h2 = height * height, d2 = depth * depth;
+            double k = mass / 12.0;
+            return new Matrix(new double[,]
+            {
+                { k * (h2 + d2), 0, 0 },
+                { 0, k * (w2 + d2), 0 },
+                { 0, 0, k * (w2 + h2) }
+            });
+        }
+
+        /// <summary>
+        /// 3×3 inertia tensor of a solid cylinder (symmetry axis along Z).
+        /// </summary>
+        public static Matrix InertiaTensorSolidCylinder(this double mass, double radius, double height)
+        {
+            double r2 = radius * radius;
+            double Idiameter = mass / 12.0 * (3 * r2 + height * height);
+            double Iaxis = 0.5 * mass * r2;
+            return new Matrix(new double[,]
+            {
+                { Idiameter, 0, 0 },
+                { 0, Idiameter, 0 },
+                { 0, 0, Iaxis }
+            });
+        }
+
+        /// <summary>
+        /// Parallel axis theorem for a 3×3 inertia tensor: I_new = I_cm + m·(d²·E - d⊗d).
+        /// </summary>
+        /// <param name="inertiaTensor">Inertia tensor about center of mass.</param>
+        /// <param name="mass">Mass in kg.</param>
+        /// <param name="offset">Displacement vector from CM to new point.</param>
+        public static Matrix ParallelAxis(this Matrix inertiaTensor, double mass, Vector offset)
+        {
+            double d2 = offset.Dot(offset);
+            double[] d = [offset.x, offset.y, offset.z];
+            var result = new double[3, 3];
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    result[i, j] = inertiaTensor.values[i, j]
+                        + mass * (d2 * (i == j ? 1.0 : 0.0) - d[i] * d[j]);
+                }
+            }
+            return new Matrix(result);
+        }
+
+        #endregion
+
+        #region Torque & Rotational Dynamics
+
+        /// <summary>
+        /// Computes torque from a moment arm and force: τ = r × F.
+        /// </summary>
+        /// <param name="momentArm">Vector from pivot to point of force application.</param>
+        /// <param name="force">Force vector in Newtons.</param>
+        public static Vector Torque(this Vector momentArm, Vector force)
+        {
+            return momentArm.Cross(force);
+        }
+
+        /// <summary>
+        /// Computes angular momentum: L = I·ω.
+        /// </summary>
+        /// <param name="inertiaTensor">3×3 inertia tensor.</param>
+        /// <param name="angularVelocity">Angular velocity vector in rad/s.</param>
+        public static Vector AngularMomentum(this Matrix inertiaTensor, Vector angularVelocity)
+        {
+            return inertiaTensor * angularVelocity;
+        }
+
+        /// <summary>
+        /// Computes angular acceleration: α = I⁻¹·τ.
+        /// </summary>
+        /// <param name="inverseInertiaTensor">Inverse of the 3×3 inertia tensor.</param>
+        /// <param name="torque">Torque vector in N·m.</param>
+        public static Vector AngularAcceleration(this Matrix inverseInertiaTensor, Vector torque)
+        {
+            return inverseInertiaTensor * torque;
+        }
+
+        /// <summary>
+        /// Computes rotational kinetic energy: KE_rot = ½ωᵀIω.
+        /// </summary>
+        /// <param name="inertiaTensor">3×3 inertia tensor.</param>
+        /// <param name="angularVelocity">Angular velocity vector in rad/s.</param>
+        public static double RotationalKineticEnergy(this Matrix inertiaTensor, Vector angularVelocity)
+        {
+            var Iw = inertiaTensor * angularVelocity;
+            return 0.5 * angularVelocity.Dot(Iw);
+        }
+
+        /// <summary>
+        /// Computes the scalar torque magnitude for rotation about a single axis: τ = r·F·sin(θ).
+        /// </summary>
+        /// <param name="force">Force magnitude in Newtons.</param>
+        /// <param name="momentArm">Distance from pivot in meters.</param>
+        /// <param name="angleRadians">Angle between force and moment arm in radians.</param>
+        public static double Torque(this double force, double momentArm, double angleRadians = Math.PI / 2)
+        {
+            return force * momentArm * Math.Sin(angleRadians);
+        }
+
+        /// <summary>
+        /// Computes scalar angular momentum: L = I·ω.
+        /// </summary>
+        public static double AngularMomentum(this double momentOfInertia, double angularVelocity)
+        {
+            return momentOfInertia * angularVelocity;
+        }
+
+        /// <summary>
+        /// Computes scalar rotational kinetic energy: KE = ½Iω².
+        /// </summary>
+        public static double RotationalKineticEnergy(this double momentOfInertia, double angularVelocity)
+        {
+            return 0.5 * momentOfInertia * angularVelocity * angularVelocity;
+        }
+
+        #endregion
     }
 }

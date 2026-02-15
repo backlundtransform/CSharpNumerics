@@ -265,6 +265,87 @@ double loss = m1.InelasticCollisionEnergyLoss(v1, m2, v2);
 double e = v1Before.CoefficientOfRestitution(v2Before, v1After, v2After);
 ```
 
+**Rigid Body** (`Physics/Objects/RigidBody.cs`)
+
+Create rigid bodies from standard shapes with automatic inertia tensors:
+
+```csharp
+var sphere  = RigidBody.CreateSolidSphere(mass: 10, radius: 2);
+var box     = RigidBody.CreateSolidBox(mass: 12, width: 2, height: 3, depth: 4);
+var cyl     = RigidBody.CreateSolidCylinder(mass: 6, radius: 1, height: 4);
+var hollow  = RigidBody.CreateHollowSphere(mass: 5, radius: 3);
+var tube    = RigidBody.CreateHollowCylinder(mass: 8, innerRadius: 1, outerRadius: 2, height: 3);
+var rod     = RigidBody.CreateThinRod(mass: 4, length: 5);
+var wall    = RigidBody.CreateStatic(new Vector(0, 0, 0));  // immovable
+```
+
+Apply forces, torques, and query state:
+
+```csharp
+var body = RigidBody.CreateSolidSphere(10, 1);
+body.Position = new Vector(0, 5, 0);
+body.Velocity = new Vector(3, 0, 0);
+
+body.ApplyForce(new Vector(0, 0, -98));           // gravity
+body.ApplyForceAtPoint(                            // generates torque too
+    new Vector(10, 0, 0), worldPoint: new Vector(0, 1, 0));
+body.ApplyTorque(new Vector(0, 0, 5));
+
+Vector a     = body.LinearAcceleration;            // F/m
+Vector alpha = body.AngularAcceleration;           // I⁻¹τ
+Vector p     = body.LinearMomentum;                // mv
+Vector L     = body.AngularMomentum;               // Iω
+double KE    = body.KineticEnergy;                 // ½mv² + ½ωᵀIω
+
+body.ClearForces();  // reset accumulators after integration step
+```
+
+**Moment of Inertia (Scalar)**
+
+```csharp
+double I = 10.0.MomentOfInertiaSolidSphere(radius: 2);       // 2/5·mr²
+double I2 = 10.0.MomentOfInertiaHollowSphere(radius: 2);     // 2/3·mr²
+double I3 = 8.0.MomentOfInertiaSolidCylinder(radius: 3);      // ½mr²
+double I4 = 6.0.MomentOfInertiaThinRod(length: 4);            // mL²/12
+double I5 = 6.0.MomentOfInertiaThinRodEnd(length: 4);         // mL²/3
+double I6 = 12.0.MomentOfInertiaSolidBox(sideA: 3, sideB: 4); // m/12·(a²+b²)
+
+// Parallel axis theorem: I_new = I_cm + m·d²
+double Inew = I.ParallelAxis(mass: 10, distance: 3);
+```
+
+**Inertia Tensor (3×3 Matrix)**
+
+```csharp
+Matrix I  = 10.0.InertiaTensorSolidSphere(radius: 2);
+Matrix Ib = 12.0.InertiaTensorSolidBox(width: 2, height: 3, depth: 4);
+Matrix Ic = 6.0.InertiaTensorSolidCylinder(radius: 1, height: 4);
+
+// Parallel axis theorem for 3×3 tensor: I_new = I_cm + m·(d²E - d⊗d)
+Matrix Inew = I.ParallelAxis(mass: 10, offset: new Vector(3, 0, 0));
+```
+
+**Torque & Rotational Dynamics**
+
+```csharp
+// Vector: τ = r × F
+Vector tau = momentArm.Torque(force);
+
+// Scalar: τ = F·r·sin(θ)
+double tau2 = 20.0.Torque(momentArm: 3, angleRadians: Math.PI / 6);
+
+// Angular momentum: L = Iω
+Vector L = inertiaTensor.AngularMomentum(omega);
+double Ls = momentOfInertia.AngularMomentum(omega);
+
+// Angular acceleration: α = I⁻¹τ
+Vector alpha = inverseInertiaTensor.AngularAcceleration(torque);
+
+// Rotational kinetic energy: KE = ½ωᵀIω
+double KE = inertiaTensor.RotationalKineticEnergy(omega);
+double KEs = momentOfInertia.RotationalKineticEnergy(omega);
+```
+
 ---
 
 
