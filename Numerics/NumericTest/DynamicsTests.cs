@@ -770,7 +770,7 @@ namespace NumericTest
 
             Assert.AreEqual(LExtension.x, LBody.x, 1e-10);
             Assert.AreEqual(LExtension.y, LBody.y, 1e-10);
-            Assert.AreEqual(LExtension.z, LBody.z, 1e-10);
+           Assert.AreEqual(LExtension.z, LBody.z, 1e-10);
         }
 
         #endregion
