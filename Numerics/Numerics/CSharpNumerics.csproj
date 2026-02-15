@@ -4,7 +4,7 @@
 		<OutputType>Library</OutputType>
 		<Authors>Göran Bäcklund</Authors>
 		<Company>Backlundtransform</Company>
-		<Description>Numeric package</Description>
+		<Description>A numerical package for physics simulations and machine learning workflows, providing tools for discretization, numerical analysis, and efficient iterative solvers</Description>
 		<PackageProjectUrl>https://csnumerics.com/</PackageProjectUrl>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryUrl>https://github.com/backlundtransform/CSharpNumerics</RepositoryUrl>
