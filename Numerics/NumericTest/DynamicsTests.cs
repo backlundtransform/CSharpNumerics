@@ -774,5 +774,176 @@ namespace NumericTest
         }
 
         #endregion
+
+        #region RigidBody Integration
+
+        [TestMethod]
+        public void IntegrateSemiImplicitEuler_FreeFall()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            body.Position = new Vector(0, 0, 100);
+
+            double g = PhysicsConstants.GravitationalAcceleration;
+            double dt = 0.001;
+            double totalTime = 2.0;
+            int steps = (int)(totalTime / dt);
+
+            for (int i = 0; i < steps; i++)
+            {
+                body.ApplyForce(new Vector(0, 0, -g * body.Mass));
+                body.IntegrateSemiImplicitEuler(dt);
+            }
+
+            double expectedZ = 100 - 0.5 * g * totalTime * totalTime;
+            Assert.AreEqual(expectedZ, body.Position.z, 0.1);
+            Assert.AreEqual(-g * totalTime, body.Velocity.z, 0.1);
+        }
+
+        [TestMethod]
+        public void IntegrateSemiImplicitEuler_StaticBody_DoesNotMove()
+        {
+            var body = RigidBody.CreateStatic(new Vector(5, 0, 0));
+            body.ApplyForce(new Vector(1000, 0, 0));
+            body.IntegrateSemiImplicitEuler(1.0);
+
+            Assert.AreEqual(5, body.Position.x, 1e-10);
+            Assert.AreEqual(0, body.Velocity.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void IntegrateSemiImplicitEuler_ConstantVelocity()
+        {
+            var body = RigidBody.CreateSolidSphere(5, 1);
+            body.Velocity = new Vector(10, 0, 0);
+
+            body.IntegrateSemiImplicitEuler(2.0);
+
+            Assert.AreEqual(20, body.Position.x, 1e-10);
+            Assert.AreEqual(10, body.Velocity.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void IntegrateSemiImplicitEuler_AngularVelocity()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            // I = 2/5*10*1 = 4, torque = (0,0,8) → α = 2 rad/s²
+            body.ApplyTorque(new Vector(0, 0, 8));
+            body.IntegrateSemiImplicitEuler(1.0);
+
+            Assert.AreEqual(2, body.AngularVelocity.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void IntegrateVelocityVerlet_FreeFall_ExactForConstantForce()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            body.Position = new Vector(0, 0, 100);
+            double g = PhysicsConstants.GravitationalAcceleration;
+
+            Func<RigidBody, (Vector, Vector)> gravity = b =>
+                (new Vector(0, 0, -g * b.Mass), new Vector(0, 0, 0));
+
+            double dt = 0.01;
+            int steps = 200; // 2 seconds
+            for (int i = 0; i < steps; i++)
+                body.IntegrateVelocityVerlet(gravity, dt);
+
+            double t = steps * dt;
+            double expectedZ = 100 - 0.5 * g * t * t;
+            Assert.AreEqual(expectedZ, body.Position.z, 1e-10); // exact for constant force
+        }
+
+        [TestMethod]
+        public void IntegrateVelocityVerlet_Spring_ConservesEnergy()
+        {
+            // 1D spring: F = -kx, k=1, m=1 → ω=1
+            var body = RigidBody.CreateSolidSphere(1, 1);
+            body.Position = new Vector(1, 0, 0); // stretched spring
+
+            double k = 1.0;
+            Func<RigidBody, (Vector, Vector)> spring = b =>
+                (new Vector(-k * b.Position.x, 0, 0), new Vector(0, 0, 0));
+
+            double E0 = 0.5 * k * 1.0; // initial PE, KE=0
+
+            double dt = 0.01;
+            for (int i = 0; i < 10000; i++) // 100 seconds
+                body.IntegrateVelocityVerlet(spring, dt);
+
+            double PE = 0.5 * k * body.Position.x * body.Position.x;
+            double KE = 0.5 * body.Mass * body.Velocity.Dot(body.Velocity);
+            Assert.AreEqual(E0, PE + KE, 1e-4);
+        }
+
+        [TestMethod]
+        public void IntegrateVelocityVerlet_StaticBody_DoesNotMove()
+        {
+            var body = RigidBody.CreateStatic(new Vector(3, 0, 0));
+            body.ApplyForce(new Vector(999, 0, 0));
+
+            Func<RigidBody, (Vector, Vector)> force = _ =>
+                (new Vector(999, 0, 0), new Vector(0, 0, 0));
+
+            body.IntegrateVelocityVerlet(force, 1.0);
+
+            Assert.AreEqual(3, body.Position.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void IntegrateEuler_FreeFall()
+        {
+            var body = RigidBody.CreateSolidSphere(10, 1);
+            body.Position = new Vector(0, 0, 100);
+            double g = PhysicsConstants.GravitationalAcceleration;
+
+            double dt = 0.001;
+            int steps = 2000;
+            for (int i = 0; i < steps; i++)
+            {
+                body.ApplyForce(new Vector(0, 0, -g * body.Mass));
+                body.IntegrateEuler(dt);
+            }
+
+            double t = steps * dt;
+            double expectedZ = 100 - 0.5 * g * t * t;
+            Assert.AreEqual(expectedZ, body.Position.z, 0.5);
+        }
+
+        [TestMethod]
+        public void IntegrateSemiImplicitEuler_Spring_MoreStableThanEuler()
+        {
+            double k = 10.0;
+            double dt = 0.05;
+            int steps = 2000;
+
+            // Semi-implicit
+            var bodySI = RigidBody.CreateSolidSphere(1, 1);
+            bodySI.Position = new Vector(1, 0, 0);
+            for (int i = 0; i < steps; i++)
+            {
+                bodySI.ApplyForce(new Vector(-k * bodySI.Position.x, 0, 0));
+                bodySI.IntegrateSemiImplicitEuler(dt);
+            }
+
+            // Explicit Euler
+            var bodyE = RigidBody.CreateSolidSphere(1, 1);
+            bodyE.Position = new Vector(1, 0, 0);
+            for (int i = 0; i < steps; i++)
+            {
+                bodyE.ApplyForce(new Vector(-k * bodyE.Position.x, 0, 0));
+                bodyE.IntegrateEuler(dt);
+            }
+
+            // Semi-implicit should have bounded energy, explicit Euler blows up
+            double eSI = 0.5 * k * bodySI.Position.x * bodySI.Position.x
+                + 0.5 * bodySI.Velocity.Dot(bodySI.Velocity);
+            double eE = 0.5 * k * bodyE.Position.x * bodyE.Position.x
+                + 0.5 * bodyE.Velocity.Dot(bodyE.Velocity);
+
+            double E0 = 0.5 * k; // initial energy
+            Assert.IsTrue(Math.Abs(eSI - E0) < Math.Abs(eE - E0));
+        }
+
+        #endregion
     }
 }

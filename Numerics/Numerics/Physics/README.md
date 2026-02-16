@@ -346,6 +346,29 @@ double KE = inertiaTensor.RotationalKineticEnergy(omega);
 double KEs = momentOfInertia.RotationalKineticEnergy(omega);
 ```
 
+**RigidBody Integration**
+
+Three time-stepping methods advance a `RigidBody` by one `dt`. Each delegates to the corresponding ODE solver in `DifferentialEquationExtensions`, packing body state into `VectorN` internally — no duplicated stepping logic.
+
+```csharp
+// Semi-implicit (symplectic) Euler — stable for games, first-order
+// Apply forces before calling; accumulators are cleared afterwards
+var body = RigidBody.CreateSolidSphere(10, 1);
+body.Position = new Vector(0, 0, 100);
+body.ApplyForce(new Vector(0, 0, -9.80665 * body.Mass));
+body.IntegrateSemiImplicitEuler(dt: 0.001);
+
+// Velocity Verlet — O(dt²) accuracy, excellent energy conservation
+// Forces are evaluated by forceFunc (no need to pre-apply)
+Func<RigidBody, (Vector force, Vector torque)> gravity = b =>
+    (new Vector(0, 0, -9.80665 * b.Mass), new Vector(0, 0, 0));
+body.IntegrateVelocityVerlet(gravity, dt: 0.01);
+
+// Explicit Euler — simplest, least stable
+body.ApplyForce(new Vector(0, 0, -9.80665 * body.Mass));
+body.IntegrateEuler(dt: 0.001);
+```
+
 ---
 
 

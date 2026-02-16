@@ -449,5 +449,191 @@ namespace NumericsTests
         }
 
         #endregion
+
+        #region Semi-Implicit Euler
+
+        [TestMethod]
+        public void SemiImplicitEuler_SimpleHarmonic_Stable()
+        {
+            // x'' = -x → state = [x, v], derivative = [v, -x]
+            // Semi-implicit Euler should be stable (symplectic) even over long time
+            Func<(double t, VectorN y), VectorN> func = v =>
+                new VectorN([v.y[1], -v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var result = func.SemiImplicitEuler(0, 100, 0.01, y0);
+
+            // Energy should be approximately conserved: E = 0.5*(x² + v²) ≈ 0.5
+            double E = 0.5 * (result[0] * result[0] + result[1] * result[1]);
+            Assert.AreEqual(0.5, E, 0.05);
+        }
+
+        [TestMethod]
+        public void SemiImplicitEuler_FreeFall()
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            Func<(double t, VectorN y), VectorN> func = v =>
+                new VectorN([v.y[1], -g]);
+            var y0 = new VectorN([100, 0]); // height=100, v=0
+
+            var result = func.SemiImplicitEuler(0, 2, 0.001, y0);
+
+            double expectedH = 100 - 0.5 * g * 4;
+            Assert.AreEqual(expectedH, result[0], 0.1);
+        }
+
+        [TestMethod]
+        public void SemiImplicitEuler_DoubleArray_Convenience()
+        {
+            Func<(double t, double[] y), double[]> func = v =>
+                [v.y[1], -v.y[0]];
+            var y0 = new double[] { 1, 0 };
+
+            var result = func.SemiImplicitEuler(0, Math.PI, 0.001, y0);
+
+            Assert.AreEqual(-1, result[0], 0.05);
+        }
+
+        [TestMethod]
+        public void SemiImplicitEulerTrajectory_ReturnsSteps()
+        {
+            Func<(double t, VectorN y), VectorN> func = v =>
+                new VectorN([v.y[1], -v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var traj = func.SemiImplicitEulerTrajectory(0, 1, 0.1, y0);
+
+            Assert.IsTrue(traj.Count >= 10);
+            Assert.AreEqual(0, traj[0].t, 1e-10);
+            Assert.AreEqual(1, traj[0].y[0], 1e-10);
+        }
+
+        [TestMethod]
+        public void SemiImplicitEuler_BetterThanExplicitEuler_Energy()
+        {
+            // After 100 time units, semi-implicit should conserve energy much better
+            Func<(double t, VectorN y), VectorN> func = v =>
+                new VectorN([v.y[1], -v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var semiImplicit = func.SemiImplicitEuler(0, 50, 0.01, y0);
+            var euler = func.EulerMethod(0, 50, 0.01, y0);
+
+            double E0 = 0.5;
+            double eSemi = 0.5 * (semiImplicit[0] * semiImplicit[0] + semiImplicit[1] * semiImplicit[1]);
+            double eEuler = 0.5 * (euler[0] * euler[0] + euler[1] * euler[1]);
+
+            Assert.IsTrue(Math.Abs(eSemi - E0) < Math.Abs(eEuler - E0));
+        }
+
+        #endregion
+
+        #region Velocity Verlet
+
+        [TestMethod]
+        public void VelocityVerlet_SimpleHarmonic_ExcellentEnergy()
+        {
+            // x'' = -x, acceleration function returns just [-x]
+            Func<(double t, VectorN y), VectorN> accel = v =>
+                new VectorN([-v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var result = accel.VelocityVerlet(0, 100, 0.01, y0);
+
+            double E = 0.5 * (result[0] * result[0] + result[1] * result[1]);
+            Assert.AreEqual(0.5, E, 1e-4);
+        }
+
+        [TestMethod]
+        public void VelocityVerlet_FreeFall_SecondOrderAccurate()
+        {
+            double g = PhysicsConstants.GravitationalAcceleration;
+            // State: [height, velocity], acceleration = [-g]
+            Func<(double t, VectorN y), VectorN> accel = _ =>
+                new VectorN([-g]);
+            var y0 = new VectorN([100, 0]);
+
+            var result = accel.VelocityVerlet(0, 2, 0.1, y0);
+
+            double expectedH = 100 - 0.5 * g * 4;
+            double expectedV = -g * 2;
+            Assert.AreEqual(expectedH, result[0], 1e-10); // exact for constant accel
+            Assert.AreEqual(expectedV, result[1], 1e-10);
+        }
+
+        [TestMethod]
+        public void VelocityVerlet_Orbital_ReturnsToStart()
+        {
+            double GM = PhysicsConstants.GravitationalConstant * PhysicsConstants.EarthMass;
+            double R = 7e6;
+            double vOrb = Math.Sqrt(GM / R);
+
+            Func<(double t, VectorN y), VectorN> accel = v =>
+            {
+                double x = v.y[0], y2 = v.y[1];
+                double r3 = Math.Pow(x * x + y2 * y2, 1.5);
+                return new VectorN([-GM * x / r3, -GM * y2 / r3]);
+            };
+
+            var y0 = new VectorN([R, 0, 0, vOrb]);
+            double T = 2 * Math.PI * R / vOrb;
+
+            var result = accel.VelocityVerlet(0, T, 0.5, y0);
+
+            Assert.AreEqual(R, result[0], R * 1e-4);
+            Assert.AreEqual(0, result[1], R * 1e-4);
+        }
+
+        [TestMethod]
+        public void VelocityVerlet_DoubleArray_Convenience()
+        {
+            Func<(double t, double[] y), double[]> accel = v =>
+                [-v.y[0]];
+            var y0 = new double[] { 1, 0 };
+
+            var result = accel.VelocityVerlet(0, Math.PI, 0.01, y0);
+
+            Assert.AreEqual(-1, result[0], 0.01);
+        }
+
+        [TestMethod]
+        public void VelocityVerletTrajectory_ConservesEnergy()
+        {
+            Func<(double t, VectorN y), VectorN> accel = v =>
+                new VectorN([-v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var traj = accel.VelocityVerletTrajectory(0, 20, 0.01, y0);
+
+            double E0 = 0.5;
+            foreach (var (t, y) in traj)
+            {
+                double E = 0.5 * (y[0] * y[0] + y[1] * y[1]);
+                Assert.AreEqual(E0, E, 1e-4);
+            }
+        }
+
+        [TestMethod]
+        public void VelocityVerlet_SymplecticEnergyConservation()
+        {
+            // Verlet is symplectic: energy oscillates around true value instead of drifting
+            // Over 10000 time units, RK4 energy drifts monotonically while Verlet stays bounded
+            Func<(double t, VectorN y), VectorN> accel = v =>
+                new VectorN([-v.y[0]]);
+            Func<(double t, VectorN y), VectorN> rk4Func = v =>
+                new VectorN([v.y[1], -v.y[0]]);
+            var y0 = new VectorN([1, 0]);
+
+            var verlet = accel.VelocityVerlet(0, 10000, 0.5, y0);
+            var rk4 = rk4Func.RungeKutta(0, 10000, 0.5, y0);
+
+            double E0 = 0.5;
+            double eVerlet = 0.5 * (verlet[0] * verlet[0] + verlet[1] * verlet[1]);
+            double eRk4 = 0.5 * (rk4[0] * rk4[0] + rk4[1] * rk4[1]);
+
+            Assert.IsTrue(Math.Abs(eVerlet - E0) < Math.Abs(eRk4 - E0));
+        }
+
+        #endregion
     }
 }

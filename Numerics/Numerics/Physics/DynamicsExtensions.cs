@@ -1,6 +1,8 @@
 using CSharpNumerics.Physics.Constants;
+using CSharpNumerics.Physics.Objects;
 using System;
 using Numerics.Objects;
+using CSharpNumerics.Objects;
 
 namespace CSharpNumerics.Physics
 {
@@ -537,6 +539,135 @@ namespace CSharpNumerics.Physics
         public static double RotationalKineticEnergy(this double momentOfInertia, double angularVelocity)
         {
             return 0.5 * momentOfInertia * angularVelocity * angularVelocity;
+        }
+
+        #endregion
+
+        #region RigidBody Integration
+
+        /// <summary>
+        /// Integrates a rigid body one time step using semi-implicit (symplectic) Euler.
+        /// Updates velocity before position for better stability in oscillatory systems.
+        /// Forces and torques must be applied before calling this method.
+        /// Accumulators are cleared after integration.
+        /// Delegates to <see cref="DifferentialEquationExtensions.SemiImplicitEuler"/> for the linear state.
+        /// </summary>
+        /// <param name="body">The rigid body to integrate.</param>
+        /// <param name="dt">Time step in seconds.</param>
+        public static void IntegrateSemiImplicitEuler(this ref RigidBody body, double dt)
+        {
+            if (body.IsStatic) { body.ClearForces(); return; }
+
+            var linearAccel = body.LinearAcceleration;
+            var angularAccel = body.AngularAcceleration;
+
+            // Pack linear state: [px, py, pz, vx, vy, vz] (half = 3)
+            var y0 = new VectorN([
+                body.Position.x, body.Position.y, body.Position.z,
+                body.Velocity.x, body.Velocity.y, body.Velocity.z
+            ]);
+
+            Func<(double t, VectorN y), VectorN> derivative = state =>
+                new VectorN([
+                    state.y[3], state.y[4], state.y[5],
+                    linearAccel.x, linearAccel.y, linearAccel.z
+                ]);
+
+            var result = derivative.SemiImplicitEuler(0, dt, dt, y0);
+
+            body.Position = new Vector(result[0], result[1], result[2]);
+            body.Velocity = new Vector(result[3], result[4], result[5]);
+            body.AngularVelocity = body.AngularVelocity + dt * angularAccel;
+
+            body.ClearForces();
+        }
+
+        /// <summary>
+        /// Integrates a rigid body one time step using velocity Verlet.
+        /// Provides O(dt²) accuracy and excellent energy conservation.
+        /// The forceFunc computes all forces/torques at each evaluation — no need to pre-apply forces.
+        /// Delegates to <see cref="DifferentialEquationExtensions.VelocityVerlet"/> for the state update.
+        /// </summary>
+        /// <param name="body">The rigid body to integrate.</param>
+        /// <param name="forceFunc">Function that computes (force, torque) given the body's current state.</param>
+        /// <param name="dt">Time step in seconds.</param>
+        public static void IntegrateVelocityVerlet(
+            this ref RigidBody body,
+            Func<RigidBody, (Vector force, Vector torque)> forceFunc,
+            double dt)
+        {
+            if (body.IsStatic) { body.ClearForces(); return; }
+
+            var invMass = body.InverseMass;
+            var invI = body.InverseInertiaTensorWorld;
+            var mass = body.Mass;
+            var inertiaTensor = body.InertiaTensorBody;
+
+            // Pack state: [px, py, pz, θx, θy, θz, vx, vy, vz, ωx, ωy, ωz] (half = 6)
+            // θ slots are dummy angular positions (not tracked by RigidBody, but needed for Verlet layout)
+            var y0 = new VectorN([
+                body.Position.x, body.Position.y, body.Position.z,
+                0, 0, 0,
+                body.Velocity.x, body.Velocity.y, body.Velocity.z,
+                body.AngularVelocity.x, body.AngularVelocity.y, body.AngularVelocity.z
+            ]);
+
+            Func<(double t, VectorN y), VectorN> accelFunc = state =>
+            {
+                var tempBody = new RigidBody(mass, inertiaTensor)
+                {
+                    Position = new Vector(state.y[0], state.y[1], state.y[2]),
+                    Velocity = new Vector(state.y[6], state.y[7], state.y[8]),
+                    AngularVelocity = new Vector(state.y[9], state.y[10], state.y[11])
+                };
+                var (f, torque) = forceFunc(tempBody);
+                var linA = invMass * f;
+                var angA = invI * torque;
+                return new VectorN([linA.x, linA.y, linA.z, angA.x, angA.y, angA.z]);
+            };
+
+            var result = accelFunc.VelocityVerlet(0, dt, dt, y0);
+
+            body.Position = new Vector(result[0], result[1], result[2]);
+            body.Velocity = new Vector(result[6], result[7], result[8]);
+            body.AngularVelocity = new Vector(result[9], result[10], result[11]);
+
+            body.ClearForces();
+        }
+
+        /// <summary>
+        /// Integrates a rigid body one time step using explicit Euler.
+        /// Simple but least stable — use semi-implicit Euler or Verlet for better results.
+        /// Delegates to <see cref="DifferentialEquationExtensions.EulerMethod"/> for the linear state.
+        /// </summary>
+        /// <param name="body">The rigid body to integrate.</param>
+        /// <param name="dt">Time step in seconds.</param>
+        public static void IntegrateEuler(this ref RigidBody body, double dt)
+        {
+            if (body.IsStatic) { body.ClearForces(); return; }
+
+            var linearAccel = body.LinearAcceleration;
+            var angularAccel = body.AngularAcceleration;
+
+            // Pack linear state: [px, py, pz, vx, vy, vz]
+            var y0 = new VectorN([
+                body.Position.x, body.Position.y, body.Position.z,
+                body.Velocity.x, body.Velocity.y, body.Velocity.z
+            ]);
+
+            Func<(double t, VectorN y), VectorN> derivative = state =>
+                new VectorN([
+                    state.y[3], state.y[4], state.y[5],
+                    linearAccel.x, linearAccel.y, linearAccel.z
+                ]);
+
+            var result = derivative.EulerMethod(0, dt, dt, y0);
+
+            body.Position = new Vector(result[0], result[1], result[2]);
+            body.Velocity = new Vector(result[3], result[4], result[5]);
+            body.AngularVelocity = body.AngularVelocity + dt * angularAccel;
+
+            body.ClearForces();
         }
 
         #endregion

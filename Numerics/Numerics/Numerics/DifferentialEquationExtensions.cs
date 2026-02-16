@@ -341,6 +341,191 @@ namespace System
 
         #endregion
 
+        #region Semi-Implicit Euler (Symplectic)
+
+        /// <summary>
+        /// Solves a second-order ODE system using semi-implicit (symplectic) Euler.
+        /// State y = [positions, velocities] (must have even length).
+        /// func returns the full derivative [velocities, accelerations].
+        /// Update order: v += a·dt, then x += v_new·dt (uses updated velocity for stability).
+        /// </summary>
+        public static VectorN SemiImplicitEuler(
+            this Func<(double t, VectorN y), VectorN> func,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var y = new VectorN(y0.Values);
+            int half = y.Length / 2;
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+                var dy = func((t, y));
+
+                for (int i = half; i < y.Length; i++)
+                    y[i] += h * dy[i];
+
+                for (int i = 0; i < half; i++)
+                    y[i] += h * y[half + i];
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Semi-implicit Euler with full trajectory output.
+        /// </summary>
+        public static List<(double t, VectorN y)> SemiImplicitEulerTrajectory(
+            this Func<(double t, VectorN y), VectorN> func,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var trajectory = new List<(double t, VectorN y)>();
+            var y = new VectorN(y0.Values);
+            int half = y.Length / 2;
+            trajectory.Add((tMin, new VectorN(y.Values)));
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+                var dy = func((t, y));
+
+                for (int i = half; i < y.Length; i++)
+                    y[i] += h * dy[i];
+
+                for (int i = 0; i < half; i++)
+                    y[i] += h * y[half + i];
+
+                trajectory.Add((t + h, new VectorN(y.Values)));
+            }
+
+            return trajectory;
+        }
+
+        /// <summary>
+        /// Convenience overload: semi-implicit Euler with double[].
+        /// </summary>
+        public static double[] SemiImplicitEuler(
+            this Func<(double t, double[] y), double[]> func,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(func((v.t, v.y.Values)));
+
+            return wrapped.SemiImplicitEuler(tMin, tMax, stepSize, new VectorN(y0)).Values;
+        }
+
+        /// <summary>
+        /// Convenience overload: semi-implicit Euler trajectory with double[].
+        /// </summary>
+        public static List<(double t, double[] y)> SemiImplicitEulerTrajectory(
+            this Func<(double t, double[] y), double[]> func,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(func((v.t, v.y.Values)));
+
+            return wrapped.SemiImplicitEulerTrajectory(tMin, tMax, stepSize, new VectorN(y0))
+                .Select(p => (p.t, p.y.Values))
+                .ToList();
+        }
+
+        #endregion
+
+        #region Velocity Verlet
+
+        /// <summary>
+        /// Solves a second-order ODE system using velocity Verlet integration.
+        /// State y = [positions, velocities] (must have even length).
+        /// accelerationFunc takes (t, state) and returns accelerations only (half the state length).
+        /// Provides O(dt²) accuracy and excellent energy conservation.
+        /// </summary>
+        public static VectorN VelocityVerlet(
+            this Func<(double t, VectorN y), VectorN> accelerationFunc,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var y = new VectorN(y0.Values);
+            int half = y.Length / 2;
+            var a = accelerationFunc((tMin, y));
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                for (int i = 0; i < half; i++)
+                    y[i] += h * y[half + i] + 0.5 * h * h * a[i];
+
+                var aNew = accelerationFunc((t + h, y));
+
+                for (int i = 0; i < half; i++)
+                    y[half + i] += 0.5 * h * (a[i] + aNew[i]);
+
+                a = aNew;
+            }
+
+            return y;
+        }
+
+        /// <summary>
+        /// Velocity Verlet with full trajectory output.
+        /// </summary>
+        public static List<(double t, VectorN y)> VelocityVerletTrajectory(
+            this Func<(double t, VectorN y), VectorN> accelerationFunc,
+            double tMin, double tMax, double stepSize, VectorN y0)
+        {
+            var trajectory = new List<(double t, VectorN y)>();
+            var y = new VectorN(y0.Values);
+            int half = y.Length / 2;
+            trajectory.Add((tMin, new VectorN(y.Values)));
+            var a = accelerationFunc((tMin, y));
+
+            for (var t = tMin; t < tMax; t += stepSize)
+            {
+                var h = Math.Min(stepSize, tMax - t);
+
+                for (int i = 0; i < half; i++)
+                    y[i] += h * y[half + i] + 0.5 * h * h * a[i];
+
+                var aNew = accelerationFunc((t + h, y));
+
+                for (int i = 0; i < half; i++)
+                    y[half + i] += 0.5 * h * (a[i] + aNew[i]);
+
+                a = aNew;
+                trajectory.Add((t + h, new VectorN(y.Values)));
+            }
+
+            return trajectory;
+        }
+
+        /// <summary>
+        /// Convenience overload: velocity Verlet with double[].
+        /// </summary>
+        public static double[] VelocityVerlet(
+            this Func<(double t, double[] y), double[]> accelerationFunc,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(accelerationFunc((v.t, v.y.Values)));
+
+            return wrapped.VelocityVerlet(tMin, tMax, stepSize, new VectorN(y0)).Values;
+        }
+
+        /// <summary>
+        /// Convenience overload: velocity Verlet trajectory with double[].
+        /// </summary>
+        public static List<(double t, double[] y)> VelocityVerletTrajectory(
+            this Func<(double t, double[] y), double[]> accelerationFunc,
+            double tMin, double tMax, double stepSize, double[] y0)
+        {
+            Func<(double t, VectorN y), VectorN> wrapped = v =>
+                new VectorN(accelerationFunc((v.t, v.y.Values)));
+
+            return wrapped.VelocityVerletTrajectory(tMin, tMax, stepSize, new VectorN(y0))
+                .Select(p => (p.t, p.y.Values))
+                .ToList();
+        }
+
+        #endregion
+
         /// <summary>
         /// Solves a linear system A x = b by computing x = A^{-1} b.
         /// </summary>

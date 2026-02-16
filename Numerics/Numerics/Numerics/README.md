@@ -380,8 +380,45 @@ var orbit = dynamics.RungeKuttaTrajectory(0, period, 1.0, y0);
 double energy = orbit.Last().y.Dot(orbit.Last().y); // use VectorN operations
 ```
 
-`double[]` convenience overloads are also available — they delegate to `VectorN` internally:
+`double[]` convenience overloads are also available — they delegate to `VectorN` internally.
+
+**Semi-Implicit (Symplectic) Euler** — stable for oscillatory systems
+
+State is split as `[positions | velocities]`; velocities are updated first, then positions use the new velocities.
+
+```csharp
+// Simple harmonic oscillator: state = [x, v], dy/dt = [v, -x]
+Func<(double t, VectorN y), VectorN> sho = v =>
+    new VectorN([v.y[1], -v.y[0]]);
+
+var y0 = new VectorN([1, 0]);
+VectorN result = sho.SemiImplicitEuler(0, 100, 0.01, y0);
+
+// Full trajectory
+var traj = sho.SemiImplicitEulerTrajectory(0, 100, 0.01, y0);
 ```
+
+**Velocity Verlet** — O(dt²) symplectic, excellent energy conservation
+
+For second-order ODEs. State is `[positions | velocities]`; the acceleration function returns only accelerations (half the state length).
+
+```csharp
+// Spring: acceleration = -x (depends on position only)
+Func<(double t, VectorN y), VectorN> accel = v =>
+    new VectorN([-v.y[0]]);
+
+var y0 = new VectorN([1, 0]); // [position, velocity]
+VectorN result = accel.VelocityVerlet(0, 100, 0.01, y0);
+
+// Full trajectory
+var traj = accel.VelocityVerletTrajectory(0, 20, 0.01, y0);
+foreach (var (t, y) in traj)
+{
+    double energy = 0.5 * (y[0] * y[0] + y[1] * y[1]); // bounded
+}
+```
+
+`double[]` convenience overloads are available for both — they delegate to `VectorN` internally.
 
 **Linear ODE System Solver** — eigenvalue-based analytical solution
 
