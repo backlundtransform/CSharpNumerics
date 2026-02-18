@@ -671,5 +671,97 @@ namespace CSharpNumerics.Physics
         }
 
         #endregion
+
+        #region Common Force Models
+
+        /// <summary>
+        /// Computes a spring force between two points using Hooke's law: F = -k·(|Δr| - L₀)·r̂.
+        /// The returned force acts on the object at <paramref name="position"/> pulling it toward <paramref name="anchor"/>.
+        /// </summary>
+        /// <param name="k">Spring stiffness in N/m.</param>
+        /// <param name="restLength">Natural (rest) length of the spring in meters.</param>
+        /// <param name="position">Position of the attached object.</param>
+        /// <param name="anchor">Position of the anchor point.</param>
+        public static Vector SpringForce(this double k, double restLength, Vector position, Vector anchor)
+        {
+            var delta = position - anchor;
+            double distance = delta.GetMagnitude();
+            if (distance < 1e-15) return new Vector(0, 0, 0);
+            var direction = (1.0 / distance) * delta;
+            return -k * (distance - restLength) * direction;
+        }
+
+        /// <summary>
+        /// Computes a linear damping (viscous) force: F = -c·v.
+        /// Opposes the direction of motion proportionally to speed.
+        /// </summary>
+        /// <param name="c">Damping coefficient in N·s/m.</param>
+        /// <param name="velocity">Velocity vector of the object in m/s.</param>
+        public static Vector DampingForce(this double c, Vector velocity)
+        {
+            return -c * velocity;
+        }
+
+        /// <summary>
+        /// Computes aerodynamic drag: F = -½·Cd·ρ·A·|v|·v.
+        /// The force is proportional to v² and opposes the direction of motion.
+        /// </summary>
+        /// <param name="dragCoefficient">Drag coefficient Cd (dimensionless).</param>
+        /// <param name="fluidDensity">Fluid density ρ in kg/m³ (air ≈ 1.225).</param>
+        /// <param name="crossSectionArea">Cross-sectional area A in m².</param>
+        /// <param name="velocity">Velocity vector of the object in m/s.</param>
+        public static Vector DragForce(this double dragCoefficient, double fluidDensity, double crossSectionArea, Vector velocity)
+        {
+            double speed = velocity.GetMagnitude();
+            if (speed < 1e-15) return new Vector(0, 0, 0);
+            return -0.5 * dragCoefficient * fluidDensity * crossSectionArea * speed * velocity;
+        }
+
+        /// <summary>
+        /// Computes a friction force given a friction coefficient and normal force magnitude.
+        /// Static friction is returned when speed is below <paramref name="staticThreshold"/>;
+        /// kinetic friction is returned otherwise.
+        /// 
+        /// Kinetic: F = -μk·|N|·v̂
+        /// Static:  F = -min(|applied|, μs·|N|)·applied̂  (opposes applied tangential force)
+        /// </summary>
+        /// <param name="mu">Friction coefficient (μk for kinetic, or μs for static).</param>
+        /// <param name="normalForceMagnitude">Magnitude of the normal force |N| in Newtons.</param>
+        /// <param name="velocity">Current velocity of the object in m/s.</param>
+        /// <param name="appliedTangentialForce">
+        /// The tangential component of the applied force (used for static friction direction).
+        /// If null, only kinetic friction is computed.
+        /// </param>
+        /// <param name="staticThreshold">Speed below which static friction applies (default 1e-6 m/s).</param>
+        public static Vector FrictionForce(
+            this double mu,
+            double normalForceMagnitude,
+            Vector velocity,
+            Vector? appliedTangentialForce = null,
+            double staticThreshold = 1e-6)
+        {
+            if (normalForceMagnitude < 0) normalForceMagnitude = 0;
+            double speed = velocity.GetMagnitude();
+
+            if (speed > staticThreshold)
+            {
+                // Kinetic friction: opposes velocity direction
+                return -mu * normalForceMagnitude * (1.0 / speed) * velocity;
+            }
+
+            // Static friction: opposes the applied tangential force
+            if (appliedTangentialForce is Vector applied)
+            {
+                double appliedMag = applied.GetMagnitude();
+                if (appliedMag < 1e-15) return new Vector(0, 0, 0);
+                double maxStaticForce = mu * normalForceMagnitude;
+                double frictionMag = Math.Min(appliedMag, maxStaticForce);
+                return -frictionMag * (1.0 / appliedMag) * applied;
+            }
+
+            return new Vector(0, 0, 0);
+        }
+
+        #endregion
     }
 }

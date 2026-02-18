@@ -945,5 +945,245 @@ namespace NumericTest
         }
 
         #endregion
+
+        #region Common Force Models
+
+        [TestMethod]
+        public void SpringForce_AtRest_ZeroForce()
+        {
+            double k = 50;
+            var pos = new Vector(3, 0, 0);
+            var anchor = new Vector(0, 0, 0);
+            double restLength = 3.0; // exactly at rest length
+
+            var F = k.SpringForce(restLength, pos, anchor);
+
+            Assert.AreEqual(0, F.x, 1e-10);
+            Assert.AreEqual(0, F.y, 1e-10);
+            Assert.AreEqual(0, F.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void SpringForce_Stretched_PullsBack()
+        {
+            double k = 100;
+            var pos = new Vector(5, 0, 0);
+            var anchor = new Vector(0, 0, 0);
+            double restLength = 3.0;
+
+            var F = k.SpringForce(restLength, pos, anchor);
+
+            // Stretched by 2m → F = -100*2 = -200 along x
+            Assert.AreEqual(-200, F.x, 1e-10);
+            Assert.AreEqual(0, F.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void SpringForce_Compressed_PushesAway()
+        {
+            double k = 100;
+            var pos = new Vector(1, 0, 0);
+            var anchor = new Vector(0, 0, 0);
+            double restLength = 3.0;
+
+            var F = k.SpringForce(restLength, pos, anchor);
+
+            // Compressed by 2m → F = +200 along x (pushes away from anchor)
+            Assert.AreEqual(200, F.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void SpringForce_3D_DirectionCorrect()
+        {
+            double k = 10;
+            var pos = new Vector(3, 4, 0);  // distance = 5 from origin
+            var anchor = new Vector(0, 0, 0);
+            double restLength = 0;
+
+            var F = k.SpringForce(restLength, pos, anchor);
+
+            // F = -10 * 5 * (3/5, 4/5, 0) = (-30, -40, 0)
+            Assert.AreEqual(-30, F.x, 1e-10);
+            Assert.AreEqual(-40, F.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void SpringForce_WithVerlet_ConservesEnergy()
+        {
+            // 1D spring-mass: m=1, k=4, x0=2 → ω=2, E0 = ½k·x0² = 8
+            var body = RigidBody.CreateSolidSphere(1, 1);
+            body.Position = new Vector(2, 0, 0);
+            double k = 4.0;
+
+            Func<RigidBody, (Vector, Vector)> spring = b =>
+                (k.SpringForce(0, b.Position, new Vector(0, 0, 0)), new Vector(0, 0, 0));
+
+            double dt = 0.001;
+            for (int i = 0; i < 50000; i++) // 50 seconds ≈ 16 oscillation periods
+                body.IntegrateVelocityVerlet(spring, dt);
+
+            double E = 0.5 * k * body.Position.Dot(body.Position)
+                     + 0.5 * body.Velocity.Dot(body.Velocity);
+            Assert.AreEqual(8.0, E, 1e-4);
+        }
+
+        [TestMethod]
+        public void DampingForce_OpposesVelocity()
+        {
+            double c = 5.0;
+            var v = new Vector(3, -4, 1);
+
+            var F = c.DampingForce(v);
+
+            Assert.AreEqual(-15, F.x, 1e-10);
+            Assert.AreEqual(20, F.y, 1e-10);
+            Assert.AreEqual(-5, F.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void DampingForce_ZeroVelocity_ZeroForce()
+        {
+            var F = 10.0.DampingForce(new Vector(0, 0, 0));
+
+            Assert.AreEqual(0, F.x, 1e-10);
+            Assert.AreEqual(0, F.y, 1e-10);
+            Assert.AreEqual(0, F.z, 1e-10);
+        }
+
+        [TestMethod]
+        public void DampingForce_DissipatesEnergy()
+        {
+            // Spring + damper → energy should decrease over time
+            var body = RigidBody.CreateSolidSphere(1, 1);
+            body.Position = new Vector(2, 0, 0);
+            double k = 10.0, c = 0.5;
+
+            double E0 = 0.5 * k * 4; // initial PE = 20
+
+            Func<RigidBody, (Vector, Vector)> forces = b =>
+            {
+                var spring = k.SpringForce(0, b.Position, new Vector(0, 0, 0));
+                var damp = c.DampingForce(b.Velocity);
+                return (spring + damp, new Vector(0, 0, 0));
+            };
+
+            double dt = 0.001;
+            for (int i = 0; i < 10000; i++)
+                body.IntegrateVelocityVerlet(forces, dt);
+
+            double E = 0.5 * k * body.Position.Dot(body.Position)
+                     + 0.5 * body.Velocity.Dot(body.Velocity);
+            Assert.IsTrue(E < E0); // energy must have decreased
+        }
+
+        [TestMethod]
+        public void DragForce_Magnitude_MatchesFormula()
+        {
+            double Cd = 0.47; // sphere
+            double rho = 1.225; // air
+            double A = Math.PI * 0.05 * 0.05; // r=5cm
+            var v = new Vector(10, 0, 0);
+
+            var F = Cd.DragForce(rho, A, v);
+
+            double expectedMag = 0.5 * Cd * rho * A * 100; // |v|²=100
+            Assert.AreEqual(-expectedMag, F.x, 1e-10);
+            Assert.AreEqual(0, F.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void DragForce_ZeroVelocity_ZeroForce()
+        {
+            var F = 0.47.DragForce(1.225, 1.0, new Vector(0, 0, 0));
+
+            Assert.AreEqual(0, F.GetMagnitude(), 1e-10);
+        }
+
+        [TestMethod]
+        public void DragForce_OpposesMotion()
+        {
+            var v = new Vector(3, 4, 0); // speed = 5
+            var F = 1.0.DragForce(1.0, 1.0, v);
+
+            // F should be anti-parallel to v
+            double dot = F.Dot(v);
+            Assert.IsTrue(dot < 0);
+        }
+
+        [TestMethod]
+        public void DragForce_QuadraticScaling()
+        {
+            double Cd = 1.0, rho = 1.0, A = 1.0;
+
+            var F1 = Cd.DragForce(rho, A, new Vector(1, 0, 0));
+            var F2 = Cd.DragForce(rho, A, new Vector(2, 0, 0));
+
+            // Drag scales as v²: doubling speed → 4× force
+            Assert.AreEqual(4.0 * Math.Abs(F1.x), Math.Abs(F2.x), 1e-10);
+        }
+
+        [TestMethod]
+        public void FrictionForce_Kinetic_OpposesVelocity()
+        {
+            double mu = 0.3;
+            double N = 98.0; // ~10 kg on Earth
+            var v = new Vector(5, 0, 0);
+
+            var F = mu.FrictionForce(N, v);
+
+            Assert.AreEqual(-0.3 * 98, F.x, 1e-10);
+            Assert.AreEqual(0, F.y, 1e-10);
+        }
+
+        [TestMethod]
+        public void FrictionForce_Kinetic_MagnitudeIsMuN()
+        {
+            double mu = 0.5;
+            double N = 50;
+            var v = new Vector(3, 4, 0); // speed = 5
+
+            var F = mu.FrictionForce(N, v);
+
+            Assert.AreEqual(mu * N, F.GetMagnitude(), 1e-10);
+        }
+
+        [TestMethod]
+        public void FrictionForce_Static_CancelsAppliedForce_WhenBelowLimit()
+        {
+            double mu = 0.5;
+            double N = 100;
+            var v = new Vector(0, 0, 0); // stationary
+            var applied = new Vector(20, 0, 0); // below μN = 50
+
+            var F = mu.FrictionForce(N, v, applied);
+
+            // Static friction fully cancels applied force
+            Assert.AreEqual(-20, F.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void FrictionForce_Static_CappedAtMuN()
+        {
+            double mu = 0.5;
+            double N = 100;
+            var v = new Vector(0, 0, 0);
+            var applied = new Vector(80, 0, 0); // above μN = 50
+
+            var F = mu.FrictionForce(N, v, applied);
+
+            // Capped at μN = 50
+            Assert.AreEqual(-50, F.x, 1e-10);
+        }
+
+        [TestMethod]
+        public void FrictionForce_ZeroNormal_ZeroFriction()
+        {
+            // No normal force → no friction (e.g. object in freefall)
+            var F = 0.5.FrictionForce(0, new Vector(5, 0, 0));
+
+            Assert.AreEqual(0, F.GetMagnitude(), 1e-10);
+        }
+
+        #endregion
     }
 }
