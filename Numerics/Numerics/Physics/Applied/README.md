@@ -177,3 +177,64 @@ var spring = new SpringJoint(0, 1,
 - Baumgarte positional stabilization prevents drift
 - Handles mixed static + dynamic bodies
 - Hard constraints (Distance, BallSocket, Hinge) iterated; soft constraints (SpringJoint) applied once
+
+---
+
+### PhysicsWorld
+
+The main orchestrator — manages bodies, constraints, collisions, and the full simulation pipeline in one call.
+
+```csharp
+var world = new PhysicsWorld
+{
+    Gravity = new Vector(0, 0, -9.8),
+    DefaultRestitution = 0.7,
+    DefaultFriction = 0.3,
+    SolverIterations = 10,
+    FixedTimeStep = 1.0 / 60.0,
+};
+
+// Add bodies (returns index for constraints/queries)
+var floor = RigidBody.CreateStatic(new Vector(0, 0, 0));
+int iFloor = world.AddBody(floor, boundingRadius: 100);
+
+var ball = RigidBody.CreateSolidSphere(mass: 1, radius: 0.5);
+ball.Position = new Vector(0, 0, 10);
+int iBall = world.AddBody(ball, boundingRadius: 0.5);
+
+// Add constraints
+world.AddConstraint(new DistanceConstraint(0, 1,
+    new Vector(0, 0, 0), new Vector(0, 0, 0), distance: 5));
+
+// Collision callback
+world.OnCollision = (a, b, contact) =>
+    Console.WriteLine($"Collision: body {a} ↔ body {b}, depth={contact.PenetrationDepth:F3}");
+
+// Modify bodies directly via ref
+ref var b = ref world.Body(iBall);
+b.Velocity = new Vector(3, 0, 0);
+```
+
+**Simulation step — full pipeline in one call:**
+
+```csharp
+// Option 1: Single fixed step
+world.Step(dt: 0.01);
+// Pipeline: gravity → constraints → positions → broadphase → collisions
+
+// Option 2: Fixed-timestep accumulator (deterministic, framerate-independent)
+int steps = world.Update(elapsed: deltaTime); // consumes time in fixed chunks
+
+// Smooth rendering between physics steps
+double alpha = world.Alpha; // interpolation factor [0, 1)
+```
+
+**Broad phase algorithms:**
+
+```csharp
+// Default: sweep-and-prune on X axis — O(n log n)
+var world = new PhysicsWorld(); // uses SweepAndPruneBroadPhase
+
+// Brute force — O(n²), simpler, for small scenes
+var world2 = new PhysicsWorld(new BruteForceBroadPhase());
+```
