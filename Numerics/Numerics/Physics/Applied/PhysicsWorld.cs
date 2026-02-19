@@ -6,6 +6,8 @@ using Numerics.Objects;
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace CSharpNumerics.Physics.Applied
 {
     /// <summary>
