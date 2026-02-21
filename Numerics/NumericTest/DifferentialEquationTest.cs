@@ -1,6 +1,6 @@
-﻿using CSharpNumerics.Objects;
+﻿
 using CSharpNumerics.Physics.Constants;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using Xunit.Sdk;
 
 namespace NumericsTests

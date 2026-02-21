@@ -1,5 +1,5 @@
-﻿using Numerics.Models;
-using Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics.Data;
 using System.Collections.Generic;
 using System.Linq;
 

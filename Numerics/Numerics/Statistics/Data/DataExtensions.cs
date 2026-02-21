@@ -1,11 +1,11 @@
-﻿using CSharpNumerics.Numerics.Enums;
-using Numerics.Models;
+﻿using CSharpNumerics.Statistics.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace System
+namespace CSharpNumerics.Statistics.Data
 {
-    public static class SeriesExtensions
+    public static class DataExtensions
     {
         public static List<Serie> GetSeries(this Func<double, double> func, double minValue, double maxValue, double stepSize)
         {
@@ -126,20 +126,6 @@ namespace System
 
             }
             return newTimeserie;
-        }
-
-        public static double Interpolation(this long currentTicks,
-            long firstTicks, 
-            long lastTicks, 
-            double firstValue,
-            double lastValue)
-        {
-            if ((lastTicks - firstTicks) == 0)
-            {
-                return firstValue;
-            }
-
-            return firstValue + (lastValue - firstValue) * (currentTicks - firstTicks) / (lastTicks - firstTicks);
         }
     }
 }

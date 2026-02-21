@@ -3,7 +3,7 @@ using CSharpNumerics.Physics.Applied.BroadPhase;
 using CSharpNumerics.Physics.Applied.Constraints;
 using CSharpNumerics.Physics.Applied.Objects;
 using CSharpNumerics.Physics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 namespace NumericTest
 {

@@ -1,8 +1,6 @@
-﻿using CSharpNumerics.Objects;
-using Numerics.Objects;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using CSharpNumerics.Numerics.Objects;
+
 
 namespace CSharpNumerics.ML.Models.Interfaces;
 

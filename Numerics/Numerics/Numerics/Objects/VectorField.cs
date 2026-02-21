@@ -1,8 +1,9 @@
 ﻿using CSharpNumerics.Numerics.Enums;
+using CSharpNumerics.Numerics.Enums;
 using System;
 using System.Collections.Generic;
 
-namespace Numerics.Objects
+namespace CSharpNumerics.Numerics.Objects
 {
     public struct VectorField
     {

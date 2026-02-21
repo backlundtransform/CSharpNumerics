@@ -1,8 +1,7 @@
 ﻿using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.ML.Selector.Interfaces;
-using CSharpNumerics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

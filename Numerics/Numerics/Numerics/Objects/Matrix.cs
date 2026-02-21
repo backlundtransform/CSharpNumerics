@@ -1,8 +1,7 @@
-﻿using CSharpNumerics.Objects;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace Numerics.Objects;
+namespace CSharpNumerics.Numerics.Objects;
 
 public struct Matrix
 {

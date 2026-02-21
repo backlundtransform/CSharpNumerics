@@ -1,5 +1,5 @@
 using CSharpNumerics.Physics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Physics.Applied.Constraints
 {

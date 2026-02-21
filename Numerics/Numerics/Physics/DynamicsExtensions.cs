@@ -1,8 +1,8 @@
 using CSharpNumerics.Physics.Constants;
 using CSharpNumerics.Physics.Objects;
 using System;
-using Numerics.Objects;
-using CSharpNumerics.Objects;
+using CSharpNumerics.Numerics.Objects;
+
 
 namespace CSharpNumerics.Physics
 {

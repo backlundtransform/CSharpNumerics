@@ -1,9 +1,9 @@
-﻿using Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 
 
-namespace CSharpNumerics.Objects
+namespace CSharpNumerics.Numerics.Objects
 {
     public struct VectorN
     {

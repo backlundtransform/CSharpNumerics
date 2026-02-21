@@ -4,7 +4,7 @@ using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
 using CSharpNumerics.Numerics.Models;
-using Numerics.Models;
+using CSharpNumerics.Numerics.Objects;
 using NumericTest.TestData;
 
 
@@ -64,7 +64,7 @@ namespace NumericTest
             var ts = TimeSeries.FromCsv("ts.csv");
             var cv = new ShuffleSplitCrossValidator(pipelineGrid,  5, testSize: 0.2,0.8);
             var colIndex = Array.IndexOf(ts.Cols, "Target");
-            var result = cv.Run(ts.ToMatrix(2), new CSharpNumerics.Objects.VectorN(ts.Data[colIndex]));
+            var result = cv.Run(ts.ToMatrix(2), new VectorN(ts.Data[colIndex]));
 
             Assert.IsTrue(result.BestScore > -1);
         }
@@ -84,7 +84,7 @@ namespace NumericTest
 
             var cv = new StratifiedKFoldCrossValidator(pipelineGrid, folds: 5);
 
-            var result = cv.Run(df.ToMatrix(2), new CSharpNumerics.Objects.VectorN(df.Data[colIndex]));
+            var result = cv.Run(df.ToMatrix(2), new VectorN(df.Data[colIndex]));
 
 
             Assert.IsTrue(result.BestScore > 0);

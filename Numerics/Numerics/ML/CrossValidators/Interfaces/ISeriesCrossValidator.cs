@@ -1,6 +1,6 @@
 ﻿using CSharpNumerics.ML.CrossValidators.Grouping;
 using CSharpNumerics.ML.CrossValidators.Result;
-using CSharpNumerics.Numerics.Models;
+using CSharpNumerics.Statistics.Data;
 
 
 namespace CSharpNumerics.ML.CrossValidators.Interfaces;

@@ -1,10 +1,10 @@
 ﻿using CSharpNumerics.Statistics.Methods;
-using Numerics.Models;
 using System.Collections.Generic;
+using CSharpNumerics.Statistics.Data;
 
 namespace System.Linq
 {
-    public static class StatisticsExtensions
+    public static class DataExtensions
     {
         /// <summary>
         /// Computes the median value of a sequence after projecting each element to a scalar.

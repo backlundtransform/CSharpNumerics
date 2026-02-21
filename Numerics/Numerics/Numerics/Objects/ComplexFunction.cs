@@ -2,7 +2,7 @@
 using System;
 
 
-namespace Numerics.Objects
+namespace CSharpNumerics.Numerics.Objects
 {
 
 

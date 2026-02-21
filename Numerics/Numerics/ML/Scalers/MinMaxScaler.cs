@@ -1,5 +1,5 @@
 ﻿using CSharpNumerics.ML.Scalers.Interfaces;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 
 namespace CSharpNumerics.ML.Scalers;

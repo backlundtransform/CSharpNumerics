@@ -1,4 +1,4 @@
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using System.Collections.Generic;
 
 namespace System;

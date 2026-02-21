@@ -2,8 +2,7 @@
 using CSharpNumerics.ML.CrossValidators.Interfaces;
 using CSharpNumerics.ML.CrossValidators.Result;
 using CSharpNumerics.ML.Models.Interfaces;
-using CSharpNumerics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Buffers;
 using System.Collections.Generic;

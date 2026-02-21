@@ -1,4 +1,4 @@
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using System;
 
 namespace CSharpNumerics.Physics.Objects

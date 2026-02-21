@@ -1,5 +1,4 @@
-﻿using CSharpNumerics.Objects;
-using Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System.Collections.Generic;
 using System.Linq;
 

@@ -1,10 +1,9 @@
-﻿using Numerics.Models;
-using Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-namespace CSharpNumerics.Numerics.Models;
+namespace CSharpNumerics.Statistics.Data;
 
 
 

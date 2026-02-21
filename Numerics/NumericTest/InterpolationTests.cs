@@ -1,5 +1,5 @@
 ﻿using CSharpNumerics.Numerics.Enums;
-using Numerics.Models;
+using CSharpNumerics.Numerics.Models;
 
 namespace NumericTest
 {

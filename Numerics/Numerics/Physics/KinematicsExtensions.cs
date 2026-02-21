@@ -1,6 +1,6 @@
 ﻿using CSharpNumerics.Physics.Constants;
 using System;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Physics
 {

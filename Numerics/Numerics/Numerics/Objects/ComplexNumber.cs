@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Numerics.Objects
+namespace CSharpNumerics.Numerics.Objects
 {
    
     public class ComplexNumber

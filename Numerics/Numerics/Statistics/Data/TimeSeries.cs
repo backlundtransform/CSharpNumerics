@@ -1,12 +1,11 @@
-﻿using Numerics.Models;
-using Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace Numerics.Models;
+namespace CSharpNumerics.Statistics.Data;
 
 public class TimeSeries
 {

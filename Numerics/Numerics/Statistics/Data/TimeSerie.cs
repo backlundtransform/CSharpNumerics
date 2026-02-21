@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Numerics.Models
+namespace CSharpNumerics.Statistics.Data
 {
    public class TimeSerie
     {

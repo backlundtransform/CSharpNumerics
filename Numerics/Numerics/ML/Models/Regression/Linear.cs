@@ -1,6 +1,5 @@
 ﻿using CSharpNumerics.ML.Models.Interfaces;
-using CSharpNumerics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.ML.Models.Regression;
 

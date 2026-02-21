@@ -5,8 +5,7 @@ using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
 using CSharpNumerics.ML.Selector;
-using CSharpNumerics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using Xunit.Sdk;
 
 namespace NumericTest

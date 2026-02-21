@@ -1,4 +1,4 @@
-﻿namespace CSharpNumerics.Numerics.Enums
+﻿namespace CSharpNumerics.Statistics.Enum
 {
     public enum GroupOperator
     {

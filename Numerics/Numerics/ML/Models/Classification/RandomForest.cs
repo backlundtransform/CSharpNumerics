@@ -1,6 +1,5 @@
 ﻿using CSharpNumerics.ML.Models.Interfaces;
-using CSharpNumerics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

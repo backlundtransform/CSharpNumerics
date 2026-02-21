@@ -1,5 +1,5 @@
-﻿using CSharpNumerics.Numerics.Enums;
-using Numerics.Models;
+﻿using CSharpNumerics.Statistics.Data;
+using CSharpNumerics.Statistics.Enum;
 using System.Collections.Generic;
 
 namespace System.Linq;
@@ -205,5 +205,30 @@ public static class InterpolationExtensions
         double t = (lxi - lx1) / (lx2 - lx1);
 
         return y + t * (next.y - y);
+    }
+
+    /// <summary>
+    /// Linearly interpolates a value based on tick positions.
+    /// Returns firstValue when currentTicks == firstTicks, lastValue when currentTicks == lastTicks,
+    /// and a proportional blend in between.
+    /// </summary>
+    /// <param name="currentTicks">The tick position to interpolate at.</param>
+    /// <param name="firstTicks">The tick position of the first known value.</param>
+    /// <param name="lastTicks">The tick position of the last known value.</param>
+    /// <param name="firstValue">The value at <paramref name="firstTicks"/>.</param>
+    /// <param name="lastValue">The value at <paramref name="lastTicks"/>.</param>
+    /// <returns>The interpolated value at <paramref name="currentTicks"/>.</returns>
+    public static double Interpolation(this long currentTicks,
+        long firstTicks,
+        long lastTicks,
+        double firstValue,
+        double lastValue)
+    {
+        if (lastTicks == firstTicks)
+        {
+            return firstValue;
+        }
+
+        return firstValue + (lastValue - firstValue) * (currentTicks - firstTicks) / (lastTicks - firstTicks);
     }
 }

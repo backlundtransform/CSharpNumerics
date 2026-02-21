@@ -1,6 +1,6 @@
 using System;
 
-namespace Numerics.Objects
+namespace CSharpNumerics.Numerics.Objects
 {
     /// <summary>
     /// Represents a quaternion q = w + xi + yj + zk.
@@ -257,7 +257,7 @@ namespace Numerics.Objects
             // Pitch (Y) — clamp for safety
             double sinp = 2.0 * (w * y - z * x);
             double pitch = Math.Abs(sinp) >= 1.0
-                ? Math.CopySign(Math.PI / 2, sinp)
+                ? (sinp >= 0 ? Math.PI / 2 : -Math.PI / 2)
                 : Math.Asin(sinp);
 
             // Yaw (Z)

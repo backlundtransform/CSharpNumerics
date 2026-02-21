@@ -1,4 +1,4 @@
-﻿namespace Numerics.Models
+﻿namespace CSharpNumerics.Statistics.Data
 {
    public class Serie
     {

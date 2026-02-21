@@ -1,7 +1,7 @@
 using CSharpNumerics.Physics.Applied;
 using CSharpNumerics.Physics.Applied.Objects;
 using CSharpNumerics.Physics.Objects;
-using Numerics.Objects;
+using CSharpNumerics.Numerics.Objects;
 
 namespace NumericTest
 {

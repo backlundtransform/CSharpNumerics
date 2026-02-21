@@ -1,6 +1,6 @@
 ﻿using Xunit.Sdk;
-using Numerics.Objects;
-using Numerics.Models;
+using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Models;
 using CSharpNumerics.Numerics.Enums;
 
 

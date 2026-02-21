@@ -1,5 +1,5 @@
 ﻿using Xunit.Sdk;
-using Numerics.Models;
+using CSharpNumerics.Numerics.Models;
 using CSharpNumerics.Statistics.Methods;
 
 
