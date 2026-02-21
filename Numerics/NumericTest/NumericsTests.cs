@@ -1,7 +1,8 @@
 ﻿using Xunit.Sdk;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Numerics.Models;
+
 using CSharpNumerics.Numerics.Enums;
+using CSharpNumerics.Statistics.Data;
 
 
 namespace NumericsTests

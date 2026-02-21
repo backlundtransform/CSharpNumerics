@@ -3,8 +3,9 @@ using CSharpNumerics.ML.CrossValidators;
 using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
 using CSharpNumerics.ML.Scalers;
-using CSharpNumerics.Numerics.Models;
+
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics.Data;
 using NumericTest.TestData;
 
 
