@@ -13,6 +13,7 @@
 		<PackageTags>Numerics,Statistics,ML,Physics,Math,Calculus,Matrix,Vector,FFT,Interpolation,ODE,Regression,Classification,CrossValidation,Astronomy,Kinematics,Dynamics,Integration,Tensor, GamePhysics</PackageTags>
 		<Version>2.2.6</Version>
 		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,5 +28,10 @@
 	<!-- LICENSE filen -->
 	<ItemGroup>
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<!-- README filen -->
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 </Project>
