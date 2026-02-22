@@ -1,10 +1,9 @@
-﻿using CSharpNumerics.Statistics.Methods;
-using System.Collections.Generic;
-using CSharpNumerics.Statistics.Data;
+﻿using System.Collections.Generic;
+
 
 namespace System.Linq
 {
-    public static class DataExtensions
+    public static class DescriptiveStatisticsExtensions
     {
         /// <summary>
         /// Computes the median value of a sequence after projecting each element to a scalar.
@@ -191,140 +190,7 @@ namespace System.Linq
                 yield return sum;
             }
         }
+     
 
-        /// <summary>
-        /// Generates noise from a normal distribution with the given variance.
-        /// </summary>
-        /// <param name="random">Random number generator.</param>
-        /// <param name="variance">Variance (σ²).</param>
-        /// <returns>A random sample.</returns>
-        public static double GenerateNoise(this Random random, double variance)
-        {
-            var normalDistribution = Statistics.NormalDistribution(Math.Sqrt(variance), 0);
-
-            return normalDistribution(random.Next((int)variance));
-        }
-
-        /// <summary>
-        /// Generates a uniformly distributed random double in [minimum, maximum).
-        /// </summary>
-        /// <param name="random">Random number generator.</param>
-        /// <param name="minimum">Lower bound.</param>
-        /// <param name="maximum">Upper bound.</param>
-        /// <returns>A random value in the specified range.</returns>
-        public static double GetRandomDouble(this Random random, double minimum, double maximum)
-        {
-            return random.NextDouble() * (maximum - minimum) + minimum;
-        }
-
-        /// <summary>
-        /// Computes simple linear regression parameters for paired data.
-        /// Returns slope, intercept, and correlation.
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The input sequence.</param>
-        /// <param name="func">Projection from element to (x,y).</param>
-        /// <returns>(slope, intercept, correlation).</returns>
-        public static (double slope, double intercept, double correlation) LinearRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
-        {
-
-            var serie = enumerable.Select(func);
-            var sxx = serie.Sum(p=>Math.Pow(p.x,2))-1.0/ serie.Count()* Math.Pow(serie.Sum(p => p.x), 2);
-            var syy = serie.Sum(p => Math.Pow(p.y, 2)) - 1.0 / serie.Count() * Math.Pow(serie.Sum(p => p.y), 2);
-            var sxy = serie.Sum(p => p.x*p.y) - 1.0 / serie.Count() * (serie.Sum(p => p.x) * serie.Sum(p => p.y));
-
-            var slope = sxy / sxx;
-            var intercept = serie.Average(p=>p.y)-slope * serie.Average(p => p.x);
-            var correlation = sxy / Math.Sqrt(sxx * syy);
-
-            return (slope, intercept, correlation);
-        }
-
-
-        /// <summary>
-        /// Fits an exponential model y = exp(intercept) * exp(slope * x) by applying linear regression to log(y).
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The input sequence.</param>
-        /// <param name="func">Projection from element to (x,y).</param>
-        /// <returns>A function f(x) representing the fitted exponential curve.</returns>
-        public static Func<double,double> ExponentialRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
-        {
-            var (slope, intercept, correlation) = enumerable.Select(func).LinearRegression(p => (p.x, Math.Log(p.y)));
-
-            return (double x)=> Math.Exp(intercept)* Math.Exp(slope*x);
-        }
-
-
-
-        /// <summary>
-        /// Applies a logistic function to data points.
-        /// Value = 1 / (1 + exp(-(slope * y + intercept))).
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The input sequence.</param>
-        /// <param name="func">Projection from element to (x,y).</param>
-        /// <param name="slope">Slope parameter.</param>
-        /// <param name="intercept">Intercept parameter.</param>
-        /// <returns>A sequence of <see cref="Serie"/> values after applying the logistic transform.</returns>
-        public static IEnumerable<Serie> LogisticRegression<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func, double slope, double intercept)
-        {
-
-            return enumerable.Select(func).Select(p =>new Serie() { Value = 1 / (1 + Math.Exp(-(slope * p.y + intercept))), Index= p.y});
-  
-        }
-
-        /// <summary>
-        /// Applies the rectified linear unit (ReLU) transform: relu(x) = max(0, x).
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The input sequence.</param>
-        /// <param name="func">Projection from element to (x,y).</param>
-        /// <returns>A sequence of <see cref="Serie"/> values after applying ReLU to x.</returns>
-        public static IEnumerable<Serie> Rectifier<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y)> func)
-        {
-
-            return enumerable.Select(func).Select(p => new Serie() { Value =p.x>0?p.x:0, Index = p.y });
-
-        }
-        /// <summary>
-        /// Classifies an unknown point using the k-nearest neighbors (k-NN) rule.
-        /// Selects the k closest points and returns the most frequent classification.
-        /// </summary>
-        /// <typeparam name="T">The element type.</typeparam>
-        /// <param name="enumerable">The dataset.</param>
-        /// <param name="func">Projection from element to (x, y, classification).</param>
-        /// <param name="unkown">The unknown point to classify.</param>
-        /// <param name="k">Number of neighbors.</param>
-        /// <returns>The predicted classification label.</returns>
-        public static int KnearestNeighbors<T>(this IEnumerable<T> enumerable, Func<T, (double x, double y, int classification)> func, (double x, double y) unkown, int k)
-        {
-            var data = enumerable.Select(func);
-
-            var pointInRing = new List<(double x, double y, int classification, double distance)>();
-
-            foreach(var (x, y, classification) in data)
-            {
-                var distance = Math.Sqrt(Math.Pow(unkown.x - x, 2) - Math.Pow(unkown.y - y, 2));
-                pointInRing.Add((x, y, classification, distance));     
-            }
-
-            return pointInRing.OrderBy(p => p.distance).Take(k).GroupBy(x => x.classification)
-                          .OrderByDescending(x => x.Count())
-                          .First().Key;
-
-        }
-
-        /// <summary>
-        /// Generates a uniformly distributed random double in [min, max).
-        /// </summary>
-        /// <param name="rnd">Random number generator.</param>
-        /// <param name="min">Lower bound.</param>
-        /// <param name="max">Upper bound.</param>
-        /// <returns>A random value in the specified range.</returns>
-        public static double RandomDouble(this Random rnd, double min, double max)
-        {
-            return rnd.NextDouble() * (max - min) + min;
-        }
     }
 }

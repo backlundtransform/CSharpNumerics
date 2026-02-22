@@ -1,6 +1,5 @@
 ﻿using Xunit.Sdk;
 
-using CSharpNumerics.Statistics.Methods;
 using CSharpNumerics.Statistics.Data;
 
 
@@ -57,17 +56,6 @@ namespace NumericsTests
 
         }
 
-
-        [TestMethod]
-        public void NormalDistribution()
-        {
-            var normalDistribution = Statistics.NormalDistribution(15, 100).GetSeries(0, 200, 100);
-           
-            Assert.IsTrue(Math.Round(normalDistribution.First(p=>p.Value==normalDistribution.Max(c=>c.Value)).Index) == 100);
-
-         ;
-
-        }
 
 
         [TestMethod]
@@ -142,66 +130,6 @@ namespace NumericsTests
 
 
         [TestMethod]
-        public void TestLinearRegression()
-        {
-            var serie = new List<Serie>() {
-              new Serie() { Index = 3.0, Value = 0.62},
-              new Serie() { Index = 3.4, Value = 0.93 },
-              new Serie() { Index = 3.8, Value = 1.08 },
-              new Serie() { Index = 4.2, Value = 1.19},
-              new Serie() { Index = 4.6, Value = 1.45 },
-              new Serie() { Index = 5.0, Value = 1.54 },
-              new Serie() { Index = 5.4, Value = 1.62 },
-              new Serie() { Index = 5.8, Value = 1.92 },
-              new Serie() { Index = 6.2, Value = 1.96 },
-              new Serie() { Index = 6.6, Value = 2.10 },
-              new Serie() { Index = 7.0, Value = 2.35},
-              new Serie() { Index = 7.4, Value = 2.49 },
-              new Serie() { Index = 7.8, Value = 2.58 } };
-
-
-            var (slope, intercept, correlation) = serie.LinearRegression(p=>(p.Index, p.Value));
-            Assert.IsTrue(Math.Round(slope, 3) == 0.395);
-            Assert.IsTrue(Math.Round(intercept, 3) == -0.455);
-            Assert.IsTrue(Math.Round(correlation, 3) == 0.995);
-        }
-
-
-        [TestMethod]
-        public void LogisticRegression()
-        {
-            var series = new List<Serie>() {
-              new Serie() { Index = 1, Value = 0.5},
-              new Serie() { Index = 0, Value = 0.75 },
-              new Serie() { Index = 0, Value = 1.0},
-              new Serie() { Index = 0, Value = 1.25},
-              new Serie() { Index = 0, Value = 1.50 },
-              new Serie() { Index =1, Value = 1.75 },
-              new Serie() { Index = 0, Value = 1.75 },
-              new Serie() { Index = 0, Value = 2 },
-              new Serie() { Index = 1, Value = 2.25 },
-              new Serie() { Index = 0, Value = 2.5 },
-              new Serie() { Index = 1, Value = 2.75 },
-              new Serie() { Index = 0, Value = 3},
-              new Serie() { Index = 1, Value = 3.25 },
-              new Serie() { Index = 0, Value = 3.50 },
-              new Serie() { Index = 1, Value = 4 },
-              new Serie() { Index = 1, Value = 4.25 },
-              new Serie() { Index =1, Value = 4.50 },
-              new Serie() { Index = 1, Value = 4.75 },
-              new Serie() { Index = 1, Value = 5 },
-              new Serie() { Index = 1, Value = 5.5 }
-            };
-           
-            var result = series.LogisticRegression(p => (p.Index, p.Value), 1.5046, -4.0777);
-
-       
-            Assert.IsTrue(Math.Round(result.First(p=>p.Index==2).Value, 2) == 0.26);
-  
-        }
-
-
-        [TestMethod]
         public void TestConfidence()
         {
 
@@ -217,16 +145,6 @@ namespace NumericsTests
 
         }
 
-        [TestMethod]
-        public void TestNearestNeighbors()
-        {
-
-            var timeserie = new List<(double x, double y, int classification)>() { (7, 7, 0), (7, 4, 0), (3, 4, 1), (1, 4, 1) };
-
-            var classification = timeserie.KnearestNeighbors(p=> (p.x, p.y, p.classification),(3,7),3);
-
-            Assert.IsTrue(classification == 1);
-
-        }
+      
    }
 }
