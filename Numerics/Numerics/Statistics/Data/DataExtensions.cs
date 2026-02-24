@@ -1,4 +1,5 @@
-﻿using CSharpNumerics.Statistics.Enum;
+﻿using CSharpNumerics.Numerics;
+using CSharpNumerics.Statistics.Enum;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,6 +1,7 @@
 ﻿
+using CSharpNumerics.Numerics;
+using CSharpNumerics.Numerics.Enums;
 using CSharpNumerics.Statistics.Data;
-using CSharpNumerics.Statistics.Enum;
 
 namespace NumericTest
 {

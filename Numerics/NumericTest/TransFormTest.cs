@@ -2,6 +2,7 @@
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Statistics.Data;
 
+using CSharpNumerics.Numerics;
 
 namespace NumericsTests
 {

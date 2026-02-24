@@ -3,6 +3,7 @@ using CSharpNumerics.Numerics.Objects;
 
 using CSharpNumerics.Numerics.Enums;
 using CSharpNumerics.Statistics.Data;
+using CSharpNumerics.Numerics;
 
 
 namespace NumericsTests

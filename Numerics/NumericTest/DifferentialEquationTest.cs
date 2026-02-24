@@ -2,6 +2,7 @@
 using CSharpNumerics.Physics.Constants;
 using CSharpNumerics.Numerics.Objects;
 using Xunit.Sdk;
+using CSharpNumerics.Numerics;
 
 namespace NumericsTests
 {

@@ -1,10 +1,12 @@
+using CSharpNumerics.Numerics;
 using CSharpNumerics.Numerics.Enums;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Statistics.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
-namespace System;
+namespace CSharpNumerics.Numerics;
 
 /// <summary>
 /// Provides extension methods for numerical differentiation of scalar, multivariate,

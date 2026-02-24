@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
+using System;
 
 
-namespace System;
+namespace CSharpNumerics.Numerics;
 
 public static class NumericExtensions
 {

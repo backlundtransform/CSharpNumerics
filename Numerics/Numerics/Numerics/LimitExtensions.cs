@@ -1,4 +1,6 @@
-namespace System;
+using System;
+
+namespace CSharpNumerics.Numerics;
 
 /// <summary>
 /// Provides extension methods for computing one-sided and two-sided limits of functions.

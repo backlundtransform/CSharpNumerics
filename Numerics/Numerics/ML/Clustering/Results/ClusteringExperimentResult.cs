@@ -72,4 +72,15 @@ public class ClusteringExperimentResult
 
     /// <summary>Total wall-clock time for the entire experiment.</summary>
     public TimeSpan TotalDuration { get; set; }
+
+    // ── Monte Carlo uncertainty (optional) ───────────────────────
+
+    /// <summary>
+    /// Monte Carlo uncertainty analysis result. Only populated when
+    /// <see cref="ClusteringExperimentBuilder.WithMonteCarloUncertainty"/>
+    /// was called before <c>Run()</c>.
+    /// Contains score distributions with confidence intervals,
+    /// optimal-K distribution, and (for bootstrap) a consensus matrix.
+    /// </summary>
+    public MonteCarloClusteringResult MonteCarloResult { get; set; }
 }

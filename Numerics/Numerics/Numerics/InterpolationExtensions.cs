@@ -1,8 +1,14 @@
-﻿using CSharpNumerics.Statistics.Data;
-using CSharpNumerics.Statistics.Enum;
+﻿using CSharpNumerics.Numerics.Enums;
+using CSharpNumerics.Statistics.Data;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace System.Linq;
+using PolyInterp = CSharpNumerics.Numerics.Interpolation.PolynomialInterpolation;
+using SplineInterp = CSharpNumerics.Numerics.Interpolation.CubicSplineInterpolation;
+using TrigInterp = CSharpNumerics.Numerics.Interpolation.TrigonometricInterpolation;
+
+namespace CSharpNumerics.Numerics;
 
 public static class InterpolationExtensions
 {
@@ -27,6 +33,9 @@ public static class InterpolationExtensions
             InterpolationType.Logarithmic => ts.LogarithmicInterpolation(func, index),
             InterpolationType.LinLog => ts.LinLogInterpolation(func, index),
             InterpolationType.LogLin => ts.LogLinInterpolation(func, index),
+            InterpolationType.Polynomial => ts.PolynomialInterpolation(func, index),
+            InterpolationType.CubicSpline => ts.CubicSplineInterpolation(func, index),
+            InterpolationType.Trigonometric => ts.TrigonometricInterpolation(func, index),
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
     }
@@ -230,5 +239,79 @@ public static class InterpolationExtensions
         }
 
         return firstValue + (lastValue - firstValue) * (currentTicks - firstTicks) / (lastTicks - firstTicks);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Polynomial interpolation (Lagrange)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Performs polynomial (Lagrange) interpolation using all data points.
+    /// Suitable for small to moderate N. For large N, prefer splines.
+    /// </summary>
+    /// <typeparam name="T">The source item type.</typeparam>
+    /// <param name="ts">The sequence of source items.</param>
+    /// <param name="func">Mapping from source item to an (x,y) point.</param>
+    /// <param name="index">The x-coordinate at which to interpolate.</param>
+    /// <returns>The interpolated y-value.</returns>
+    public static double PolynomialInterpolation<T>(
+        this IEnumerable<T> ts,
+        Func<T, (double x, double y)> func,
+        double index)
+    {
+        var points = ts.Select(func).OrderBy(p => p.x).ToList();
+        var x = points.Select(p => p.x).ToArray();
+        var y = points.Select(p => p.y).ToArray();
+        return PolyInterp.Lagrange(x, y, index);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Cubic spline interpolation (natural)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Performs natural cubic spline interpolation through all data points.
+    /// Produces a smooth (C²-continuous) interpolant.
+    /// </summary>
+    /// <typeparam name="T">The source item type.</typeparam>
+    /// <param name="ts">The sequence of source items.</param>
+    /// <param name="func">Mapping from source item to an (x,y) point.</param>
+    /// <param name="index">The x-coordinate at which to interpolate.</param>
+    /// <returns>The interpolated y-value.</returns>
+    public static double CubicSplineInterpolation<T>(
+        this IEnumerable<T> ts,
+        Func<T, (double x, double y)> func,
+        double index)
+    {
+        var points = ts.Select(func).OrderBy(p => p.x).ToList();
+        var x = points.Select(p => p.x).ToArray();
+        var y = points.Select(p => p.y).ToArray();
+        var spline = new SplineInterp(x, y);
+        return spline.Evaluate(index);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Trigonometric interpolation
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Performs trigonometric interpolation. Best for periodic data.
+    /// The period is auto-detected from the data range.
+    /// </summary>
+    /// <typeparam name="T">The source item type.</typeparam>
+    /// <param name="ts">The sequence of source items.</param>
+    /// <param name="func">Mapping from source item to an (x,y) point.</param>
+    /// <param name="index">The x-coordinate at which to interpolate.</param>
+    /// <returns>The interpolated y-value.</returns>
+    public static double TrigonometricInterpolation<T>(
+        this IEnumerable<T> ts,
+        Func<T, (double x, double y)> func,
+        double index)
+    {
+        var points = ts.Select(func).OrderBy(p => p.x).ToList();
+        var x = points.Select(p => p.x).ToArray();
+        var y = points.Select(p => p.y).ToArray();
+        var trig = new TrigInterp(x, y);
+        return trig.Evaluate(index);
     }
 }

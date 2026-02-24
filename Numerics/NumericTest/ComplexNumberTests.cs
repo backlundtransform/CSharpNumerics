@@ -1,6 +1,7 @@
 ﻿using Xunit.Sdk;
 using CSharpNumerics.Numerics.Objects;
 using System.Drawing;
+using CSharpNumerics.Numerics;
 
 namespace NumericsTests
 {

@@ -3,6 +3,7 @@ using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.ML.Clustering.Results;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics.MonteCarlo;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,6 +37,10 @@ public static class ClusteringExperiment
 ///   1. Simple: WithAlgorithm + TryClusterCounts  (auto-expands K range)
 ///   2. Multi:  WithAlgorithms + TryClusterCounts  (multiple algorithms)
 ///   3. Grid:   WithGrid                            (full hyperparameter search)
+/// 
+/// Optionally, add Monte Carlo uncertainty estimation via
+/// <see cref="WithMonteCarloUncertainty"/> to get confidence intervals
+/// and an optimal-K distribution.
 /// </summary>
 public class ClusteringExperimentBuilder
 {
@@ -45,6 +50,8 @@ public class ClusteringExperimentBuilder
     private IScaler _scaler;
     private (int min, int max)? _clusterRange;
     private ClusteringGrid _grid;
+    private int? _mcIterations;
+    private int? _mcSeed;
 
     internal ClusteringExperimentBuilder(Matrix data)
     {
@@ -120,6 +127,23 @@ public class ClusteringExperimentBuilder
         return this;
     }
 
+    // ── Monte Carlo uncertainty ──────────────────────────────────
+
+    /// <summary>
+    /// Enable Monte Carlo uncertainty estimation.
+    /// After the standard experiment, runs a <see cref="MonteCarloClustering"/>
+    /// analysis to produce score confidence intervals and an optimal-K distribution.
+    /// Results are available in <see cref="ClusteringExperimentResult.MonteCarloResult"/>.
+    /// </summary>
+    /// <param name="iterations">Number of bootstrap iterations (default 100).</param>
+    /// <param name="seed">Optional random seed for reproducibility.</param>
+    public ClusteringExperimentBuilder WithMonteCarloUncertainty(int iterations = 100, int? seed = null)
+    {
+        _mcIterations = iterations;
+        _mcSeed = seed;
+        return this;
+    }
+
     // ── Run ──────────────────────────────────────────────────────
 
     /// <summary>Execute the experiment and return ranked results.</summary>
@@ -186,8 +210,50 @@ public class ClusteringExperimentBuilder
             ElbowCurve = elbowCurve
                 .OrderBy(e => e.K)
                 .ToList(),
-            TotalDuration = totalSw.Elapsed
+            TotalDuration = totalSw.Elapsed,
+            MonteCarloResult = RunMonteCarloIfConfigured(ranked, primaryName)
         };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Private: Monte Carlo uncertainty (optional)
+    // ═══════════════════════════════════════════════════════════════
+
+    private MonteCarloClusteringResult RunMonteCarloIfConfigured(
+        List<ClusteringResult> ranked, string primaryEvaluator)
+    {
+        if (_mcIterations == null || ranked.Count == 0)
+            return null;
+
+        var mc = new MonteCarloClustering
+        {
+            Iterations = _mcIterations.Value,
+            Seed = _mcSeed
+        };
+
+        // Find the primary evaluator instance
+        var evaluator = _evaluators.FirstOrDefault(e => e.Name == primaryEvaluator);
+        if (evaluator == null) return null;
+
+        // If we have a K range and K-accepting algorithms, run the experiment variant
+        var bestResult = ranked[0];
+        var bestAlgorithm = bestResult.Model;
+
+        if (_clusterRange.HasValue && AcceptsK(bestAlgorithm))
+        {
+            return mc.RunExperiment(
+                _data,
+                bestAlgorithm,
+                evaluator,
+                _clusterRange.Value.min,
+                _clusterRange.Value.max,
+                _scaler);
+        }
+        else
+        {
+            // Single-K or DBSCAN — do bootstrap analysis
+            return mc.RunBootstrap(_data, bestAlgorithm, evaluator, _scaler);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

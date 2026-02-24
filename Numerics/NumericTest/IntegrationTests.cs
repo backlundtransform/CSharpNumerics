@@ -1,3 +1,6 @@
+using CSharpNumerics.Numerics;
+
+
 namespace NumericTest
 {
     [TestClass]
