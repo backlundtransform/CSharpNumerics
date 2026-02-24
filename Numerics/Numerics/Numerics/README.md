@@ -504,61 +504,146 @@ var solution = matrix.GaussElimination(vector);
 ```
 
 ---
+##  ✨ Interpolation
 
-## 📈 Interpolation
+CSharpNumerics provides a rich interpolation toolkit — from simple piecewise methods to polynomial, spline, rational, trigonometric, and multivariate interpolation.
 
-```csharp
-var linear = data.LinearInterpolation(p => (p.X, p.Y), xValue);
-var logLog = data.LogarithmicInterpolation(p => (p.X, p.Y), xValue);
-var linLog = data.LinLogInterpolation(p => (p.X, p.Y), xValue);
-var logLin = data.LogLinInterpolation(p => (p.X, p.Y), xValue);
+### Piecewise (two-point) interpolation
 
-// Or with enum:
-var result = data.Interpolate(p => (p.X, p.Y), xValue, InterpolationType.Linear);
-
-// Time series interpolation:
-double value = timeSeries.LinearInterpolationTimeSerie(dateTime);
-```
-
----
-
-## 📊 Statistics
-
-**Descriptive**
+All piecewise methods are accessible via a unified dispatcher:
 
 ```csharp
-double median = data.Median(p => p.Value);
-double variance = data.Variance(p => p.Value);
-double stdDev = data.StandardDeviation(p => p.Value);
-double covariance = data.Covariance(p => (p.X, p.Y));
-double r2 = data.CoefficientOfDetermination(p => (p.Predicted, p.Actual));
+double y = data.Interpolate(p => (p.Index, p.Value), 3.5, InterpolationType.Linear);
 ```
 
-**Confidence Intervals**
+| Type | Enum | Description |
+|------|------|-------------|
+| Linear | `Linear` | $y = y_1 + (y_2 - y_1)\frac{x - x_1}{x_2 - x_1}$ |
+| Log–Log | `Logarithmic` | Linear in log-space for both x and y |
+| Lin–Log | `LinLog` | Linear in x, logarithmic in y |
+| Log–Lin | `LogLin` | Logarithmic in x, linear in y |
+
+### Polynomial interpolation
+
+Passes a single polynomial of degree N−1 through all N data points.
 
 ```csharp
-var (lower, upper) = data.ConfidenceIntervals(p => p.Value, 0.95);
+double[] x = { 0, 1, 2, 3 };
+double[] y = { 1, 2, 0, 5 };
+var poly = new PolynomialInterpolation(x, y);
+
+double val  = poly.Evaluate(1.5);             // Lagrange basis form
+double val2 = poly.EvaluateNewton(1.5);       // Newton divided-difference
+var (val3, err) = poly.EvaluateNeville(1.5);  // Neville with error estimate
+
+// Or via the extension method:
+double val4 = data.Interpolate(p => (p.Index, p.Value), 1.5, InterpolationType.Polynomial);
 ```
 
-**Cumulative Sum**
+### Cubic Spline interpolation
+
+Piecewise cubic polynomials with C² continuity. Three boundary conditions:
+
+| Boundary | Description |
+|----------|-------------|
+| `Natural` | $S''(x_0) = S''(x_n) = 0$ (free ends) |
+| `Clamped` | First derivative specified at endpoints |
+| `NotAKnot` | Third derivative continuous at second & second-to-last knot |
 
 ```csharp
-var cumsum = data.CumulativeSum(p => p.Value);
+double[] x = { 0, 1, 2, 3, 4 };
+double[] y = { 0, 1, 0, 1, 0 };
+
+var spline = new CubicSplineInterpolation(x, y);                       // Natural
+var clamped = new CubicSplineInterpolation(x, y, SplineBoundary.Clamped, 1.0, -1.0);
+var nak     = new CubicSplineInterpolation(x, y, SplineBoundary.NotAKnot);
+
+double val   = spline.Evaluate(2.5);
+double dydx  = spline.Derivative(2.5);         // first derivative
+double d2y   = spline.SecondDerivative(2.5);    // curvature
+
+// Or via extension method:
+double val2 = data.Interpolate(p => (p.Index, p.Value), 2.5, InterpolationType.CubicSpline);
 ```
 
-**Simple Regression**
+### Rational interpolation
+
+Ratio of two polynomials — handles poles and near-singularities better than polynomials.
 
 ```csharp
-var (slope, intercept, correlation) = data.LinearRegression(p => (p.X, p.Y));
-var expFunc = data.ExponentialRegression(p => (p.X, p.Y));
+double[] x = { 0, 1, 2, 3, 4 };
+double[] y = { 1.0, 0.5, 0.333, 0.25, 0.2 };   // ≈ 1/(1+x)
+var rat = new RationalInterpolation(x, y);
+
+var (val, err) = rat.Evaluate(1.5);              // Bulirsch–Stoer + error estimate
+double val2 = rat.EvaluateFloaterHormann(1.5);   // barycentric, guaranteed pole-free
 ```
 
-**Normal Distribution**
+### Trigonometric interpolation
+
+Best for periodic functions. Builds a trigonometric polynomial from the data.
 
 ```csharp
-var pdf = Statistics.NormalDistribution(standardDeviation: 1, mean: 0);
-double density = pdf(0.5);
+int N = 16;
+double[] x = new double[N], y = new double[N];
+for (int i = 0; i < N; i++)
+{
+    x[i] = 2 * Math.PI * i / N;
+    y[i] = Math.Sin(x[i]) + 0.5 * Math.Cos(2 * x[i]);
+}
+
+var trig = new TrigonometricInterpolation(x, y, period: 2 * Math.PI);
+double val  = trig.Evaluate(Math.PI / 3);
+double dydx = trig.Derivative(Math.PI / 3);
+
+// Fourier coefficients
+double[] a = trig.CosineCoefficients;   // a_0, a_1, ..., a_M
+double[] b = trig.SineCoefficients;     // b_0, b_1, ..., b_M
+
+// Or via extension method:
+double val2 = data.Interpolate(p => (p.Index, p.Value), 1.5, InterpolationType.Trigonometric);
 ```
+
+### Multivariate interpolation
+
+For scattered data in multiple dimensions.
+
+**Inverse Distance Weighting (IDW / Shepard)**
+
+```csharp
+double[][] points = {
+    new[] { 0.0, 0.0 }, new[] { 1.0, 0.0 },
+    new[] { 0.0, 1.0 }, new[] { 1.0, 1.0 }, new[] { 0.5, 0.5 }
+};
+double[] values = points.Select(p => p[0] * p[0] + p[1] * p[1]).ToArray();
+
+var interp = new MultivariateInterpolation(points, values);
+double val = interp.EvaluateIDW(new[] { 0.25, 0.75 }, power: 2);
+```
+
+**Radial Basis Functions (RBF)**
+
+```csharp
+double val = interp.EvaluateRBF(new[] { 0.25, 0.75 }, RbfKernel.Gaussian);
+```
+
+| Kernel | Formula |
+|--------|---------|
+| `Gaussian` | $\phi(r) = e^{-(r/\varepsilon)^2}$ |
+| `Multiquadric` | $\phi(r) = \sqrt{1 + (r/\varepsilon)^2}$ |
+| `InverseMultiquadric` | $\phi(r) = 1/\sqrt{1 + (r/\varepsilon)^2}$ |
+| `ThinPlateSpline` | $\phi(r) = r^2 \ln(r)$ |
+| `Cubic` | $\phi(r) = r^3$ |
+
+**Bilinear / Trilinear (regular grids)**
+
+```csharp
+double val2d = MultivariateInterpolation.Bilinear(xGrid, yGrid, gridValues, xi, yi);
+double val3d = MultivariateInterpolation.Trilinear(xGrid, yGrid, zGrid, gridValues, xi, yi, zi);
+```
+
+
+
 
 
 
