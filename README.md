@@ -10,4 +10,4 @@ It provides a clean, modular API with robust building blocks for scientific and 
 * **Physics** — classical mechanics, rigid body dynamics, orbital mechanics, and real-time simulation
 
 
-📘 Documentation: [https://csnumerics.com/docs/Csharpnumerics/](https://csnumerics.com/docs/Csharpnumerics/)
+📘 Documentation: [https://csnumerics.com](https://csnumerics.com)
