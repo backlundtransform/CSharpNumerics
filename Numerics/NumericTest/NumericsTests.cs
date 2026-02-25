@@ -4,6 +4,7 @@ using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics.Enums;
 using CSharpNumerics.Statistics.Data;
 using CSharpNumerics.Numerics;
+using CSharpNumerics.Statistics;
 
 
 namespace NumericsTests

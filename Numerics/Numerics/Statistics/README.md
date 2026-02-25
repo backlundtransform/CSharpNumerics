@@ -85,15 +85,98 @@ List<TimeSerie> grouped = timeSeries.GenerateTimeSerieWithEquivalentSteps(
 
 ## �📊 Statistics
 
+### Descriptive Statistics
+
+All methods follow the generic selector pattern `IEnumerable<T>.Method(Func<T, double>)`.
+
 ```csharp
-var noise = new Random().GenerateNoise(4);
-double median = ts.Median(p => p.Value);
-double std = ts.StandardDeviation(p => p.Value);
+var data = new[] { 3.0, 7.0, 7.0, 2.0, 5.0, 1.0, 9.0, 4.0 };
+
+double median   = data.Median(x => x);           // 4.5
+double variance = data.Variance(x => x);          // population variance (÷n)
+double sVar     = data.SampleVariance(x => x);    // sample variance (÷(n-1))
+double std      = data.StandardDeviation(x => x); // population std dev
+double mode     = data.Mode(x => x);              // 7.0
+double range    = data.Range(x => x);             // 8.0
+double p90      = data.Percentile(x => x, 90);    // 90th percentile
+double iqr      = data.InterquartileRange(x => x);// Q3 - Q1
+double skew     = data.Skewness(x => x);          // sample skewness
+double kurt     = data.Kurtosis(x => x);          // excess kurtosis (normal = 0)
 ```
-Coefficient of determination:
+
+Bivariate selectors use `Func<T, (double x, double y)>`:
 ```csharp
-var data = new[] { (1.0, 5.0), (2.0, 1.0), (3.0, 4.0), (4.0, 6.0) };
-double r2 = data.CoefficientOfDetermination(p => (p.Item1, p.Item2));
+var pairs = new[] { (1.0, 5.0), (2.0, 1.0), (3.0, 4.0), (4.0, 6.0) };
+double cov = pairs.Covariance(p => (p.Item1, p.Item2));
+double r2  = pairs.CoefficientOfDetermination(p => (p.Item1, p.Item2));
+```
+
+Cumulative sum and confidence intervals:
+```csharp
+double[] cumSum = data.CumulativeSum(x => x).ToArray();
+var (lo, hi) = data.ConfidenceIntervals(x => x, 0.95);
+```
+
+### Inferential Statistics — Regression
+
+```csharp
+var points = new[] { (1.0, 2.1), (2.0, 3.9), (3.0, 6.2), (4.0, 7.8) };
+
+// Linear regression: y = slope * x + intercept
+var (slope, intercept, r) = points.LinearRegression(p => (p.Item1, p.Item2));
+
+// Exponential: y = a * e^(bx)
+Func<double, double> expFit = points.ExponentialRegression(p => (p.Item1, p.Item2));
+
+// Logarithmic: y = a + b * ln(x)
+Func<double, double> logFit = points.LogarithmicRegression(p => (p.Item1, p.Item2));
+
+// Power: y = a * x^b
+Func<double, double> powFit = points.PowerRegression(p => (p.Item1, p.Item2));
+
+// Polynomial (degree N): y = a₀ + a₁x + a₂x² + ...
+var (predict, coefficients) = points.PolynomialRegression(p => (p.Item1, p.Item2), degree: 2);
+double yHat = predict(2.5);
+```
+
+### Inferential Statistics — Correlation
+
+```csharp
+// Pearson correlation coefficient with p-value
+var (r, pValue) = data.PearsonCorrelation(p => (p.X, p.Y));
+
+// Spearman rank correlation with p-value
+var (rho, pVal) = data.SpearmanCorrelation(p => (p.X, p.Y));
+```
+
+### Inferential Statistics — Hypothesis Tests
+
+All tests return a `StatisticalTestResult` with `TestStatistic`, `PValue`, `RejectNull`, `ConfidenceLevel`, and `DegreesOfFreedom`.
+
+```csharp
+// One-sample t-test: is the mean equal to 50?
+StatisticalTestResult t1 = scores.OneSampleTTest(s => s.Value, hypothesizedMean: 50);
+
+// Two-sample t-test (Welch's): are two group means different?
+StatisticalTestResult t2 = groupA.TwoSampleTTest(groupB, s => s.Value);
+
+// Paired t-test: before/after comparison
+StatisticalTestResult t3 = patients.PairedTTest(p => (p.Before, p.After));
+
+// Z-test: known population standard deviation
+StatisticalTestResult z = measurements.ZTest(m => m.Value, hypothesizedMean: 100, populationStdDev: 15);
+
+// Chi-squared goodness-of-fit
+var bins = new[] { (observed: 50.0, expected: 40.0), (30.0, 40.0), (20.0, 20.0) };
+StatisticalTestResult chi = bins.ChiSquaredTest(b => (b.observed, b.expected));
+
+// One-way ANOVA: compare means across groups
+StatisticalTestResult anova = allSamples.OneWayAnova(s => (s.Value, s.GroupId));
+
+// Inspect the result
+Console.WriteLine(anova.TestStatistic); // F-value
+Console.WriteLine(anova.PValue);        // p-value
+Console.WriteLine(anova.RejectNull);    // true/false at 95% confidence
 ```
 
 
@@ -147,6 +230,9 @@ The `CSharpNumerics.Statistics.Distributions` namespace provides probability dis
 | Poisson | `PoissonDistribution` | λ |
 | Bernoulli | `BernoulliDistribution` | p |
 | Binomial | `BinomialDistribution` | n, p |
+| Student's t | `StudentTDistribution` | ν (degrees of freedom) |
+| Chi-squared | `ChiSquaredDistribution` | k (degrees of freedom) |
+| F | `FDistribution` | d1, d2 (degrees of freedom) |
 
 Every distribution exposes `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Sample(rng)` and `Samples(rng, count)`.
 
@@ -172,6 +258,20 @@ double cumul = poisson.Cdf(4);    // P(X ≤ 4)
 var binomial = new BinomialDistribution(n: 10, p: 0.3);
 // PMF sums to 1
 double total = Enumerable.Range(0, 11).Sum(k => binomial.Pdf(k));
+```
+
+Student's t, chi-squared and F distributions are used by the hypothesis testing methods, but can also be used directly:
+
+```csharp
+var t = new StudentTDistribution(degreesOfFreedom: 29);
+double pTwoTail = t.TwoTailedPValue(2.045);   // two-tailed p-value
+double quantile  = t.InverseCdf(0.975);         // critical value
+
+var chi2 = new ChiSquaredDistribution(degreesOfFreedom: 5);
+double pUpper = chi2.UpperTailPValue(11.07);   // P(X ≥ 11.07)
+
+var f = new FDistribution(d1: 3, d2: 20);
+double pF = f.UpperTailPValue(3.10);           // P(F ≥ 3.10)
 ```
 
 ---

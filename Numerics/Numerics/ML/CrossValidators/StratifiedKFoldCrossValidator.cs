@@ -1,8 +1,8 @@
-﻿using CSharpNumerics.ML;
-using CSharpNumerics.ML.CrossValidators.Interfaces;
+﻿using CSharpNumerics.ML.CrossValidators.Interfaces;
 using CSharpNumerics.ML.CrossValidators.Result;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;

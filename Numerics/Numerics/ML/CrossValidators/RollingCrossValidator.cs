@@ -4,6 +4,7 @@ using CSharpNumerics.ML.CrossValidators.Interfaces;
 using CSharpNumerics.ML.CrossValidators.Result;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics;
 using CSharpNumerics.Statistics.Data;
 using System;
 using System.Buffers;
