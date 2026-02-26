@@ -7,7 +7,7 @@ It provides a clean, modular API with robust building blocks for scientific and 
 * **Numerical Analysis** — linear algebra, transforms, ordinary differential equations (ODEs), vector fields, and numerical integration methods
 * **Machine Learning** — regression, classification, cross-validation, and reusable pipelines
 * **Statistics** — descriptive analytics, probability tools, and interpolation techniques
-* **Physics** — classical mechanics, rigid body dynamics, orbital mechanics, and real-time simulation
+* **Physics** — classical mechanics, rigid body dynamics, orbital mechanics, oscillations, and real-time simulation
 
 
 📘 Documentation: [https://csnumerics.com](https://csnumerics.com)

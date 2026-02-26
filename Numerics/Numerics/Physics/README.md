@@ -507,4 +507,117 @@ double dec = AstronomyExtensions.DeclinationToDegrees(-16, 42, 58);   // → -16
 
 ---
 
+## 🔄 Oscillations
+
+The `Physics.Oscillations` namespace provides one-dimensional oscillator models with both **analytic** and **numerical** solutions. All oscillators implement `IOscillator` for a consistent API.
+
+### Simple Harmonic Oscillator
+
+Models the undamped system $\ddot{x} + \omega_0^2 x = 0$ where $\omega_0 = \sqrt{k/m}$.
+
+Integration uses **Velocity Verlet** (symplectic, O(dt²)) — excellent energy conservation for undamped systems.
+
+**Create and inspect properties**
+
+```csharp
+using CSharpNumerics.Physics.Oscillations;
+
+// mass = 2 kg, spring constant = 50 N/m, initial displacement = 0.5 m
+var sho = new SimpleHarmonicOscillator(mass: 2, stiffness: 50, initialPosition: 0.5);
+
+double w = sho.AngularFrequency;   // ω₀ = √(k/m) = 5 rad/s
+double f = sho.Frequency;          // f₀ = ω₀/2π ≈ 0.796 Hz
+double T = sho.Period;             // T = 1/f₀ ≈ 1.257 s
+double A = sho.Amplitude;          // A = √(x₀² + (v₀/ω₀)²) = 0.5 m
+double phi = sho.PhaseOffset;      // φ = atan2(-v₀/ω₀, x₀)
+```
+
+**Analytic solution** — exact reference for verification
+
+```csharp
+double x = sho.AnalyticPosition(t: 1.0);   // x(t) = A·cos(ω₀t + φ)
+double v = sho.AnalyticVelocity(t: 1.0);   // v(t) = -Aω₀·sin(ω₀t + φ)
+```
+
+**Step-by-step simulation**
+
+```csharp
+double dt = 0.001;
+for (int i = 0; i < 10000; i++)
+{
+    sho.Step(dt);
+    Console.WriteLine($"t={sho.Time:F3}  x={sho.Position:F6}  v={sho.Velocity:F6}");
+}
+
+sho.Reset();  // restore initial conditions
+```
+
+**Trajectory** — displacement vs time as a `List<Serie>`
+
+```csharp
+// Simulate 5 full periods, returns (Index = time, Value = position)
+List<Serie> trajectory = sho.Trajectory(tEnd: sho.Period * 5, dt: 0.001);
+```
+
+**Phase portrait** — (position, velocity) plot
+
+```csharp
+// Returns (Index = x, Value = v) — traces an ellipse for SHM
+List<Serie> phase = sho.PhasePortrait(tEnd: sho.Period * 2, dt: 0.001);
+```
+
+**Energy**
+
+```csharp
+double KE = sho.KineticEnergy;     // ½mv²
+double PE = sho.PotentialEnergy;    // ½kx²
+double E  = sho.TotalEnergy;       // KE + PE (conserved for undamped SHM)
+
+// Energy over time — verify conservation
+List<Serie> energy = sho.EnergyOverTime(tEnd: sho.Period * 10, dt: 0.001);
+```
+
+**Frequency spectrum** — FFT of the displacement signal
+
+```csharp
+// Returns frequency (Hz) vs normalised magnitude
+// Peak appears at the natural frequency f₀
+List<Serie> spectrum = sho.FrequencySpectrum(tEnd: sho.Period * 20, dt: 0.01);
+```
+
+**With initial velocity**
+
+```csharp
+// Released from equilibrium with an impulse
+var sho2 = new SimpleHarmonicOscillator(mass: 1, stiffness: 25,
+    initialPosition: 0, initialVelocity: 5);
+
+// A = √(0² + (5/5)²) = 1 m
+Console.WriteLine(sho2.Amplitude);  // 1.0
+```
+
+### IOscillator Interface
+
+All oscillators share this contract:
+
+```csharp
+public interface IOscillator
+{
+    double Position { get; }
+    double Velocity { get; }
+    double Time { get; }
+    double TotalEnergy { get; }
+    double KineticEnergy { get; }
+    double PotentialEnergy { get; }
+
+    void Step(double dt);
+    void Reset();
+    List<Serie> Trajectory(double tEnd, double dt);
+    List<Serie> PhasePortrait(double tEnd, double dt);
+}
+```
+
+This enables polymorphic use — the same analysis code works for `SimpleHarmonicOscillator`, `DampedOscillator`, `DrivenOscillator`, and `CoupledOscillators` (coming in future phases).
+
+---
 
