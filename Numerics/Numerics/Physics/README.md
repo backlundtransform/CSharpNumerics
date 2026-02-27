@@ -596,6 +596,110 @@ var sho2 = new SimpleHarmonicOscillator(mass: 1, stiffness: 25,
 Console.WriteLine(sho2.Amplitude);  // 1.0
 ```
 
+### Damped Oscillator
+
+Models the damped system $\ddot{x} + 2\gamma\dot{x} + \omega_0^2 x = 0$ where $\gamma = c/(2m)$.
+
+Three damping regimes are automatically detected:
+- **Underdamped** ($\gamma < \omega_0$): oscillates with exponentially decaying amplitude
+- **Critically damped** ($\gamma = \omega_0$): returns to equilibrium as fast as possible without oscillating
+- **Overdamped** ($\gamma > \omega_0$): decays without oscillation, slower than critical
+
+Integration uses **RK4** (4th-order Runge-Kutta) — appropriate for dissipative systems where energy is not conserved.
+
+**Create and inspect properties**
+
+```csharp
+using CSharpNumerics.Physics.Oscillations;
+
+// mass = 1 kg, k = 100 N/m, damping coefficient c = 4 N·s/m
+var osc = new DampedOscillator(mass: 1, stiffness: 100, damping: 4, initialPosition: 1.0);
+
+double w0 = osc.NaturalFrequency;    // ω₀ = √(k/m) = 10 rad/s
+double g  = osc.Gamma;               // γ = c/(2m) = 2 rad/s
+double wd = osc.DampedFrequency;     // ω_d = √(ω₀² − γ²) = √96 ≈ 9.80 rad/s
+double Td = osc.DampedPeriod;        // T_d = 2π/ω_d ≈ 0.641 s
+
+DampingRegime regime = osc.Regime;   // Underdamped
+double Q     = osc.QualityFactor;    // Q = ω₀/(2γ) = 2.5
+double delta = osc.LogarithmicDecrement; // δ = γ·T_d ≈ 1.283
+```
+
+**Damping regime detection**
+
+```csharp
+var under   = new DampedOscillator(1, 100,  4);  // γ=2  < ω₀=10 → Underdamped
+var crit    = new DampedOscillator(1, 100, 20);  // γ=10 = ω₀=10 → CriticallyDamped
+var over    = new DampedOscillator(1, 100, 40);  // γ=20 > ω₀=10 → Overdamped
+```
+
+**Analytic solution** — exact reference for all three regimes
+
+```csharp
+// Underdamped:  x(t) = A·e^(−γt)·cos(ω_d·t + φ)
+// Critical:     x(t) = (C₁ + C₂t)·e^(−γt)
+// Overdamped:   x(t) = C₁·e^(r₁t) + C₂·e^(r₂t)
+double x = osc.AnalyticPosition(t: 1.0);
+double v = osc.AnalyticVelocity(t: 1.0);
+```
+
+**Step-by-step simulation**
+
+```csharp
+double dt = 0.001;
+for (int i = 0; i < 5000; i++)
+{
+    osc.Step(dt);
+    Console.WriteLine($"t={osc.Time:F3}  x={osc.Position:F6}  v={osc.Velocity:F6}");
+}
+
+osc.Reset();  // restore initial conditions
+```
+
+**Trajectory and phase portrait**
+
+```csharp
+// Displacement vs time
+List<Serie> trajectory = osc.Trajectory(tEnd: 5.0, dt: 0.001);
+
+// Phase portrait — spirals to origin for underdamped
+List<Serie> phase = osc.PhasePortrait(tEnd: 5.0, dt: 0.001);
+```
+
+**Energy** — monotonically decreasing for damped systems
+
+```csharp
+double E = osc.TotalEnergy;         // KE + PE (decreases over time)
+
+// Energy over time
+List<Serie> energy = osc.EnergyOverTime(tEnd: 5.0, dt: 0.001);
+
+// Energy dissipated by damping: E₀ − E(t), monotonically increasing
+List<Serie> dissipated = osc.EnergyDissipation(tEnd: 5.0, dt: 0.001);
+```
+
+**Envelope** — the exponential decay bounding the oscillation
+
+```csharp
+double env = osc.Envelope(t: 1.0);  // A·e^(−γt) at a given time
+
+// Envelope curve over time
+List<Serie> envCurve = osc.EnvelopeCurve(tEnd: 5.0, dt: 0.01);
+```
+
+**Frequency spectrum** — peak at ω_d with spectral broadening proportional to γ
+
+```csharp
+List<Serie> spectrum = osc.FrequencySpectrum(tEnd: 20.0, dt: 0.005);
+```
+
+**Zero damping** — reduces to `SimpleHarmonicOscillator` behaviour
+
+```csharp
+var undamped = new DampedOscillator(mass: 1, stiffness: 25, damping: 0);
+// Regime = Underdamped, QualityFactor = ∞, DampedFrequency = ω₀
+```
+
 ### IOscillator Interface
 
 All oscillators share this contract:
