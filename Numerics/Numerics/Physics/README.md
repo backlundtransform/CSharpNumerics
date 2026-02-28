@@ -700,6 +700,223 @@ var undamped = new DampedOscillator(mass: 1, stiffness: 25, damping: 0);
 // Regime = Underdamped, QualityFactor = ∞, DampedFrequency = ω₀
 ```
 
+### Driven Oscillator
+
+Extends the damped oscillator with a harmonic driving force:
+
+$$\ddot{x} + 2\gamma\dot{x} + \omega_0^2 x = \frac{F_0}{m}\cos(\omega_d t)$$
+
+**Constructor**
+
+```csharp
+var osc = new DrivenOscillator(
+    mass:           1.0,
+    stiffness:      100.0,
+    damping:        4.0,
+    driveAmplitude: 10.0,
+    driveFrequency: 7.0,
+    initialPosition: 0.0,   // optional, default 0
+    initialVelocity: 0.0    // optional, default 0
+);
+```
+
+| Parameter | Description |
+|---|---|
+| `mass` | Mass $m$ (must be > 0) |
+| `stiffness` | Spring constant $k$ (must be ≥ 0) |
+| `damping` | Damping coefficient $c$ (must be ≥ 0) |
+| `driveAmplitude` | Force amplitude $F_0$ (must be ≥ 0) |
+| `driveFrequency` | Angular frequency $\omega_d$ of the driving force (must be ≥ 0) |
+
+**Physical properties**
+
+| Property | Formula | Description |
+|---|---|---|
+| `NaturalFrequency` | $\omega_0 = \sqrt{k/m}$ | Undamped natural frequency |
+| `Gamma` | $\gamma = c/(2m)$ | Damping rate |
+| `DampedFrequency` | $\omega_d = \sqrt{\omega_0^2 - \gamma^2}$ | Damped frequency |
+| `Regime` | auto-detected | `Underdamped`, `CriticallyDamped`, or `Overdamped` |
+| `QualityFactor` | $Q = \omega_0/(2\gamma)$ | Sharpness of resonance |
+| `ResonanceFrequency` | $\omega_r = \sqrt{\omega_0^2 - 2\gamma^2}$ | Frequency of maximum amplitude response (0 if $\omega_0^2 < 2\gamma^2$) |
+| `Bandwidth` | $\Delta\omega = 2\gamma$ | Width of resonance peak |
+
+**Steady-state response**
+
+The forced response after transients decay:
+
+```csharp
+// Amplitude & phase at a specific driving frequency
+double A  = osc.SteadyStateAmplitude(wd);    // A(ωd) = (F₀/m) / √((ω₀²−ωd²)² + (2γωd)²)
+double φ  = osc.SteadyStatePhase(wd);        // φ(ωd) = −atan2(2γωd, ω₀²−ωd²)
+
+// At the configured drive frequency
+double Adrive = osc.SteadyStateAmplitudeAtDrive;
+double φdrive = osc.SteadyStatePhaseAtDrive;
+```
+
+**Resonance curve & phase response**
+
+```csharp
+// Sweep amplitude A(ω) over a frequency range
+List<Serie> resonance = osc.ResonanceCurve(wMin: 0.1, wMax: 20, steps: 500);
+
+// Sweep phase φ(ω) over a frequency range
+List<Serie> phase = osc.PhaseResponse(wMin: 0.1, wMax: 20, steps: 500);
+```
+
+**Transfer function & frequency response**
+
+```csharp
+// H(s) = 1 / (s² + 2γs + ω₀²) — Laplace domain
+ComplexNumber H = osc.TransferFunction(s);
+
+// H(iω) — evaluate on imaginary axis
+ComplexNumber Hiw = osc.FrequencyResponse(w);
+// |H(iω)| = A(ω) / (F₀/m),   arg(H(iω)) = φ(ω)
+```
+
+**Simulation (RK4)**
+
+```csharp
+osc.Step(dt: 0.001);                        // advance one step
+List<Serie> traj  = osc.Trajectory(5.0, 0.001);
+List<Serie> phase = osc.PhasePortrait(5.0, 0.001);
+```
+
+**Steady-state extraction**
+
+```csharp
+// Simulates past the transient, returns only the steady-state window
+List<Serie> steady = osc.SteadyStateTrajectory(
+    steadyDuration: 10.0,
+    dt: 0.001,
+    transientDuration: null  // auto = 5/γ
+);
+
+// Measure numerical peak-to-peak amplitude in steady state
+double Ameas = osc.MeasuredSteadyStateAmplitude(dt: 0.001);
+```
+
+**Energy & power**
+
+```csharp
+List<Serie> energy = osc.EnergyOverTime(tEnd: 5.0, dt: 0.001);
+List<Serie> power  = osc.PowerInput(tEnd: 5.0, dt: 0.001);
+// PowerInput = F(t) · v(t) — instantaneous power from the drive
+```
+
+**Frequency spectrum**
+
+```csharp
+List<Serie> spectrum = osc.FrequencySpectrum(tEnd: 50.0, dt: 0.005);
+// Peak appears at the drive frequency f_d = ω_d / (2π)
+```
+
+**Zero driving force** — reduces to `DampedOscillator` behaviour
+
+```csharp
+var undriven = new DrivenOscillator(mass: 1, stiffness: 100, damping: 4,
+                                     driveAmplitude: 0, driveFrequency: 0, initialPosition: 1);
+// Identical trajectory to DampedOscillator with same parameters
+```
+
+### Coupled Oscillators
+
+Models an N-mass spring chain with fixed walls on both ends:
+
+$$M\ddot{\mathbf{x}} + C\dot{\mathbf{x}} + K\mathbf{x} = 0$$
+
+where $M$ is a diagonal mass matrix, $K$ is a tridiagonal stiffness matrix, and $C$ is an optional diagonal damping matrix.
+
+```
+wall —k₀— m₁ —k₁— m₂ —k₂— … —mₙ —kₙ— wall
+```
+
+**General constructor**
+
+```csharp
+var osc = new CoupledOscillators(
+    masses:      new[] { 1.0, 2.0, 1.5 },
+    stiffnesses: new[] { 5.0, 10.0, 8.0, 5.0 },  // N+1 springs
+    dampings:    new[] { 0.1, 0.2, 0.1 },          // optional
+    initialPositions:  new[] { 1.0, 0.0, -0.5 },   // optional
+    initialVelocities: new[] { 0.0, 0.0, 0.0 }     // optional
+);
+```
+
+**Uniform constructor**
+
+```csharp
+var osc = new CoupledOscillators(
+    count: 5, mass: 1.0, stiffness: 4.0, damping: 0.0,
+    initialPositions: new[] { 1.0, 0.0, 0.0, 0.0, 0.0 }
+);
+```
+
+| Property | Description |
+|---|---|
+| `Count` | Number of masses $N$ |
+| `Position(i)` / `Velocity(i)` | State of mass $i$ |
+| `Positions` / `Velocities` | Copy of all current states |
+| `KineticEnergy` | $\frac{1}{2}\sum m_i v_i^2$ |
+| `PotentialEnergy` | $\frac{1}{2}\sum k_j (\Delta x_j)^2$ (all springs) |
+| `TotalEnergy` | Kinetic + Potential |
+
+**Matrices**
+
+```csharp
+Matrix K = osc.StiffnessMatrix();   // N×N tridiagonal symmetric
+Matrix M = osc.MassMatrix();        // N×N diagonal
+```
+
+**Normal modes** — computed via the Jacobi eigenvalue algorithm on the symmetrised dynamical matrix $D = L^{-1}KL^{-1}$ where $L = \text{diag}(\sqrt{m_i})$
+
+```csharp
+List<double> frequencies = osc.NormalModes();   // ω₁ ≤ ω₂ ≤ … ≤ ωₙ
+List<VectorN> shapes     = osc.ModeShapes();    // normalised eigenvectors
+```
+
+For a uniform 2-mass chain ($m=1$, $k=1$): $\omega_1 = 1$, $\omega_2 = \sqrt{3}$ with modes $[1,1]/\sqrt{2}$ (symmetric) and $[1,-1]/\sqrt{2}$ (antisymmetric).
+
+For a uniform N-mass chain: $\omega_r = 2\sqrt{k/m}\,\sin\!\bigl(\frac{r\pi}{2(N+1)}\bigr)$
+
+**Simulation (RK4)**
+
+```csharp
+osc.Step(dt: 0.001);
+osc.Reset();
+List<List<Serie>> trajectories = osc.Trajectory(tEnd: 5.0, dt: 0.001);
+// trajectories[i] = time series for mass i
+List<Serie> phase = osc.PhasePortrait(massIndex: 0, tEnd: 5.0, dt: 0.001);
+```
+
+**Energy analysis**
+
+```csharp
+List<Serie> energy = osc.EnergyOverTime(tEnd: 5.0, dt: 0.001);
+
+// Modal energy decomposition (sum over modes ≈ total energy)
+List<Serie> modeEnergy = osc.ModalEnergy(modeIndex: 0, tEnd: 5.0, dt: 0.001);
+```
+
+**Dispersion relation** — theoretical for uniform periodic chain: $\omega(k) = 2\sqrt{k/m}\,|\sin(ka/2)|$
+
+```csharp
+double[] kValues = Enumerable.Range(0, 100)
+    .Select(i => i * Math.PI / 100.0).ToArray();
+List<Serie> dispersion = osc.DispersionRelation(kValues, latticeSpacing: 1.0);
+
+double vp = osc.PhaseVelocity(k: 1.0);   // ω/k
+double vg = osc.GroupVelocity(k: 1.0);    // dω/dk (numerical derivative)
+```
+
+**Frequency spectrum**
+
+```csharp
+List<Serie> spectrum = osc.FrequencySpectrum(massIndex: 0, tEnd: 50.0, dt: 0.01);
+// Peaks appear at the excited normal mode frequencies
+```
+
 ### IOscillator Interface
 
 All oscillators share this contract:
@@ -721,7 +938,7 @@ public interface IOscillator
 }
 ```
 
-This enables polymorphic use — the same analysis code works for `SimpleHarmonicOscillator`, `DampedOscillator`, `DrivenOscillator`, and `CoupledOscillators` (coming in future phases).
+This enables polymorphic use — the same analysis code works for `SimpleHarmonicOscillator`, `DampedOscillator`, and `DrivenOscillator`. `CoupledOscillators` has a similar API but operates on N masses simultaneously.
 
 ---
 
