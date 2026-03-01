@@ -330,6 +330,217 @@ var result = cv.Run(ts, "Target", new DailyGrouping());
 
 ---
 
+## 🧪 SupervisedExperiment (Fluent API)
+
+A high-level fluent API for **supervised ML experiments** — the supervised counterpart to `ClusteringExperiment`. Combines a `PipelineGrid` with one or more **cross-validation strategies** in a single call, then ranks all pipeline × CV combinations automatically.
+
+### ➡️ Quick Start
+
+```csharp
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(new PipelineGrid()
+        .AddModel<KNearestNeighbors>(g => g
+            .Add("K", 3, 5, 7)
+            .AddScaler<StandardScaler>(s => { }))
+        .AddModel<DecisionTree>(g => g
+            .Add("MaxDepth", 3, 5, 10)))
+    .WithCrossValidator(CrossValidatorConfig.KFold(folds: 5))
+    .Run();
+
+Console.WriteLine(result.BestModelName);   // e.g. "DecisionTree"
+Console.WriteLine(result.BestScore);       // e.g. 0.92
+Pipeline best = result.BestPipeline;
+```
+
+### ➡️ Multiple Cross-Validators
+
+Add several cross-validation strategies — the **first one added is the primary** used for final ranking (same convention as evaluators in `ClusteringExperiment`):
+
+```csharp
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(new PipelineGrid()
+        .AddModel<KNearestNeighbors>(g => g
+            .Add("K", 3, 5, 7)
+            .AddScaler<StandardScaler>(s => { }))
+        .AddModel<DecisionTree>(g => g
+            .Add("MaxDepth", 3, 5, 10))
+        .AddModel<RandomForest>(g => g
+            .Add("NumTrees", 50, 100)
+            .Add("MaxDepth", 5, 8))
+        .AddModel<LinearSVC>(g => g
+            .Add("C", 0.1, 1.0, 10.0)
+            .Add("LearningRate", 0.001, 0.01)
+            .Add("Epochs", 500, 1000)))
+    .WithCrossValidators(
+        CrossValidatorConfig.KFold(folds: 5),
+        CrossValidatorConfig.StratifiedKFold(folds: 10),
+        CrossValidatorConfig.ShuffleSplit(nSplits: 10, testSize: 0.2))
+    .Run();
+
+// Ranked by primary CV (KFold)
+foreach (var r in result.Rankings.Take(5))
+{
+    Console.WriteLine(
+        $"{r.ModelName,-25} " +
+        $"KFold={r.Scores["KFold"],6:F3}  " +
+        $"Stratified={r.Scores["StratifiedKFold"],6:F3}  " +
+        $"Shuffle={r.Scores["ShuffleSplit"],6:F3}");
+}
+
+// Best by a specific cross-validator
+var bestStratified = result.BestBy("StratifiedKFold");
+```
+
+### ➡️ Regression Example
+
+```csharp
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(new PipelineGrid()
+        .AddModel<Linear>(g => { })
+        .AddModel<Ridge>(g => g
+            .Add("Alpha", 0.01, 0.1, 1.0))
+        .AddModel<Lasso>(g => g
+            .Add("Alpha", 0.01, 0.1))
+        .AddModel<ElasticNet>(g => g
+            .Add("Lambda", 0.01, 0.1)
+            .Add("L1Ratio", 0.3, 0.5, 0.7)))
+    .WithCrossValidators(
+        CrossValidatorConfig.KFold(folds: 5),
+        CrossValidatorConfig.MonteCarlo(iterations: 100, testSize: 0.2, seed: 42))
+    .Run();
+
+Console.WriteLine($"Best: {result.BestModelName} → R² = {result.BestR2:F4}");
+```
+
+### ➡️ Simple Pipeline Mode
+
+Instead of a grid, you can also pass manually-constructed pipelines:
+
+```csharp
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithPipelines(
+        new Pipeline(new Linear(), new Dictionary<string, object>()),
+        new Pipeline(new Ridge(), new Dictionary<string, object> { { "Alpha", 0.1 } }))
+    .WithCrossValidator(CrossValidatorConfig.KFold(folds: 5))
+    .Run();
+```
+
+### 📐 Available Cross-Validator Configs
+
+| Factory method | CV strategy | Notes |
+|---|---|---|
+| `CrossValidatorConfig.KFold(folds)` | K-Fold | Standard tabular CV |
+| `CrossValidatorConfig.StratifiedKFold(folds)` | Stratified K-Fold | Classification only, preserves class ratios |
+| `CrossValidatorConfig.ShuffleSplit(nSplits, testSize, ...)` | Shuffle-Split | Random train/test splits |
+| `CrossValidatorConfig.LeaveOneOut()` | Leave-One-Out | K = n, expensive |
+| `CrossValidatorConfig.MonteCarlo(iterations, testSize, seed, ...)` | Monte Carlo CV | Full score distributions with CI |
+| `CrossValidatorConfig.Custom(name, factory)` | Any `ICrossValidator` | Wrap your own implementation |
+
+### 📐 Result Properties
+
+| Property | Description |
+|---|---|
+| `Rankings` | All pipelines ranked by primary CV score (descending) |
+| `Best` / `BestPipeline` / `BestModelName` / `BestScore` | Convenience accessors for the top-ranked pipeline |
+| `BestBy(cvName)` | Best pipeline according to a specific cross-validator |
+| `CVResults[cvName]` | Raw `CrossValidationResult` per CV (confusion matrix, R², actual/predicted) |
+| `BestConfusionMatrix` | Confusion matrix from the best pipeline's primary CV (classification) |
+| `BestR2` | Coefficient of determination from the best pipeline's primary CV (regression) |
+| `BestActualValues` / `BestPredictedValues` | Actual vs predicted from the best pipeline |
+| `ScoreSummary(cvName?)` | Descriptive statistics across all pipeline scores (see below) |
+| `ScorePercentile(result, cvName?)` | Percentile rank (0–100) of a specific pipeline |
+| `RankCorrelation(cv1, cv2)` | Spearman ρ between rankings from two CVs |
+| `ScoreConsistency(result)` | StdDev of a pipeline's scores across CVs |
+| `TotalDuration` | Wall-clock time for the entire experiment |
+
+**Key points:**
+
+* Reuses existing `PipelineGrid` — same `AddModel<T>()`, `AddScaler<T>()`, `AddSelector<T>()` syntax
+* Reuses all existing `ICrossValidator` implementations — no new CV code needed
+* First cross-validator added is the **primary** for ranking (matches ClusteringExperiment convention)
+* `CrossValidatorConfig` is a **lazy factory** — pipelines are bound at `Run()` time
+* Each pipeline is scored by **all** cross-validators for multi-perspective evaluation
+
+### 📊 Score Distribution Statistics (Supervised & Clustering)
+
+Both `SupervisedExperimentResult` and `ClusteringExperimentResult` expose **descriptive statistics** computed from the library's `DescriptiveStatisticsExtensions`. These help answer: *"how sensitive is my score to the pipeline configuration?"*
+
+**`ScoreSummary()`** — overview of all pipeline scores for a given CV/evaluator:
+
+```csharp
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(grid)
+    .WithCrossValidator(CrossValidatorConfig.KFold(folds: 5))
+    .Run();
+
+var summary = result.ScoreSummary();          // primary CV
+var summary2 = result.ScoreSummary("ShuffleSplit"); // specific CV
+
+Console.WriteLine(summary);
+// N=8, Mean=0.8520, Median=0.8650, StdDev=0.0430, IQR=0.0510,
+// Range=[0.7800, 0.9200], Skew=-0.320, Kurt=-0.810
+```
+
+| Property | Meaning |
+|---|---|
+| `Mean` / `Median` | Central tendency of scores across all tested pipelines |
+| `StandardDeviation` | How spread out the scores are — high = very model-sensitive problem |
+| `InterquartileRange` | Middle 50 % spread (robust to outliers) |
+| `Skewness` | Positive = few good pipelines; Negative = most pipelines are good |
+| `Kurtosis` | High = score outliers (a few configs are much better/worse) |
+| `ConfidenceInterval` | 95 % CI for the mean score |
+| `Range` / `Min` / `Max` | Full score span |
+
+**`ScorePercentile()`** — how a specific pipeline ranks relative to all others:
+
+```csharp
+double pct = result.ScorePercentile(result.Best);       // e.g. 100.0
+double pct2 = result.ScorePercentile(result.Rankings[3]); // e.g. 62.5
+```
+
+**`RankCorrelation()`** *(supervised only)* — Spearman ρ between two CV rankings:
+
+```csharp
+var result = SupervisedExperiment.For(X, y)
+    .WithGrid(grid)
+    .WithCrossValidators(
+        CrossValidatorConfig.KFold(folds: 5),
+        CrossValidatorConfig.StratifiedKFold(folds: 10))
+    .Run();
+
+var (rho, pValue) = result.RankCorrelation("KFold", "StratifiedKFold");
+// rho ≈ 0.94, p < 0.01 → CVs agree strongly on ranking
+```
+
+**`ScoreConsistency()`** *(supervised only)* — StdDev of a pipeline's score across CVs:
+
+```csharp
+double consistency = result.ScoreConsistency(result.Best);
+// Low → model performs the same regardless of CV strategy
+// High → performance is CV-dependent (potential overfitting signal)
+```
+
+The same `ScoreSummary()` and `ScorePercentile()` are available on `ClusteringExperimentResult`:
+
+```csharp
+var clustResult = ClusteringExperiment.For(X)
+    .WithAlgorithm(new KMeans())
+    .TryClusterCounts(2, 10)
+    .WithEvaluators(new SilhouetteEvaluator(), new CalinskiHarabaszEvaluator())
+    .Run();
+
+var silSummary = clustResult.ScoreSummary("Silhouette");
+var chSummary  = clustResult.ScoreSummary("CalinskiHarabasz");
+double pct = clustResult.ScorePercentile(clustResult.Best);
+```
+
+---
+
 ## 📊 Classification Models
 
 All classifiers implement `IClassificationModel` and operate directly on `Matrix` and `Vector` primitives.

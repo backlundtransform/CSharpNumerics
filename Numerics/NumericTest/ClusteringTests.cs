@@ -1,3 +1,4 @@
+using CSharpNumerics.ML;
 using CSharpNumerics.ML.Clustering;
 using CSharpNumerics.ML.Clustering.Algorithms;
 using CSharpNumerics.ML.Clustering.Evaluators;
@@ -589,5 +590,101 @@ public class ClusteringTests
         Assert.IsTrue(result.TotalDuration.TotalMilliseconds > 0);
         foreach (var r in result.Rankings)
             Assert.IsTrue(r.Duration.TotalMilliseconds >= 0);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Score Distribution Statistics
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void ScoreSummary_ShouldComputeDescriptiveStats()
+    {
+        var X = ThreeClusterData();
+
+        var result = ClusteringExperiment
+            .For(X)
+            .WithAlgorithm(new KMeans { Seed = 42 })
+            .TryClusterCounts(2, 6)
+            .WithEvaluator(new SilhouetteEvaluator())
+            .Run();
+
+        var summary = result.ScoreSummary();
+
+        Assert.AreEqual(5, summary.Count);
+        Assert.IsTrue(summary.Mean > 0, "Mean silhouette should be positive");
+        Assert.IsTrue(summary.Median > 0, "Median should be positive");
+        Assert.IsTrue(summary.StandardDeviation >= 0, "StdDev should be non-negative");
+        Assert.IsTrue(summary.Range > 0, "Range should be positive (different K values)");
+        Assert.IsTrue(summary.InterquartileRange >= 0, "IQR should be non-negative");
+        Assert.IsTrue(summary.Max >= summary.Min, "Max >= Min");
+        Assert.IsTrue(summary.P75 >= summary.P25, "P75 >= P25");
+        // With 5 data points, skewness is computed (needs 3+)
+        Assert.IsTrue(!double.IsNaN(summary.Skewness));
+        // Kurtosis needs 4+ points
+        Assert.IsTrue(!double.IsNaN(summary.Kurtosis));
+    }
+
+    [TestMethod]
+    public void ScoreSummary_SpecificEvaluator_ShouldWork()
+    {
+        var X = ThreeClusterData();
+
+        var result = ClusteringExperiment
+            .For(X)
+            .WithAlgorithm(new KMeans { Seed = 42 })
+            .TryClusterCounts(2, 5)
+            .WithEvaluators(new SilhouetteEvaluator(), new CalinskiHarabaszEvaluator())
+            .Run();
+
+        var silSummary = result.ScoreSummary("Silhouette");
+        var chSummary = result.ScoreSummary("CalinskiHarabasz");
+
+        Assert.AreEqual(4, silSummary.Count);
+        Assert.AreEqual(4, chSummary.Count);
+        // CH scores are much larger than silhouette scores
+        Assert.IsTrue(chSummary.Mean > silSummary.Mean);
+    }
+
+    [TestMethod]
+    public void ScorePercentile_BestShouldBeHighest()
+    {
+        var X = ThreeClusterData();
+
+        var result = ClusteringExperiment
+            .For(X)
+            .WithAlgorithm(new KMeans { Seed = 42 })
+            .TryClusterCounts(2, 6)
+            .WithEvaluator(new SilhouetteEvaluator())
+            .Run();
+
+        double bestPercentile = result.ScorePercentile(result.Best);
+        double worstPercentile = result.ScorePercentile(result.Rankings.Last());
+
+        Assert.IsTrue(bestPercentile >= worstPercentile,
+            $"Best ({bestPercentile:F1}) should be >= worst ({worstPercentile:F1})");
+        // Best should beat most others
+        Assert.IsTrue(bestPercentile >= 60,
+            $"Best should be at least 60th percentile, got {bestPercentile:F1}");
+    }
+
+    [TestMethod]
+    public void ScoreSummary_ConfidenceInterval_ShouldBracketMean()
+    {
+        var X = ThreeClusterData();
+
+        var result = ClusteringExperiment
+            .For(X)
+            .WithAlgorithm(new KMeans { Seed = 42 })
+            .TryClusterCounts(2, 6)
+            .WithEvaluator(new SilhouetteEvaluator())
+            .Run();
+
+        var summary = result.ScoreSummary();
+        var ci = summary.ConfidenceInterval;
+
+        Assert.IsTrue(ci.Lower <= summary.Mean,
+            $"CI lower ({ci.Lower:F4}) should be <= mean ({summary.Mean:F4})");
+        Assert.IsTrue(ci.Upper >= summary.Mean,
+            $"CI upper ({ci.Upper:F4}) should be >= mean ({summary.Mean:F4})");
     }
 }

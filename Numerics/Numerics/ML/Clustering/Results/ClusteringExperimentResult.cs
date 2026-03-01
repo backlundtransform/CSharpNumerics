@@ -1,6 +1,7 @@
 using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.ML.Clustering.Evaluators;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,4 +84,41 @@ public class ClusteringExperimentResult
     /// optimal-K distribution, and (for bootstrap) a consensus matrix.
     /// </summary>
     public MonteCarloClusteringResult MonteCarloResult { get; set; }
+
+    // ── Score distribution statistics ────────────────────────────
+
+    /// <summary>
+    /// Descriptive statistics (mean, median, std, IQR, skewness, kurtosis, …)
+    /// of all pipeline scores for the given evaluator.
+    /// Answers: "how sensitive is the score to pipeline configuration?"
+    /// </summary>
+    /// <param name="evaluatorName">
+    /// Evaluator name (e.g. "Silhouette"). Defaults to the primary evaluator.
+    /// </param>
+    public ScoreDistributionSummary ScoreSummary(string evaluatorName = null)
+    {
+        evaluatorName ??= PrimaryEvaluator;
+        var scores = Rankings
+            .Where(r => r.Scores.ContainsKey(evaluatorName))
+            .Select(r => r.Scores[evaluatorName])
+            .ToList();
+        return new ScoreDistributionSummary(scores);
+    }
+
+    /// <summary>
+    /// Returns the percentile rank (0–100) of the given result among
+    /// all rankings for the specified evaluator.
+    /// E.g. 95 means this pipeline scored better than 95 % of tested configurations.
+    /// </summary>
+    public double ScorePercentile(ClusteringResult result, string evaluatorName = null)
+    {
+        evaluatorName ??= PrimaryEvaluator;
+        if (!result.Scores.ContainsKey(evaluatorName))
+            return 0;
+
+        double score = result.Scores[evaluatorName];
+        int belowCount = Rankings.Count(r =>
+            r.Scores.ContainsKey(evaluatorName) && r.Scores[evaluatorName] < score);
+        return 100.0 * belowCount / Rankings.Count;
+    }
 }
