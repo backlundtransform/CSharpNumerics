@@ -267,6 +267,84 @@ var y = A * x;
 
 ---
 
+## 🔢 Complex Linear Algebra
+
+`ComplexVector`, `ComplexVectorN`, and `ComplexMatrix` mirror the real-valued types with full complex number support. Existing real types convert implicitly — no API breakage.
+
+### ComplexVector (3D)
+
+```csharp
+var a = new ComplexVector(
+    new ComplexNumber(1, 2),
+    new ComplexNumber(3, 0),
+    new ComplexNumber(0, -1));
+
+var b = new ComplexVector(
+    new ComplexNumber(2, 1),
+    new ComplexNumber(0, 3),
+    new ComplexNumber(1, 1));
+
+var sum = a + b;
+var dot = a.Dot(b);                  // standard complex dot product
+var hermitian = a.HermitianDot(b);   // ⟨a,b⟩ = Σ conj(aᵢ)·bᵢ
+var cross = a.Cross(b);
+
+double mag = a.GetMagnitude();       // hermitian norm: √(Σ|xᵢ|²)
+var conj = a.GetConjugate();
+var unit = a.GetUnitVector();
+
+// Implicit from real Vector
+Vector v = new Vector(1, 2, 3);
+ComplexVector cv = v;                // imaginary parts are zero
+```
+
+### ComplexVectorN (N-dimensional)
+
+```csharp
+var v = new ComplexVectorN(new ComplexNumber[]
+{
+    new ComplexNumber(1, 2),
+    new ComplexNumber(3, -1),
+    new ComplexNumber(0, 4)
+});
+
+var dot = v.Dot(v);                  // Σ vᵢ·vᵢ
+var hermitian = v.HermitianDot(v);   // Σ conj(vᵢ)·vᵢ  (always real for self)
+var hadamard = v.Hadamard(v);
+double norm = v.Norm();
+var unit = v.Normalize();
+var conj = v.GetConjugate();
+
+// Implicit from real VectorN
+VectorN real = new VectorN(new double[] { 1, 2, 3 });
+ComplexVectorN complex = real;
+```
+
+### ComplexMatrix (NxM)
+
+```csharp
+var A = new ComplexMatrix(new ComplexNumber[,]
+{
+    { new ComplexNumber(1, 0), new ComplexNumber(0, 1) },
+    { new ComplexNumber(0, -1), new ComplexNumber(1, 0) }
+});
+
+var transpose = A.Transpose();
+var dagger = A.ConjugateTranspose();  // hermitian adjoint (A†)
+var det = A.Determinant();            // returns ComplexNumber
+var inv = A.Inverse();
+
+// Arithmetic
+var B = new ComplexNumber(2, 0) * A;
+var C = A * A;
+
+// Implicit from real Matrix
+Matrix real = new Matrix(new double[,] { { 1, 2 }, { 3, 4 } });
+ComplexMatrix complex = real;
+```
+
+---
+
 ## 📦 Tensor (multi-dimensionell)
 
 ```csharp
