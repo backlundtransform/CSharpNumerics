@@ -655,6 +655,146 @@ Func<(double t, VectorN y), VectorN> accel = v =>
 
 var y0 = new VectorN([1, 0]); // [position, velocity]
 VectorN result = accel.VelocityVerlet(0, 100, 0.01, y0);
+```
+
+---
+
+## ⏱️ Time Stepping (Class-Based ODE Integration)
+
+The extension methods above (`RungeKutta`, `EulerMethod`, `VelocityVerlet`, etc.) are functional and convenient for simple problems. The `ITimeStepper` interface provides a **class-based alternative** for advanced scenarios: adaptive step control, trajectory recording, per-step callbacks, and diagnostics.
+
+### Interface
+
+```csharp
+public interface ITimeStepper
+{
+    string Name { get; }
+    TimeStepResult Solve(
+        Func<double, VectorN, VectorN> rhs,
+        double t0, double tEnd, VectorN y0, double dt,
+        bool recordTrajectory = false,
+        Action<double, VectorN> onStep = null);
+}
+```
+
+### Available Steppers
+
+| Stepper | Class | Order | Step Size | Best For |
+|---------|-------|-------|-----------|----------|
+| Euler | `EulerStepper` | O(h) | Fixed | Quick prototyping, reference solutions |
+| RK4 | `RK4Stepper` | O(h⁴) | Fixed | General-purpose, non-stiff problems |
+| Dormand-Prince 4(5) | `AdaptiveRK45Stepper` | O(h⁴)/O(h⁵) | **Adaptive** | Automatic accuracy, varying timescales |
+| Velocity Verlet | `VelocityVerletStepper` | O(h²) | Fixed | Symplectic, N-body, energy conservation |
+
+### Result Object
+
+Every stepper returns a `TimeStepResult`:
+
+| Property | Description |
+|----------|-------------|
+| `T` | Final time reached |
+| `Y` | Final state vector |
+| `Trajectory` | Full `(t, y)` history (if `recordTrajectory = true`) |
+| `Steps` | Total accepted steps |
+| `RejectedSteps` | Rejected steps (adaptive only) |
+| `FunctionEvaluations` | Total rhs evaluations |
+| `LastError` | Estimated local error at final step (adaptive only) |
+| `LastStepSize` | Actual step size used at final step |
+
+### ➡️ Heat Equation (Method of Lines + RK4)
+
+```csharp
+var grid = new Grid2D(50, 50, 0.1);
+VectorN u = grid.Initialize((x, y) => Math.Exp(-(x * x + y * y)));
+
+Func<double, VectorN, VectorN> rhs = (t, state) =>
+    GridOperators.Laplacian2D(state, grid, BoundaryCondition.Dirichlet);
+
+var stepper = new RK4Stepper();
+var result = stepper.Solve(rhs, 0, 1.0, u, dt: 0.0001, recordTrajectory: true);
+
+double[,] finalField = grid.ToArray(result.Y);
+Console.WriteLine($"Steps: {result.Steps}, Evaluations: {result.FunctionEvaluations}");
+```
+
+### ➡️ Adaptive Step Control (Dormand-Prince)
+
+No manual `dt` tuning — the stepper finds the right step size automatically:
+
+```csharp
+Func<double, VectorN, VectorN> rhs = (t, state) =>
+    GridOperators.Laplacian2D(state, grid, BoundaryCondition.Neumann);
+
+var stepper = new AdaptiveRK45Stepper
+{
+    AbsoluteTolerance = 1e-8,
+    RelativeTolerance = 1e-8
+};
+
+var result = stepper.Solve(rhs, 0, 10.0, u, dt: 0.01);
+
+Console.WriteLine($"Steps: {result.Steps}, Rejected: {result.RejectedSteps}");
+Console.WriteLine($"Final dt: {result.LastStepSize:E3}, Error: {result.LastError:E3}");
+```
+
+### ➡️ Spring System (Velocity Verlet)
+
+Symplectic integration for oscillatory systems — state = `[positions | velocities]`:
+
+```csharp
+// Simple harmonic oscillator: x'' = -x
+Func<double, VectorN, VectorN> sho = (t, y) =>
+    new VectorN([y[1], -y[0]]);  // [velocity, acceleration]
+
+var stepper = new VelocityVerletStepper();
+var result = stepper.Solve(sho, 0, 100, new VectorN([1, 0]), dt: 0.01,
+    recordTrajectory: true);
+
+// Energy is conserved over long integrations
+foreach (var (t, y) in result.Trajectory)
+{
+    double energy = 0.5 * (y[0] * y[0] + y[1] * y[1]);
+    // energy ≈ 0.5 throughout
+}
+```
+
+### ➡️ Per-Step Callback
+
+Monitor or log intermediate states without storing the full trajectory:
+
+```csharp
+double maxTemp = 0;
+var stepper = new RK4Stepper();
+var result = stepper.Solve(rhs, 0, 10.0, u, dt: 0.001,
+    onStep: (t, y) =>
+    {
+        double peak = y.Values.Max();
+        if (peak > maxTemp) maxTemp = peak;
+    });
+
+Console.WriteLine($"Peak temperature: {maxTemp:F4}");
+```
+
+### ➡️ Swap Stepper at Runtime
+
+All steppers share `ITimeStepper` — swap methods without changing application code:
+
+```csharp
+ITimeStepper stepper = needsAdaptive
+    ? new AdaptiveRK45Stepper { AbsoluteTolerance = 1e-6 }
+    : new RK4Stepper();
+
+var result = stepper.Solve(rhs, 0, tEnd, y0, dt: 0.01);
+```
+
+**Key points:**
+
+* Complements (does not replace) the functional extension methods
+* `AdaptiveRK45Stepper` uses the Dormand-Prince 4(5) embedded pair — same method as MATLAB's `ode45`
+* FSAL (first-same-as-last) optimization: only 6 new evaluations per accepted step
+* `VelocityVerletStepper` is symplectic — ideal for Hamiltonian systems
+* All steppers report diagnostics (step count, evaluations, error)
+* `onStep` callback enables monitoring without memory overhead of full trajectory
 
 // Full trajectory
 var traj = accel.VelocityVerletTrajectory(0, 20, 0.01, y0);
