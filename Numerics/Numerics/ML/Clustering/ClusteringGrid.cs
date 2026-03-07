@@ -1,4 +1,5 @@
 using CSharpNumerics.ML.Clustering.Interfaces;
+using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -41,18 +42,28 @@ public class ClusteringGrid
                 ? mg.Scalers
                 : new List<SearchGrid<IScaler>> { new() { Factory = () => null } };
 
+            var reducers = mg.Reducers.Any()
+                ? mg.Reducers
+                : new List<SearchGrid<IDimensionalityReducer>> { new() { Factory = () => null } };
+
             foreach (var scalerGrid in scalers)
             {
-                foreach (var modelParams in CartesianProduct(mg.Model.Parameters))
-                    foreach (var scalerParams in CartesianProduct(scalerGrid.Parameters))
-                    {
-                        yield return new ClusteringPipeline(
-                            model: mg.Model.Factory(),
-                            modelParams: modelParams,
-                            scaler: scalerGrid.Factory(),
-                            scalerParams: scalerParams
-                        );
-                    }
+                foreach (var reducerGrid in reducers)
+                {
+                    foreach (var modelParams in CartesianProduct(mg.Model.Parameters))
+                        foreach (var scalerParams in CartesianProduct(scalerGrid.Parameters))
+                            foreach (var reducerParams in CartesianProduct(reducerGrid.Parameters))
+                            {
+                                yield return new ClusteringPipeline(
+                                    model: mg.Model.Factory(),
+                                    modelParams: modelParams,
+                                    scaler: scalerGrid.Factory(),
+                                    scalerParams: scalerParams,
+                                    reducer: reducerGrid.Factory(),
+                                    reducerParams: reducerParams
+                                );
+                            }
+                }
             }
         }
     }
@@ -111,6 +122,7 @@ public class ClusteringGrid
     {
         public SearchGrid<IClusteringModel> Model { get; set; }
         public List<SearchGrid<IScaler>> Scalers { get; } = new();
+        public List<SearchGrid<IDimensionalityReducer>> Reducers { get; } = new();
     }
 
     public class ClusteringModelBuilder
@@ -134,6 +146,15 @@ public class ClusteringGrid
             var g = new SearchGrid<IScaler> { Factory = () => new T() };
             setup(g);
             _grid.Scalers.Add(g);
+            return this;
+        }
+
+        public ClusteringModelBuilder AddReducer<T>(Action<SearchGrid<IDimensionalityReducer>> setup)
+            where T : IDimensionalityReducer, new()
+        {
+            var g = new SearchGrid<IDimensionalityReducer> { Factory = () => new T() };
+            setup(g);
+            _grid.Reducers.Add(g);
             return this;
         }
     }

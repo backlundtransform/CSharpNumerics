@@ -1,4 +1,5 @@
-﻿using CSharpNumerics.ML.Models.Interfaces;
+﻿using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
+using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.ML.Selector.Interfaces;
 using System;
@@ -42,14 +43,20 @@ public class PipelineGrid
                 ? mg.Selectors
                 : new List<SearchGrid<ISelector>> { new() { Factory = () => null } };
 
+            var reducers = mg.Reducers.Any()
+                ? mg.Reducers
+                : new List<SearchGrid<IDimensionalityReducer>> { new() { Factory = () => null } };
+
             foreach (var scalerGrid in scalers)
                 foreach (var selectorGrid in selectors)
-                {
+                    foreach (var reducerGrid in reducers)
+                    {
                     
 
                     foreach (var modelParams in CartesianProduct(mg.Model.Parameters))
                         foreach (var scalerParams in CartesianProduct(scalerGrid.Parameters))
                             foreach (var selectorParams in CartesianProduct(selectorGrid.Parameters))
+                                foreach (var reducerParams in CartesianProduct(reducerGrid.Parameters))
                             {
                                 yield return new Pipeline(
                                     model: mg.Model.Factory(),
@@ -57,7 +64,9 @@ public class PipelineGrid
                                     scaler: scalerGrid.Factory(),
                                     scalerParams: scalerParams,
                                     selector: selectorGrid.Factory(),
-                                    selectorParams: selectorParams
+                                    selectorParams: selectorParams,
+                                    reducer: reducerGrid.Factory(),
+                                    reducerParams: reducerParams
                                 );
                             }
                 }
@@ -113,6 +122,7 @@ public class PipelineGrid
 
         public List<SearchGrid<IScaler>> Scalers { get; } = new();
         public List<SearchGrid<ISelector>> Selectors { get; } = new();
+        public List<SearchGrid<IDimensionalityReducer>> Reducers { get; } = new();
     }
     public class ModelBuilder
     {
@@ -144,6 +154,15 @@ public class PipelineGrid
             var g = new SearchGrid<ISelector> { Factory = () => new T() };
             setup(g);
             _grid.Selectors.Add(g);
+            return this;
+        }
+
+        public ModelBuilder AddReducer<T>(Action<SearchGrid<IDimensionalityReducer>> setup)
+            where T : IDimensionalityReducer, new()
+        {
+            var g = new SearchGrid<IDimensionalityReducer> { Factory = () => new T() };
+            setup(g);
+            _grid.Reducers.Add(g);
             return this;
         }
     }

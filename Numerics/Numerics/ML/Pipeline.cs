@@ -1,4 +1,5 @@
-﻿using CSharpNumerics.ML.Models.Interfaces;
+﻿using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
+using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.ML.Selector.Interfaces;
 using CSharpNumerics.Numerics.Objects;
@@ -14,10 +15,12 @@ public class Pipeline
     public IModel Model { get; }
     public IScaler Scaler { get; }
     public ISelector Selector { get; }
+    public IDimensionalityReducer Reducer { get; }
 
     public Dictionary<string, object> ModelParams { get; }
     public Dictionary<string, object> ScalerParams { get; }
     public Dictionary<string, object> SelectorParams { get; }
+    public Dictionary<string, object> ReducerParams { get; }
 
     private bool _isFitted = false;
 
@@ -27,7 +30,9 @@ public class Pipeline
         IScaler scaler = null,
          Dictionary<string, object> scalerParams = null,
         ISelector selector = null,
-         Dictionary<string, object> selectorParams = null)
+         Dictionary<string, object> selectorParams = null,
+        IDimensionalityReducer reducer = null,
+        Dictionary<string, object> reducerParams = null)
     {
         Model = model;
         ModelParams = modelParams;
@@ -38,11 +43,17 @@ public class Pipeline
         Selector = selector;
         SelectorParams = selectorParams ?? [];
 
+        Reducer = reducer;
+        ReducerParams = reducerParams ?? [];
+
         if (model is IHasHyperparameters hpModel)
             hpModel.SetHyperParameters(modelParams);
 
         if (selector is IHasHyperparameters hpSelector)
             hpSelector.SetHyperParameters(selectorParams);
+
+        if (reducer is IHasHyperparameters hpReducer)
+            hpReducer.SetHyperParameters(reducerParams);
     }
 
 
@@ -53,6 +64,10 @@ public class Pipeline
         // Apply selector
         if (Selector != null)
             X = Selector.FitTransform(X, y);
+
+        // Apply reducer
+        if (Reducer != null)
+            X = Reducer.FitTransform(X);
 
         // Apply scaler
         if (Scaler != null)
@@ -73,6 +88,9 @@ public class Pipeline
         if (Selector != null)
             X = Selector.Transform(X);
 
+        if (Reducer != null)
+            X = Reducer.Transform(X);
+
         if (Scaler != null)
             X = Scaler.Transform(X);
 
@@ -86,7 +104,9 @@ public class Pipeline
             Scaler?.Clone(),
             ScalerParams,
             Selector?.Clone(),
-            SelectorParams
+            SelectorParams,
+            Reducer?.Clone(),
+            ReducerParams
         );
     }
 

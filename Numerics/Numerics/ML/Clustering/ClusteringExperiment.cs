@@ -1,6 +1,7 @@
 using CSharpNumerics.ML.Clustering.Evaluators;
 using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.ML.Clustering.Results;
+using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Statistics.MonteCarlo;
@@ -48,6 +49,7 @@ public class ClusteringExperimentBuilder
     private readonly List<IClusteringModel> _algorithms = new();
     private readonly List<IClusteringEvaluator> _evaluators = new();
     private IScaler _scaler;
+    private IDimensionalityReducer _reducer;
     private (int min, int max)? _clusterRange;
     private ClusteringGrid _grid;
     private int? _mcIterations;
@@ -112,6 +114,15 @@ public class ClusteringExperimentBuilder
     public ClusteringExperimentBuilder WithScaler(IScaler scaler)
     {
         _scaler = scaler;
+        return this;
+    }
+
+    // ── Reducer ─────────────────────────────────────────────────
+
+    /// <summary>Apply a dimensionality reducer before scaling/clustering (optional).</summary>
+    public ClusteringExperimentBuilder WithReducer(IDimensionalityReducer reducer)
+    {
+        _reducer = reducer;
         return this;
     }
 
@@ -281,7 +292,8 @@ public class ClusteringExperimentBuilder
                     pipelines.Add(new ClusteringPipeline(
                         model: clone,
                         modelParams: kParams,
-                        scaler: _scaler?.Clone()
+                        scaler: _scaler?.Clone(),
+                        reducer: _reducer?.Clone()
                     ));
                 }
             }
@@ -291,7 +303,8 @@ public class ClusteringExperimentBuilder
                 pipelines.Add(new ClusteringPipeline(
                     model: algorithm.Clone(),
                     modelParams: new Dictionary<string, object>(),
-                    scaler: _scaler?.Clone()
+                    scaler: _scaler?.Clone(),
+                    reducer: _reducer?.Clone()
                 ));
             }
         }

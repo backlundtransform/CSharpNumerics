@@ -1,4 +1,5 @@
 using CSharpNumerics.ML.Clustering.Interfaces;
+using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.Numerics.Objects;
@@ -15,9 +16,11 @@ public class ClusteringPipeline
 {
     public IClusteringModel Model { get; }
     public IScaler Scaler { get; }
+    public IDimensionalityReducer Reducer { get; }
 
     public Dictionary<string, object> ModelParams { get; }
     public Dictionary<string, object> ScalerParams { get; }
+    public Dictionary<string, object> ReducerParams { get; }
 
     private bool _isFitted;
 
@@ -25,7 +28,9 @@ public class ClusteringPipeline
         IClusteringModel model,
         Dictionary<string, object> modelParams,
         IScaler scaler = null,
-        Dictionary<string, object> scalerParams = null)
+        Dictionary<string, object> scalerParams = null,
+        IDimensionalityReducer reducer = null,
+        Dictionary<string, object> reducerParams = null)
     {
         Model = model;
         ModelParams = modelParams ?? new Dictionary<string, object>();
@@ -33,13 +38,22 @@ public class ClusteringPipeline
         Scaler = scaler;
         ScalerParams = scalerParams ?? new Dictionary<string, object>();
 
+        Reducer = reducer;
+        ReducerParams = reducerParams ?? new Dictionary<string, object>();
+
         if (model is IHasHyperparameters hp)
             hp.SetHyperParameters(ModelParams);
+
+        if (reducer is IHasHyperparameters hpReducer)
+            hpReducer.SetHyperParameters(ReducerParams);
     }
 
     // ── Fit ──────────────────────────────────────────────────────
     public void Fit(Matrix X)
     {
+        if (Reducer != null)
+            X = Reducer.FitTransform(X);
+
         if (Scaler != null)
             X = Scaler.FitTransform(X);
 
@@ -54,6 +68,9 @@ public class ClusteringPipeline
         if (!_isFitted)
             throw new InvalidOperationException("ClusteringPipeline has not been fitted.");
 
+        if (Reducer != null)
+            X = Reducer.Transform(X);
+
         if (Scaler != null)
             X = Scaler.Transform(X);
 
@@ -63,6 +80,9 @@ public class ClusteringPipeline
     // ── FitPredict ───────────────────────────────────────────────
     public VectorN FitPredict(Matrix X)
     {
+        if (Reducer != null)
+            X = Reducer.FitTransform(X);
+
         if (Scaler != null)
             X = Scaler.FitTransform(X);
 
@@ -79,7 +99,9 @@ public class ClusteringPipeline
             Model.Clone(),
             new Dictionary<string, object>(ModelParams),
             Scaler?.Clone(),
-            ScalerParams != null ? new Dictionary<string, object>(ScalerParams) : null
+            ScalerParams != null ? new Dictionary<string, object>(ScalerParams) : null,
+            Reducer?.Clone(),
+            ReducerParams != null ? new Dictionary<string, object>(ReducerParams) : null
         );
     }
 
@@ -88,6 +110,8 @@ public class ClusteringPipeline
         var name = Model.GetType().Name;
         if (Scaler != null)
             name = $"{Scaler.GetType().Name} → {name}";
+        if (Reducer != null)
+            name = $"{Reducer.GetType().Name}({Reducer.NComponents}) → {name}";
 
         if (ModelParams.Count > 0)
         {
