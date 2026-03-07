@@ -1,6 +1,6 @@
 using CSharpNumerics.Physics.Objects;
 
-namespace CSharpNumerics.Physics.Applied.Constraints
+namespace CSharpNumerics.Engines.Game.Constraints
 {
     /// <summary>
     /// Interface for a velocity-level constraint solved by the sequential impulse method.

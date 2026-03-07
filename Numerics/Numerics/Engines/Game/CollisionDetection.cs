@@ -1,8 +1,8 @@
-using CSharpNumerics.Physics.Applied.Objects;
+using CSharpNumerics.Engines.Game.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Applied
+namespace CSharpNumerics.Engines.Game
 {
     /// <summary>
     /// Provides overlap tests (broad phase) and contact generation (narrow phase)

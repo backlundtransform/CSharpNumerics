@@ -2,7 +2,7 @@ using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Applied.Constraints
+namespace CSharpNumerics.Engines.Game.Constraints
 {
     /// <summary>
     /// Maintains a fixed distance between two anchor points on two bodies.

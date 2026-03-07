@@ -1,6 +1,6 @@
-using CSharpNumerics.Physics.Applied.BroadPhase;
-using CSharpNumerics.Physics.Applied.Constraints;
-using CSharpNumerics.Physics.Applied.Objects;
+using CSharpNumerics.Engines.Game.BroadPhase;
+using CSharpNumerics.Engines.Game.Constraints;
+using CSharpNumerics.Engines.Game.Objects;
 using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 #nullable enable
 
-namespace CSharpNumerics.Physics.Applied
+namespace CSharpNumerics.Engines.Game
 {
     /// <summary>
     /// Container and orchestrator for a physics simulation.

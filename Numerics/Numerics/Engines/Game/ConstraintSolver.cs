@@ -1,8 +1,8 @@
-using CSharpNumerics.Physics.Applied.Constraints;
+using CSharpNumerics.Engines.Game.Constraints;
 using CSharpNumerics.Physics.Objects;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.Physics.Applied
+namespace CSharpNumerics.Engines.Game
 {
     /// <summary>
     /// Iterative sequential impulse solver for constraints and joints.

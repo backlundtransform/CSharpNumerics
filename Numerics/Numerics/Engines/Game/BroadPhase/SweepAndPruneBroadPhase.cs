@@ -2,7 +2,7 @@ using CSharpNumerics.Physics.Objects;
 using System;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.Physics.Applied.BroadPhase
+namespace CSharpNumerics.Engines.Game.BroadPhase
 {
     /// <summary>
     /// Sweep-and-prune broad phase along the X axis.

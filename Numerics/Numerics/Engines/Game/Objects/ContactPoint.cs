@@ -1,6 +1,6 @@
 using CSharpNumerics.Numerics.Objects;
 
-namespace CSharpNumerics.Physics.Applied.Objects
+namespace CSharpNumerics.Engines.Game.Objects
 {
     /// <summary>
     /// Describes a contact point between two colliding bodies.

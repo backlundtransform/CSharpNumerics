@@ -1,5 +1,5 @@
-using CSharpNumerics.Physics.Applied;
-using CSharpNumerics.Physics.Applied.Constraints;
+using CSharpNumerics.Engines.Game;
+using CSharpNumerics.Engines.Game.Constraints;
 using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 

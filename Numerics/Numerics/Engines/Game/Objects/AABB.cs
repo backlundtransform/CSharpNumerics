@@ -1,7 +1,7 @@
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Applied.Objects
+namespace CSharpNumerics.Engines.Game.Objects
 {
     /// <summary>
     /// Axis-Aligned Bounding Box defined by minimum and maximum corners.

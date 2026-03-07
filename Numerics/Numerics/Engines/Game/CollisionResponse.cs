@@ -1,9 +1,9 @@
-using CSharpNumerics.Physics.Applied.Objects;
+using CSharpNumerics.Engines.Game.Objects;
 using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Applied
+namespace CSharpNumerics.Engines.Game
 {
     /// <summary>
     /// Impulse-based collision response for rigid bodies.

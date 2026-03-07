@@ -2,7 +2,7 @@ using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Applied.Constraints
+namespace CSharpNumerics.Engines.Game.Constraints
 {
     /// <summary>
     /// Constrains two bodies to share a pivot point and only rotate about a single axis.

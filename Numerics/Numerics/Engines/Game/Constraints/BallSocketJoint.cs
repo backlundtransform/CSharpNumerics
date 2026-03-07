@@ -1,7 +1,7 @@
 using CSharpNumerics.Physics.Objects;
 using CSharpNumerics.Numerics.Objects;
 
-namespace CSharpNumerics.Physics.Applied.Constraints
+namespace CSharpNumerics.Engines.Game.Constraints
 {
     /// <summary>
     /// Constrains two anchor points to be coincident (zero distance).
