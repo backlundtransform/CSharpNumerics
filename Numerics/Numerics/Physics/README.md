@@ -1411,6 +1411,35 @@ double sy = EnvironmentalExtensions.BriggsSigmaY(1000, StabilityClass.D);
 double sz = EnvironmentalExtensions.BriggsSigmaZ(1000, StabilityClass.D);
 ```
 
+### Transient Gaussian Puff
+
+Time-dependent dispersion of an instantaneous release that advects downwind — the puff centre moves at wind speed while the cloud expands according to Briggs σ(u·t):
+
+```csharp
+double Q = 5.0;  // emission rate (kg/s)
+double releaseSeconds = 10.0;  // release duration → mass = Q·Δt
+
+ScalarField C = Q.GaussianPuff(
+    releaseSeconds: releaseSeconds,
+    windSpeed: 10.0,
+    stackHeight: 50,
+    sourcePosition: new Vector(0, 0, 50),
+    windDirection: new Vector(1, 0, 0),
+    time: 30.0,                          // seconds since release
+    stability: StabilityClass.D);
+
+// At t=30s, puff centre is at x = u·t = 300 m downwind
+double conc = C.Evaluate(new Vector(300, 0, 50));  // peak region
+
+// Evaluate at different times for animation
+for (double t = 10; t <= 120; t += 10)
+{
+    var puff = Q.GaussianPuff(releaseSeconds, 10, 50,
+        new Vector(0, 0, 50), new Vector(1, 0, 0), t, StabilityClass.D);
+    double peak = puff.Evaluate(new Vector(10 * t, 0, 50));
+}
+```
+
 ### Diffusion (Fick's Laws)
 
 ```csharp
