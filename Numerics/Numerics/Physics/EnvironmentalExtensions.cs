@@ -131,6 +131,73 @@ namespace CSharpNumerics.Physics
                 * Math.Exp(-stackHeight * stackHeight / (2 * sz * sz));
         }
 
+        /// <summary>
+        /// Creates a <see cref="ScalarField"/> representing the transient concentration
+        /// from a Gaussian puff model at a specific time after an instantaneous release
+        /// of mass Q·Δt, advected downwind by a uniform wind field:
+        /// <para>
+        /// C(r,t) = (Q·Δt) / ((2π)^(3/2) · σx · σy · σz)
+        ///          · exp(−(x−u·t)²/(2σx²)) · exp(−y²/(2σy²))
+        ///          · [exp(−(z−H)²/(2σz²)) + exp(−(z+H)²/(2σz²))]
+        /// </para>
+        /// where σx = σy (isotropic lateral dispersion evaluated at the virtual
+        /// downwind distance u·t) and σz is similarly evaluated.
+        /// </summary>
+        /// <param name="emissionRate">Source strength Q in kg/s.</param>
+        /// <param name="releaseSeconds">Duration of release Δt in seconds (mass = Q·Δt).</param>
+        /// <param name="windSpeed">Mean wind speed u in m/s.</param>
+        /// <param name="stackHeight">Effective stack height H in metres.</param>
+        /// <param name="sourcePosition">Position of the emission source.</param>
+        /// <param name="windDirection">Horizontal wind direction (z ignored).</param>
+        /// <param name="time">Time since start of release in seconds.</param>
+        /// <param name="stability">Pasquill–Gifford stability class.</param>
+        public static ScalarField GaussianPuff(
+            this double emissionRate,
+            double releaseSeconds,
+            double windSpeed,
+            double stackHeight,
+            Vector sourcePosition,
+            Vector windDirection,
+            double time,
+            StabilityClass stability = StabilityClass.D)
+        {
+            if (time <= 0) return new ScalarField(_ => 0);
+            if (windSpeed <= 0) throw new ArgumentException("Wind speed must be greater than zero.");
+
+            var windUnit = new Vector(windDirection.x, windDirection.y, 0).GetUnitVector();
+            var crossUnit = new Vector(-windUnit.y, windUnit.x, 0);
+            double mass = emissionRate * releaseSeconds;
+            double u = windSpeed;
+            double H = stackHeight;
+            double t = time;
+
+            // Virtual downwind distance for dispersion evaluation
+            double xVirt = u * t;
+            double sy = BriggsSigmaY(xVirt, stability);
+            double sz = BriggsSigmaZ(xVirt, stability);
+            double sx = sy; // isotropic lateral
+
+            if (sx <= 0 || sy <= 0 || sz <= 0) return new ScalarField(_ => 0);
+
+            double norm = mass / (Math.Pow(2 * Math.PI, 1.5) * sx * sy * sz);
+
+            return new ScalarField(r =>
+            {
+                var d = r - sourcePosition;
+                double xDownwind = d.x * windUnit.x + d.y * windUnit.y;
+                double yCross = d.x * crossUnit.x + d.y * crossUnit.y;
+                double z = r.z;
+
+                double dx = xDownwind - u * t;
+                double axial = Math.Exp(-dx * dx / (2 * sx * sx));
+                double lateral = Math.Exp(-yCross * yCross / (2 * sy * sy));
+                double vertDirect = Math.Exp(-(z - H) * (z - H) / (2 * sz * sz));
+                double vertReflect = Math.Exp(-(z + H) * (z + H) / (2 * sz * sz));
+
+                return norm * axial * lateral * (vertDirect + vertReflect);
+            });
+        }
+
         #endregion
 
         // ═══════════════════════════════════════════════════════════════

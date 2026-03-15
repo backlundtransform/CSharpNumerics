@@ -21,7 +21,7 @@ Classical mechanics, electromagnetics, heat transfer, environmental modeling, or
 
 ### ⚙️ Simulation Engines
 
-Modular computational engines designed for integration with external visualization, simulation, and analysis platforms.
+Modular computational engines designed for integration with external visualization, simulation, and analysis platforms — including a **Game Physics** engine, an **Audio** synthesis engine, and a **GIS / Geo** engine for atmospheric dispersion modelling with Monte Carlo uncertainty quantification.
 
 
 
