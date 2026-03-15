@@ -1,3 +1,4 @@
+using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections;
@@ -50,6 +51,12 @@ namespace CSharpNumerics.Engines.GIS.Grid
         public int CellCount => Nx * Ny * Nz;
 
         /// <summary>
+        /// Optional projection that maps local (x, y, z) back to WGS-84 coordinates.
+        /// Null when the grid was created with plain metre coordinates.
+        /// </summary>
+        public Projection Projection { get; private set; }
+
+        /// <summary>
         /// Creates a uniform 3-D grid.
         /// </summary>
         /// <param name="xMin">Minimum x (metres).</param>
@@ -80,6 +87,61 @@ namespace CSharpNumerics.Engines.GIS.Grid
             Nx = Math.Max(1, (int)Math.Floor((xMax - xMin) / step) + 1);
             Ny = Math.Max(1, (int)Math.Floor((yMax - yMin) / step) + 1);
             Nz = Math.Max(1, (int)Math.Floor((zMax - zMin) / step) + 1);
+        }
+
+        /// <summary>
+        /// Creates a geo-referenced grid from a geographic (lat/lon) bounding box.
+        /// The bounding box is projected to local metres using the specified projection type.
+        /// The south-west corner becomes the projection origin.
+        /// </summary>
+        /// <param name="southWest">South-west corner (min lat, min lon).</param>
+        /// <param name="northEast">North-east corner (max lat, max lon).</param>
+        /// <param name="altMin">Minimum altitude in metres.</param>
+        /// <param name="altMax">Maximum altitude in metres.</param>
+        /// <param name="step">Cell spacing in metres.</param>
+        /// <param name="projectionType">Projection method (default: LocalTangentPlane).</param>
+        /// <returns>A GeoGrid with an attached <see cref="Coordinates.Projection"/>.</returns>
+        public static GeoGrid FromLatLon(
+            GeoCoordinate southWest,
+            GeoCoordinate northEast,
+            double altMin,
+            double altMax,
+            double step,
+            ProjectionType projectionType = ProjectionType.LocalTangentPlane)
+        {
+            if (northEast.Latitude <= southWest.Latitude)
+                throw new ArgumentException("northEast latitude must be greater than southWest latitude.");
+            if (northEast.Longitude <= southWest.Longitude)
+                throw new ArgumentException("northEast longitude must be greater than southWest longitude.");
+
+            var projection = new Projection(southWest, projectionType);
+            var localNE = projection.ToLocal(northEast);
+
+            var grid = new GeoGrid(0, localNE.x, 0, localNE.y, altMin, altMax, step);
+            grid.Projection = projection;
+            return grid;
+        }
+
+        /// <summary>
+        /// Returns the geographic coordinate of the cell at the given flat index.
+        /// Requires <see cref="Projection"/> to be set (throws otherwise).
+        /// </summary>
+        public GeoCoordinate CellCentreGeo(int flatIndex)
+        {
+            if (Projection == null)
+                throw new InvalidOperationException("No projection set. Use FromLatLon to create a geo-referenced grid.");
+            return Projection.ToGeo(CellCentre(flatIndex));
+        }
+
+        /// <summary>
+        /// Returns the geographic coordinate of the cell at (ix, iy, iz).
+        /// Requires <see cref="Projection"/> to be set (throws otherwise).
+        /// </summary>
+        public GeoCoordinate CellCentreGeo(int ix, int iy, int iz)
+        {
+            if (Projection == null)
+                throw new InvalidOperationException("No projection set. Use FromLatLon to create a geo-referenced grid.");
+            return Projection.ToGeo(CellCentre(ix, iy, iz));
         }
 
         // ═══════════════════════════════════════════════════════════════

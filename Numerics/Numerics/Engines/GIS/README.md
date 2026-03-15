@@ -191,11 +191,52 @@ double p95 = peakStats.Percentile(95);
 
 ---
 
-### Fluent API (planned)
+### ScenarioClusterAnalyzer — ML clustering of scenarios
 
-The full fluent chain will be available once all phases are complete:
+Finds the most probable emission scenario by clustering the Monte Carlo scenario matrix:
 
 ```csharp
+using CSharpNumerics.Engines.GIS.Analysis;
+
+var analysis = ScenarioClusterAnalyzer
+    .For(mcResult)
+    .WithAlgorithm(new ClusteringGrid().AddModel<KMeans>(g => g.Add("K", 3, 5)))
+    .WithEvaluator(new SilhouetteEvaluator())
+    .Run();
+
+int dominant = analysis.DominantCluster;      // largest cluster
+int[] members = analysis.GetClusterIterations(dominant);
+List<GridSnapshot> mean = analysis.GetClusterMeanSnapshots(dominant);
+```
+
+### ProbabilityMap & TimeAnimator — probability mapping
+
+```csharp
+// Exceedance probability per cell at one time step
+var pMap = ProbabilityMap.Build(
+    mcResult.Snapshots,
+    timeIndex: 30,
+    threshold: 1e-6,
+    iterationFilter: members);   // optional: filter to dominant cluster
+
+double pAt = pMap.At(new Vector(200, 50, 0));
+var hotCells = pMap.CellsAbove(0.5);
+
+// Time-animated probability
+var animation = TimeAnimator.Build(mcResult.Snapshots, threshold: 1e-6);
+double p = animation.ProbabilityAt(new Vector(200, 50, 0), timeSeconds: 1800);
+double cumP = animation.CumulativeProbabilityAt(new Vector(200, 50, 0), 1800);
+```
+
+---
+
+### Fluent API — RiskScenario
+
+End-to-end pipeline in a single fluent chain:
+
+```csharp
+using CSharpNumerics.Engines.GIS.Scenario;
+
 var result = RiskScenario
     .ForGaussianPlume(5.0)
     .FromSource(new Vector(0, 0, 50))
@@ -208,18 +249,77 @@ var result = RiskScenario
     .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 100, 10))
     .OverTime(0, 3600, 60)
     .RunMonteCarlo(1000)
-    .AnalyzeWith(new ClusteringGrid()
-        .AddModel<KMeans>(g => g.Add("K", 3, 5))
-        .WithEvaluator(new SilhouetteEvaluator()))
-    .Build();
+    .AnalyzeWith(
+        new ClusteringGrid().AddModel<KMeans>(g => g.Add("K", 3, 5)),
+        new SilhouetteEvaluator())
+    .Build(threshold: 1e-6);
 
 // Query probability at a point and time
-double p = result.ProbabilityAt(
-    new Vector(200, 50, 0), timeSeconds: 1800, thresholdKgM3: 1e-6);
+double p = result.ProbabilityAt(new Vector(200, 50, 0), timeSeconds: 1800);
+double cumP = result.CumulativeProbabilityAt(new Vector(200, 50, 0), 1800);
+ProbabilityMap map = result.ProbabilityMapAt(timeIndex: 30);
 
 // Export
 result.ExportGeoJson("output/plume.geojson");
 result.ExportUnity("output/plume.bin");
+result.ExportCesium("output/plume.czml");
+```
+
+---
+
+### Export — GeoJSON, Unity binary, Cesium CZML
+
+```csharp
+using CSharpNumerics.Engines.GIS.Export;
+
+// GeoJSON — single snapshot or full animation
+GeoJsonExporter.Save(snapshot, "snap.geojson");
+GeoJsonExporter.Save(animation, "anim.geojson");
+var paths = GeoJsonExporter.SavePerTimeStep(animation, "out/step");
+
+// Unity binary — compact float[] format with GPLM header
+UnityBinaryExporter.Save(snapshots, animation, "plume.bin");
+var data = UnityBinaryExporter.Read("plume.bin");  // round-trip
+
+// Cesium CZML — time-animated colour-coded entities
+CesiumExporter.Save(animation, "plume.czml", name: "Plume Risk");
+string json = CesiumExporter.ToGeoJsonCesium(probMap);
+```
+
+---
+
+### GIS Coordinates — WGS84, UTM, local tangent plane
+
+Create geo-referenced grids from latitude/longitude bounding boxes with automatic projection:
+
+```csharp
+using CSharpNumerics.Engines.GIS.Coordinates;
+
+// Geographic coordinate
+var stockholm = new GeoCoordinate(59.3293, 18.0686, altitude: 25);
+var gothenburg = new GeoCoordinate(57.7089, 11.9746);
+double dist = stockholm.DistanceTo(gothenburg);  // ~398 km
+
+// Local Tangent Plane projection
+var proj = new Projection(stockholm, ProjectionType.LocalTangentPlane);
+Vector local = proj.ToLocal(59.34, 18.08);        // → metres (east, north, up)
+GeoCoordinate back = proj.ToGeo(local);            // → lat/lon round-trip
+
+// UTM projection (auto-detects zone)
+var utmProj = new Projection(stockholm, ProjectionType.UTM);
+int zone = utmProj.UtmZone;  // 34
+
+// Geo-referenced grid from lat/lon bounding box
+var sw = new GeoCoordinate(59.32, 18.06);
+var ne = new GeoCoordinate(59.34, 18.10);
+var geoGrid = GeoGrid.FromLatLon(sw, ne, altMin: 0, altMax: 100, step: 50);
+
+// Cell centres in WGS84
+GeoCoordinate geo = geoGrid.CellCentreGeo(0);  // lat, lon, altitude
+
+// GeoJSON export automatically uses [lon, lat, alt] with "crs":"WGS84"
+var snapshot = new GridSnapshot(geoGrid, values, 0, 0);
+string json = GeoJsonExporter.ToGeoJson(snapshot);  // WGS84 coordinates
 ```
 
 ---
@@ -228,39 +328,44 @@ result.ExportUnity("output/plume.bin");
 
 ```
 Engines/GIS/
+├── Coordinates/
+│   ├── GeoCoordinate.cs        — WGS-84 lat/lon/alt value-type
+│   └── Projection.cs           — LTP & UTM projection (forward + inverse)
 ├── Grid/
-│   ├── GeoGrid.cs              — 3-D spatial grid with index mapping
+│   ├── GeoGrid.cs              — 3-D spatial grid + FromLatLon() factory
 │   ├── GeoCell.cs              — position + value + time struct
 │   └── GridSnapshot.cs         — cell values at one time step
 ├── Scenario/
 │   ├── TimeFrame.cs            — time range value-object
-│   ├── RiskScenario.cs         — fluent entry point (planned)
-│   ├── RiskScenarioBuilder.cs  — builder (planned)
-│   └── ScenarioResult.cs       — result container (planned)
+│   ├── RiskScenario.cs         — fluent entry point
+│   ├── RiskScenarioBuilder.cs  — pipeline builder + stage results
+│   └── ScenarioResult.cs       — terminal result with export methods
 ├── Simulation/
 │   ├── PlumeSimulator.cs       — single-scenario physics evaluation
 │   ├── PlumeMonteCarloModel.cs — MC batch runner + IMonteCarloModel
 │   └── ScenarioVariation.cs    — parameter variation ranges
-├── Analysis/                    — (planned)
-│   ├── ScenarioClusterAnalyzer.cs
-│   ├── ProbabilityMap.cs
-│   └── TimeAnimator.cs
-└── Export/                      — (planned)
-    ├── GeoJsonExporter.cs
-    ├── UnityBinaryExporter.cs
-    └── CesiumExporter.cs
+├── Analysis/
+│   ├── ScenarioClusterAnalyzer.cs — ML clustering of MC scenarios
+│   ├── ProbabilityMap.cs          — per-cell exceedance probability
+│   └── TimeAnimator.cs            — time-animated probability maps
+└── Export/
+    ├── GeoJsonExporter.cs      — GeoJSON (local + WGS84)
+    ├── UnityBinaryExporter.cs  — compact binary for Unity3D
+    └── CesiumExporter.cs       — CZML + Cesium GeoJSON
 ```
 
 ### Status
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 0 | Grid foundation (`GeoGrid`, `GeoCell`, `GridSnapshot`, `TimeFrame`) | ✅ Done |
-| 1 | Single-scenario physics (`PlumeSimulator`, `GaussianPuff`) | ✅ Done |
-| 2 | Monte Carlo generation (`PlumeMonteCarloModel`, `ScenarioVariation`) | ✅ Done |
-| 3 | ML clustering & probability maps | 🔲 Planned |
-| 4 | Fluent API (`RiskScenario` builder) | 🔲 Planned |
-| 5 | Export (GeoJSON / Unity / Cesium) | 🔲 Planned |
-| 6 | Real-world coordinates (lat/lon) | 🔲 Future |
+| Phase | Description | Tests | Status |
+|-------|-------------|-------|--------|
+| 0 | Grid foundation (`GeoGrid`, `GeoCell`, `GridSnapshot`, `TimeFrame`) | 25 | ✅ Done |
+| 1 | Single-scenario physics (`PlumeSimulator`, `GaussianPuff`) | 14 | ✅ Done |
+| 2 | Monte Carlo generation (`PlumeMonteCarloModel`, `ScenarioVariation`) | 10 | ✅ Done |
+| 3 | ML clustering & probability maps (`ScenarioClusterAnalyzer`, `ProbabilityMap`, `TimeAnimator`) | 19 | ✅ Done |
+| 4 | Fluent API (`RiskScenario` → `ScenarioResult`) | 14 | ✅ Done |
+| 5 | Export (GeoJSON / Unity binary / Cesium CZML) | 24 | ✅ Done |
+| 6 | GIS coordinates (WGS84, UTM, `GeoCoordinate`, `Projection`, `FromLatLon`) | 28 | ✅ Done |
+
+**Total: 134 GIS tests**
 
 See [ROADMAP.md](ROADMAP.md) for the full design and phase details.
