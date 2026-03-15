@@ -2,6 +2,7 @@ using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Materials;
 using CSharpNumerics.Statistics.MonteCarlo;
 using CSharpNumerics.Statistics.Random;
 using System;
@@ -36,6 +37,10 @@ namespace CSharpNumerics.Engines.GIS.Simulation
         private readonly PlumeMode _mode;
         private readonly double _releaseSeconds;
 
+        // ── Material ─────────────────────────────────────────────────
+
+        private readonly MaterialDescriptor _material;
+
         // ── Variation and grid ───────────────────────────────────────
 
         private readonly ScenarioVariation _variation;
@@ -56,6 +61,7 @@ namespace CSharpNumerics.Engines.GIS.Simulation
         /// <param name="stability">Baseline stability class.</param>
         /// <param name="mode">Physics mode.</param>
         /// <param name="releaseSeconds">Release duration for transient mode.</param>
+        /// <param name="material">Optional radioactive material for activity/dose layers.</param>
         public PlumeMonteCarloModel(
             double emissionRate,
             double windSpeed,
@@ -67,7 +73,8 @@ namespace CSharpNumerics.Engines.GIS.Simulation
             ScenarioVariation variation = null,
             StabilityClass stability = StabilityClass.D,
             PlumeMode mode = PlumeMode.SteadyState,
-            double releaseSeconds = 0)
+            double releaseSeconds = 0,
+            MaterialDescriptor material = null)
         {
             _emissionRate = emissionRate;
             _windSpeed = windSpeed;
@@ -80,6 +87,7 @@ namespace CSharpNumerics.Engines.GIS.Simulation
             _stability = stability;
             _mode = mode;
             _releaseSeconds = releaseSeconds;
+            _material = material;
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -192,6 +200,7 @@ namespace CSharpNumerics.Engines.GIS.Simulation
                 emissionRate, windSpeed, windDir, _stackHeight,
                 _sourcePosition, stability, _mode);
             sim.ReleaseSeconds = _releaseSeconds;
+            sim.Material = _material;
 
             return sim.Run(_grid, _timeFrame);
         }

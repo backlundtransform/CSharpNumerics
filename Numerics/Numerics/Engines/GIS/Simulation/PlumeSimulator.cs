@@ -3,6 +3,9 @@ using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics;
 using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Materials;
+using NuclearDecay = CSharpNumerics.Physics.Materials.Nuclear.Decay.Decay;
+using NuclearDose = CSharpNumerics.Physics.Materials.Nuclear.RadiationDose.RadiationDose;
 using System;
 using System.Collections.Generic;
 
@@ -65,6 +68,13 @@ namespace CSharpNumerics.Engines.GIS.Simulation
         public double ReleaseSeconds { get; set; }
 
         /// <summary>
+        /// Optional radioactive material. When set, each <see cref="GridSnapshot"/>
+        /// will carry "activity" (Bq/m³) and "dose" (Sv) layers computed from
+        /// the concentration field and the isotope properties.
+        /// </summary>
+        public MaterialDescriptor Material { get; set; }
+
+        /// <summary>
         /// Creates a plume simulator with the given physical parameters.
         /// </summary>
         public PlumeSimulator(
@@ -111,7 +121,11 @@ namespace CSharpNumerics.Engines.GIS.Simulation
                 double[] values = EvaluateField(field, grid);
 
                 for (int t = 0; t < times.Length; t++)
-                    snapshots.Add(new GridSnapshot(grid, (double[])values.Clone(), times[t], t));
+                {
+                    var snap = new GridSnapshot(grid, (double[])values.Clone(), times[t], t);
+                    ApplyMaterialLayers(snap, timeFrame.StepSeconds);
+                    snapshots.Add(snap);
+                }
             }
             else // Transient
             {
@@ -126,7 +140,9 @@ namespace CSharpNumerics.Engines.GIS.Simulation
                         SourcePosition, WindDirection, time, Stability);
 
                     double[] values = EvaluateField(field, grid);
-                    snapshots.Add(new GridSnapshot(grid, values, time, t));
+                    var snap = new GridSnapshot(grid, values, time, t);
+                    ApplyMaterialLayers(snap, timeFrame.StepSeconds);
+                    snapshots.Add(snap);
                 }
             }
 
@@ -154,7 +170,9 @@ namespace CSharpNumerics.Engines.GIS.Simulation
             }
 
             double[] values = EvaluateField(field, grid);
-            return new GridSnapshot(grid, values, time, timeIndex);
+            var snapshot = new GridSnapshot(grid, values, time, timeIndex);
+            ApplyMaterialLayers(snapshot, 1.0);
+            return snapshot;
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -176,6 +194,39 @@ namespace CSharpNumerics.Engines.GIS.Simulation
                         i++;
                     }
             return values;
+        }
+
+        /// <summary>
+        /// Computes activity and dose layers from the concentration field
+        /// when a material is attached.
+        /// </summary>
+        private void ApplyMaterialLayers(GridSnapshot snapshot, double timeStepSeconds)
+        {
+            if (Material == null) return;
+
+            var iso = Material.Isotope;
+            var concentrations = snapshot.GetValues();
+            int n = concentrations.Length;
+
+            var activity = new double[n];
+            var dose = new double[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                // Activity: concentration (kg/m³) × specific activity (Bq/kg) = Bq/m³
+                // Apply decay correction for current time
+                double a = NuclearDecay.ConcentrationToActivity(concentrations[i], iso);
+                if (snapshot.Time > 0 && !iso.IsStable)
+                    a = NuclearDecay.ActivityAtTime(a, snapshot.Time, iso);
+                activity[i] = a;
+
+                // Inhalation dose for the time step
+                dose[i] = NuclearDose.InhalationDose(
+                    a, timeStepSeconds, iso);
+            }
+
+            snapshot.SetLayer("activity", activity);
+            snapshot.SetLayer("dose", dose);
         }
     }
 }

@@ -5,6 +5,7 @@ using CSharpNumerics.ML.Clustering;
 using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Materials;
 using System;
 
 namespace CSharpNumerics.Engines.GIS.Scenario
@@ -28,6 +29,9 @@ namespace CSharpNumerics.Engines.GIS.Scenario
 
         // ── Variation ────────────────────────────────────────────────
         private ScenarioVariation _variation;
+
+        // ── Material (radioactive) ───────────────────────────────────
+        private MaterialDescriptor _material;
 
         // ── Grid & time ──────────────────────────────────────────────
         private GeoGrid _grid;
@@ -81,6 +85,19 @@ namespace CSharpNumerics.Engines.GIS.Scenario
             return this;
         }
 
+        /// <summary>
+        /// Attach a radioactive material so the simulator computes
+        /// activity (Bq/m³) and dose (Sv) layers alongside concentration.
+        /// </summary>
+        /// <param name="material">
+        /// Material descriptor, e.g. <c>Materials.Radioisotope("Cs137")</c>.
+        /// </param>
+        public RiskScenarioBuilder WithMaterial(MaterialDescriptor material)
+        {
+            _material = material ?? throw new ArgumentNullException(nameof(material));
+            return this;
+        }
+
         /// <summary>Define the spatial grid.</summary>
         public RiskScenarioBuilder OverGrid(GeoGrid grid)
         {
@@ -112,7 +129,7 @@ namespace CSharpNumerics.Engines.GIS.Scenario
             var model = new PlumeMonteCarloModel(
                 _emissionRate, _windSpeed, _windDirection, _stackHeight,
                 _sourcePosition, _grid, _timeFrame, _variation,
-                _stability, _mode, _releaseSeconds);
+                _stability, _mode, _releaseSeconds, _material);
 
             var mcResult = model.RunBatch(iterations, seed);
             return new MonteCarloStageResult(mcResult);
@@ -130,6 +147,7 @@ namespace CSharpNumerics.Engines.GIS.Scenario
                 _emissionRate, _windSpeed, _windDirection,
                 _stackHeight, _sourcePosition, _stability, _mode);
             sim.ReleaseSeconds = _releaseSeconds;
+            sim.Material = _material;
 
             var snapshots = sim.Run(_grid, _timeFrame);
             return new ScenarioResult(snapshots, _grid, _timeFrame);

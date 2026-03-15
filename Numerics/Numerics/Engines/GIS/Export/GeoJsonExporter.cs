@@ -45,7 +45,14 @@ namespace CSharpNumerics.Engines.GIS.Export
                 double val = snapshot[i];
                 if (!first) sb.Append(',');
                 first = false;
-                AppendFeature(sb, pos, proj, ("concentration", val), ("timeStep", snapshot.Time));
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                AppendCoord(sb, pos, proj);
+                sb.Append("]},\"properties\":{");
+                AppendProp(sb, "concentration", val, true);
+                AppendProp(sb, "timeStep", snapshot.Time, false);
+                AppendSnapshotLayers(sb, snapshot, i);
+                sb.Append("}}");
             }
 
             sb.Append("]}");
@@ -299,6 +306,15 @@ namespace CSharpNumerics.Engines.GIS.Export
             sb.Append(name);
             sb.Append("\":");
             sb.Append(value);
+        }
+
+        private static void AppendSnapshotLayers(StringBuilder sb, GridSnapshot snapshot, int cellIndex)
+        {
+            foreach (var layerName in snapshot.LayerNames)
+            {
+                var layer = snapshot.GetLayer(layerName);
+                AppendProp(sb, layerName, layer[cellIndex], false);
+            }
         }
 
         private static string Fmt(double v) =>

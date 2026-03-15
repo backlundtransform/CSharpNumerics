@@ -12,6 +12,7 @@ namespace CSharpNumerics.Engines.GIS.Grid
     public class GridSnapshot
     {
         private readonly double[] _values;
+        private Dictionary<string, double[]> _layers;
 
         /// <summary>The grid this snapshot is defined over.</summary>
         public GeoGrid Grid { get; }
@@ -111,5 +112,54 @@ namespace CSharpNumerics.Engines.GIS.Grid
                     Grid.CellCentre(i), _values[i], TimeIndex, i);
             }
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Named layers (e.g. "activity", "dose")
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Adds a named data layer to the snapshot.
+        /// The array length must equal <see cref="Count"/>.
+        /// </summary>
+        /// <param name="name">Layer name (e.g. "activity", "dose").</param>
+        /// <param name="values">Values per cell. Array is stored directly (not cloned).</param>
+        public void SetLayer(string name, double[] values)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (values == null) throw new ArgumentNullException(nameof(values));
+            if (values.Length != _values.Length)
+                throw new ArgumentException(
+                    $"Layer length ({values.Length}) must equal cell count ({_values.Length}).");
+
+            if (_layers == null)
+                _layers = new Dictionary<string, double[]>(StringComparer.OrdinalIgnoreCase);
+            _layers[name] = values;
+        }
+
+        /// <summary>
+        /// Gets a named data layer. Returns the raw array (no copy).
+        /// Throws <see cref="KeyNotFoundException"/> if the layer does not exist.
+        /// </summary>
+        public double[] GetLayer(string name)
+        {
+            if (_layers != null && _layers.TryGetValue(name, out var layer))
+                return layer;
+            throw new KeyNotFoundException($"Layer '{name}' not found on this snapshot.");
+        }
+
+        /// <summary>
+        /// Returns true if the given named layer exists.
+        /// </summary>
+        public bool HasLayer(string name)
+        {
+            return _layers != null && _layers.ContainsKey(name);
+        }
+
+        /// <summary>
+        /// Returns the names of all extra layers on this snapshot.
+        /// Empty if no layers have been set.
+        /// </summary>
+        public IEnumerable<string> LayerNames =>
+            _layers != null ? (IEnumerable<string>)_layers.Keys : Array.Empty<string>();
     }
 }

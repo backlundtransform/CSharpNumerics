@@ -324,6 +324,54 @@ string json = GeoJsonExporter.ToGeoJson(snapshot);  // WGS84 coordinates
 
 ---
 
+
+#### Materials & Fluent Pipeline Integration
+
+```csharp
+using CSharpNumerics.Physics.Materials;
+
+// Create a material descriptor (auto-attaches known decay chain)
+var material = Materials.Radioisotope("Cs137");
+
+// Use in the fluent pipeline — adds "activity" and "dose" layers to snapshots
+var result = RiskScenario
+    .ForGaussianPlume(5.0)
+    .FromSource(new Vector(0, 0, 50))
+    .WithWind(10, new Vector(1, 0, 0))
+    .WithStability(StabilityClass.D)
+    .WithMaterial(Materials.Radioisotope("Cs137"))    // ← attach isotope
+    .WithVariation(v => v.WindSpeed(8, 12))
+    .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 100, 10))
+    .OverTime(0, 3600, 60)
+    .RunMonteCarlo(1000)
+    .Build(threshold: 1e-6);
+
+// Query named layers on any snapshot
+GridSnapshot snap = result.Snapshots[0];
+double[] activityLayer = snap.GetLayer("activity");   // Bq/m³
+double[] doseLayer = snap.GetLayer("dose");           // Sv
+bool hasIt = snap.HasLayer("activity");               // true
+
+// GeoJSON export automatically includes activity & dose properties
+result.ExportGeoJson("fallout.geojson");
+```
+
+Output GeoJSON includes per-feature nuclear properties:
+
+```json
+{
+  "type": "Feature",
+  "geometry": { "type": "Point", "coordinates": [200, 50, 0] },
+  "properties": {
+    "concentration": 0.0012,
+    "activity": 120.5,
+    "dose": 0.004
+  }
+}
+```
+
+---
+
 ### Architecture
 
 ```
@@ -334,14 +382,14 @@ Engines/GIS/
 ├── Grid/
 │   ├── GeoGrid.cs              — 3-D spatial grid + FromLatLon() factory
 │   ├── GeoCell.cs              — position + value + time struct
-│   └── GridSnapshot.cs         — cell values at one time step
+│   └── GridSnapshot.cs         — cell values at one time step + named layers
 ├── Scenario/
 │   ├── TimeFrame.cs            — time range value-object
 │   ├── RiskScenario.cs         — fluent entry point
 │   ├── RiskScenarioBuilder.cs  — pipeline builder + stage results
 │   └── ScenarioResult.cs       — terminal result with export methods
 ├── Simulation/
-│   ├── PlumeSimulator.cs       — single-scenario physics evaluation
+│   ├── PlumeSimulator.cs       — single-scenario physics evaluation (+ material)
 │   ├── PlumeMonteCarloModel.cs — MC batch runner + IMonteCarloModel
 │   └── ScenarioVariation.cs    — parameter variation ranges
 ├── Analysis/
@@ -349,9 +397,21 @@ Engines/GIS/
 │   ├── ProbabilityMap.cs          — per-cell exceedance probability
 │   └── TimeAnimator.cs            — time-animated probability maps
 └── Export/
-    ├── GeoJsonExporter.cs      — GeoJSON (local + WGS84)
+    ├── GeoJsonExporter.cs      — GeoJSON (local + WGS84 + activity/dose)
     ├── UnityBinaryExporter.cs  — compact binary for Unity3D
     └── CesiumExporter.cs       — CZML + Cesium GeoJSON
+
+Physics/Materials/
+└── Nuclear/
+    ├── Isotopes/
+    │   ├── Isotope.cs           — isotope value-type + static instances
+    │   └── IsotopeLibrary.cs    — registry / lookup
+    ├── Decay/
+    │   └── Decay.cs             — activity, remaining mass, λ
+    ├── DecayChains/
+    │   └── DecayChain.cs        — Bateman equations, chain evolution
+    └── RadiationDose/
+        └── RadiationDose.cs     — external / inhalation / ground-shine dose
 ```
 
 ### Status
@@ -365,7 +425,8 @@ Engines/GIS/
 | 4 | Fluent API (`RiskScenario` → `ScenarioResult`) | 14 | ✅ Done |
 | 5 | Export (GeoJSON / Unity binary / Cesium CZML) | 24 | ✅ Done |
 | 6 | GIS coordinates (WGS84, UTM, `GeoCoordinate`, `Projection`, `FromLatLon`) | 28 | ✅ Done |
+| 7 | Radioactive fallout & nuclear materials (`Isotope`, `DecayChain`, `RadiationDose`, `.WithMaterial()`) | 58 | ✅ Done |
 
-**Total: 134 GIS tests**
+**Total: 192 GIS + nuclear tests**
 
 See [ROADMAP.md](ROADMAP.md) for the full design and phase details.
