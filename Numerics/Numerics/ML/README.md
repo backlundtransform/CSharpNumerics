@@ -1539,6 +1539,24 @@ Swing up and balance an inverted pendulum with continuous torque.
 | Discrete | ❌ |
 | Settable | `MaxTorque` (2.0), `MaxSpeed` (8.0), `MaxSteps` (200) |
 
+**Plume (GIS)**
+
+Class: `PlumeEnvironment`
+
+RL environment wrapping the GIS Gaussian plume simulator. The agent takes mitigation actions (deploy barriers, activate filters) to minimise population exposure over a transient plume scenario.
+
+| Property | Value |
+|---|---|
+| Constructor | `(emissionRate, windSpeed, windDirection, stackHeight, sourcePosition, grid, timeFrame, stability?)` |
+| Observation | `VectorN([maxConc, meanConc, exposedFrac, windSpeed, windDirX, windDirY, emissionRate, normTime])`, size 8 |
+| Actions | 6 (None, BarrierN, BarrierE, BarrierS, BarrierW, ActivateFilter) |
+| Discrete | ✅ |
+| Settable | `Threshold` (1e-6), `ActionCost` (0.05), `BarrierEfficiency` (0.4), `FilterEfficiency` (0.5) |
+
+Exposes: `MaxSteps` → number of time steps per episode
+
+See the [GIS-RL Integration](#-gis-rl-integration) section below for full usage.
+
 ---
 
 ## 🔁 Replay Buffers
@@ -1675,5 +1693,222 @@ ReinforcementLearning/
 ├── Buffers/             ReplayBuffer, PrioritizedReplayBuffer
 ├── Experiment/          RLExperiment, RLPipelineGrid, EpisodeEvaluator, Results
 └── Diagnostics/         QValueHeatmap, PolicyVisualizer, ValueFunctionSurface
+```
+
+---
+
+## 🌍 GIS-RL Integration
+
+CSharpNumerics bridges **GIS simulation** with the **RL framework** through `IGISEnvironment`, `PlumeEnvironment`, and `ScenarioRLAnalyzer`. This allows training RL agents to learn **optimal mitigation strategies** for spatial scenarios — atmospheric plumes, floods, fires, or any other GIS-based model.
+
+The integration follows the same fluent pattern as `ScenarioClusterAnalyzer` (which bridges clustering ↔ GIS):
+
+| Bridge | ML module | GIS data | Purpose |
+|---|---|---|---|
+| `ScenarioClusterAnalyzer` | Clustering | `MonteCarloScenarioResult` | *What can happen?* (outcome grouping) |
+| `ScenarioRLAnalyzer` | Reinforcement Learning | Any `IEnvironment` / `IGISEnvironment` | *What should we do?* (optimal response) |
+
+### 🔌 Extensibility: Custom GIS Environments
+
+`ScenarioRLAnalyzer` is **not limited to plume models**. You can plug in any environment:
+
+| Entry point | Use case |
+|---|---|
+| `ScenarioRLAnalyzer.For(emissionRate, sourcePosition)` | Convenience: builds a `PlumeEnvironment` internally |
+| `ScenarioRLAnalyzer.For(IGISEnvironment)` | Custom GIS environment (flood, fire, pollution, etc.) |
+| `ScenarioRLAnalyzer.For(IEnvironment)` | Any RL environment (no GIS metadata required) |
+
+#### Implementing a Custom GIS Environment
+
+Implement `IGISEnvironment` to create your own spatial simulation:
+
+```csharp
+public class FloodEnvironment : IGISEnvironment
+{
+    // IEnvironment members
+    public int ObservationSize => 6;
+    public int ActionSize => 4;
+    public double[] Reset() { /* ... */ }
+    public (double[] state, double reward, bool done, Dictionary<string, object> info)
+        Step(int action) { /* ... */ }
+    public (double[] state, double reward, bool done, Dictionary<string, object> info)
+        Step(double[] action) => Step((int)action[0]);
+
+    // IGISEnvironment members
+    public GeoGrid Grid { get; }
+    public TimeFrame TimeFrame { get; }
+    public double Threshold { get; set; }
+    public double ActionCost { get; set; }
+    public int MaxSteps { get; }
+    public GridSnapshot LastSnapshot { get; }
+}
+```
+
+Then use the fluent API:
+
+```csharp
+var result = ScenarioRLAnalyzer
+    .For(new FloodEnvironment(basin, rainfall, grid, timeFrame))
+    .WithAgent(new DQN { HiddenLayers = new[] { 64, 64 } })
+    .WithPolicy(new EpsilonGreedy(seed: 42))
+    .WithReplayBuffer(10000)
+    .WithEpisodes(500)
+    .Run();
+```
+
+> **Note:** When using `For(IGISEnvironment)` or `For(IEnvironment)`, physics configuration methods (`WithWind`, `WithStability`, `OverGrid`, `OverTime`) and environment tuning methods (`WithThreshold`, `WithActionCost`, `WithMitigationEfficiency`) are **disabled** — configure these on the environment before passing it in.
+
+---
+
+### ➡️ Quick Start
+
+```csharp
+var result = ScenarioRLAnalyzer
+    .For(5.0, new Vector(0, 0, 50))
+    .WithWind(10, new Vector(1, 0, 0))
+    .WithStability(StabilityClass.D)
+    .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 0, 50))
+    .OverTime(0, 600, 10)
+    .WithAgent(new DQN
+    {
+        HiddenLayers = new[] { 64, 64 },
+        LearningRate = 0.001,
+        Gamma = 0.99,
+        BatchSize = 32
+    })
+    .WithPolicy(new EpsilonGreedy(seed: 42))
+    .WithReplayBuffer(10000, seed: 42)
+    .WithEpisodes(500, maxStepsPerEpisode: 60)
+    .WithSeed(42)
+    .Run();
+
+Console.WriteLine($"{result.AgentName} → avg return = {result.AverageReturn:F2}");
+```
+
+### ➡️ Direct Environment Usage
+
+`PlumeEnvironment` implements `IEnvironment` and works with any existing RL agent:
+
+```csharp
+var env = new PlumeEnvironment(
+    emissionRate: 5.0,
+    windSpeed: 10,
+    windDirection: new Vector(1, 0, 0),
+    stackHeight: 50,
+    sourcePosition: new Vector(0, 0, 50),
+    grid: new GeoGrid(-500, 500, -500, 500, 0, 0, 50),
+    timeFrame: new TimeFrame(0, 600, 10),
+    stability: StabilityClass.D);
+
+// Standard RLExperiment — same API as CartPole, GridWorld, etc.
+var result = RLExperiment
+    .For(env)
+    .WithAgent(new PPO
+    {
+        ActorHiddenLayers = new[] { 64, 64 },
+        CriticHiddenLayers = new[] { 64, 64 },
+        ClipEpsilon = 0.2
+    })
+    .WithEpisodes(500, maxStepsPerEpisode: 60)
+    .WithSeed(42)
+    .Run();
+```
+
+### ➡️ Grid Search Over Agents
+
+Compare multiple agent types and hyperparameters on the plume scenario:
+
+```csharp
+var result = ScenarioRLAnalyzer
+    .For(5.0, new Vector(0, 0, 50))
+    .WithWind(10, new Vector(1, 0, 0))
+    .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 0, 50))
+    .OverTime(0, 600, 10)
+    .WithGrid(new RLPipelineGrid()
+        .AddAgent<DQN>(() => new DQN(), g => g
+            .Add("HiddenLayers", new[] { 32, 32 }, new[] { 64, 64 })
+            .Add("LearningRate", 0.001, 0.0005))
+        .AddAgent<DoubleDQN>(() => new DoubleDQN(), g => g
+            .Add("HiddenLayers", new[] { 64, 64 })
+            .Add("LearningRate", 0.001)),
+        evalEpisodes: 10)
+    .WithPolicyFactory(() => new EpsilonGreedy(seed: 42))
+    .WithReplayBuffer(10000)
+    .WithEpisodes(300, maxStepsPerEpisode: 60)
+    .WithSeed(42)
+    .RunGrid();
+
+foreach (var r in result.GridResult.Rankings)
+    Console.WriteLine($"{r.Description,-40} → eval={r.AverageEvalReturn:F2}");
+```
+
+### ➡️ Environment Tuning
+
+Configure the reward function and mitigation effectiveness:
+
+```csharp
+var result = ScenarioRLAnalyzer
+    .For(5.0, new Vector(0, 0, 50))
+    .WithWind(10, new Vector(1, 0, 0))
+    .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 0, 50))
+    .OverTime(0, 600, 10)
+    .WithThreshold(1e-4)                                         // exposure detection
+    .WithActionCost(0.1)                                         // penalise each action
+    .WithMitigationEfficiency(barrierEfficiency: 0.6,            // 60% barrier reduction
+                              filterEfficiency: 0.7)             // 70% emission reduction
+    .WithAgent(new DQN { HiddenLayers = new[] { 64, 64 } })
+    .WithPolicy(new EpsilonGreedy(seed: 42))
+    .WithReplayBuffer(10000)
+    .WithEpisodes(500)
+    .Run();
+```
+
+### 📐 PlumeEnvironment Observation Space
+
+| Index | Feature | Range | Description |
+|---|---|---|---|
+| 0 | `maxConcentration` | $[0, \infty)$ | Peak concentration across all grid cells |
+| 1 | `meanConcentration` | $[0, \infty)$ | Mean concentration across all grid cells |
+| 2 | `exposedCellFraction` | $[0, 1]$ | Fraction of cells above threshold |
+| 3 | `windSpeed` | $> 0$ | Current wind speed (m/s) |
+| 4 | `windDirX` | $[-1, 1]$ | Wind direction unit vector (x) |
+| 5 | `windDirY` | $[-1, 1]$ | Wind direction unit vector (y) |
+| 6 | `emissionRate` | $> 0$ | Current emission rate (reduced by filter) |
+| 7 | `normalizedTime` | $[0, 1]$ | Episode progress |
+
+### 📐 Action Space
+
+| Action | Enum | Effect |
+|---|---|---|
+| 0 | `None` | No intervention — plume evolves naturally |
+| 1 | `BarrierNorth` | Deploy barrier — reduces concentration in north quadrant |
+| 2 | `BarrierEast` | Deploy barrier — reduces concentration in east quadrant |
+| 3 | `BarrierSouth` | Deploy barrier — reduces concentration in south quadrant |
+| 4 | `BarrierWest` | Deploy barrier — reduces concentration in west quadrant |
+| 5 | `ActivateFilter` | Activate source filter — reduces emission rate permanently |
+
+### 📐 Reward Function
+
+$$R_t = -\text{exposedFraction}_t - \mathbb{1}[a_t \neq \text{None}] \cdot \text{actionCost}$$
+
+Terminal bonus: $+1.0$ if exposure fraction $< 1\%$ at episode end.
+
+**Key points:**
+
+* `PlumeEnvironment` implements `IEnvironment` — **drop-in** for any RL agent
+* Uses `PlumeSimulator` in transient mode — each time step simulates real physics
+* Barriers are **cumulative** — once deployed, they remain active
+* Filter activation is **irreversible** within an episode (emission reduction is permanent)
+* The `info` dictionary in each `Step()` returns the full `GridSnapshot` — enables detailed post-hoc analysis
+* Compatible with all existing agents: DQN, PPO, DDPG, Q-Learning, etc.
+* `ScenarioRLAnalyzer` fluent API mirrors `ScenarioClusterAnalyzer` — same conventions
+
+### 🗺️ GIS-RL Module Structure
+
+```
+Engines/GIS/RL/
+├── IGISEnvironment.cs         Interface for GIS-aware RL environments
+├── PlumeEnvironment.cs        IGISEnvironment wrapping PlumeSimulator
+└── ScenarioRLAnalyzer.cs      Fluent API + Builder + Result classes
 ```
 
