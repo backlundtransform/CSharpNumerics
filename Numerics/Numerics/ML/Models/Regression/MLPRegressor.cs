@@ -1,6 +1,7 @@
 ﻿using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.Strategies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,9 +39,7 @@ public class MLPRegressor : IHasHyperparameters, IRegressionModel
 
         int valSize = X.rowLength - trainSize;
 
-        double bestValLoss = double.MaxValue;
-        int patienceCounter = 0;
-
+        var earlyStopping = new EarlyStopping(Patience, MinDelta);
         var (bestWeights, bestBiases) = _network.SnapshotWeights();
 
         for (int epoch = 0; epoch < Epochs; epoch++)
@@ -71,18 +70,10 @@ public class MLPRegressor : IHasHyperparameters, IRegressionModel
             {
                 double currentValLoss = CalculateValidationLoss(X, y, indices, trainSize);
 
-                if (currentValLoss < bestValLoss - MinDelta)
-                {
-                    bestValLoss = currentValLoss;
-                    patienceCounter = 0;
+                if (!earlyStopping.ShouldStop && currentValLoss < earlyStopping.BestValue - MinDelta)
                     (bestWeights, bestBiases) = _network.SnapshotWeights();
-                }
-                else
-                {
-                    patienceCounter++;
-                }
 
-                if (patienceCounter >= Patience)
+                if (earlyStopping.Check(currentValLoss))
                 {
                     _network.RestoreWeights(bestWeights, bestBiases);
                     return;

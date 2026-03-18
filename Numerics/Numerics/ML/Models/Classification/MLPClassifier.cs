@@ -1,6 +1,7 @@
 ﻿using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.Strategies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,8 +41,7 @@ namespace CSharpNumerics.ML.Models.Classification;
             int valSize = X.rowLength - trainSize;
 
             var (bestWeights, bestBiases) = _network.SnapshotWeights();
-            double bestValLoss = double.MaxValue;
-            int patienceCounter = 0;
+            var earlyStopping = new EarlyStopping(Patience, MinDelta);
 
             for (int epoch = 0; epoch < Epochs; epoch++)
             {
@@ -73,15 +73,11 @@ namespace CSharpNumerics.ML.Models.Classification;
                 if (valSize > 0)
                 {
                     double currentValLoss = CalculateValidationLoss(X, y, indices, trainSize);
-                    if (currentValLoss < bestValLoss - MinDelta)
-                    {
-                        bestValLoss = currentValLoss;
-                        patienceCounter = 0;
-                        (bestWeights, bestBiases) = _network.SnapshotWeights();
-                    }
-                    else { patienceCounter++; }
 
-                    if (patienceCounter >= Patience)
+                    if (!earlyStopping.ShouldStop && currentValLoss < earlyStopping.BestValue - MinDelta)
+                        (bestWeights, bestBiases) = _network.SnapshotWeights();
+
+                    if (earlyStopping.Check(currentValLoss))
                     {
                         _network.RestoreWeights(bestWeights, bestBiases);
                         return;

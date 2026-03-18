@@ -5,7 +5,7 @@ It provides a clean, modular architecture with robust building blocks for scient
 
 ### 🔢 Numerical Analysis
 
-Linear algebra, transforms, ordinary differential equations (ODEs), vector fields, numerical integration, and advanced computational methods.
+Linear algebra, transforms, ordinary differential equations (ODEs), vector fields, numerical integration, optimization and advanced computational methods.
 
 ### 📊 Statistics
 
@@ -21,7 +21,7 @@ Classical mechanics, electromagnetics, heat transfer, environmental modeling, or
 
 ### ⚙️ Simulation Engines
 
-Modular computational engines designed for integration with external visualization, simulation, and analysis platforms — including a **Game Physics** engine, an **Audio** synthesis engine, and a **GIS / Geo** engine for atmospheric dispersion modelling with Monte Carlo uncertainty quantification.
+Modular computational engines designed for integration with external visualization, simulation, and analysis platforms.
 
 
 

@@ -1,5 +1,7 @@
 ﻿using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
+using CSharpNumerics.Numerics.Optimization.Strategies;
 using System;
 using System.Collections.Generic;
 
@@ -49,20 +51,20 @@ public class Logistic : IClassificationModel, IHasHyperparameters
         int nFeatures = Xdesign.columnLength;
         _weights = new VectorN(nFeatures);
 
-        for (int iter = 0; iter < MaxIterations; iter++)
+        var optimizer = new GradientDescent(LearningRate, l2: RegularizationStrength / nSamples);
+        var convergence = new MaxIterationsOrTolerance(MaxIterations, Tolerance);
+
+        for (int iter = 0; ; iter++)
         {
             VectorN predictions = Sigmoid(Xdesign * _weights);
             VectorN errors = predictions - y;
 
             VectorN gradient = (Xdesign.Transpose() * errors) / nSamples;
 
-            if (RegularizationStrength > 0.0)
-                gradient += (RegularizationStrength / nSamples) * _weights;
-
-            _weights -= LearningRate * gradient;
-
-            if (gradient.Norm() < Tolerance)
+            if (convergence.HasConverged(iter, 0, gradient.Norm()))
                 break;
+
+            _weights = optimizer.Step(_weights, gradient);
         }
 
         _fitted = true;
