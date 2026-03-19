@@ -1,6 +1,7 @@
 ﻿using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -28,8 +29,11 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
         int n = X.rowLength;
         _alpha = new VectorN(n);
 
+        var optimizer = new GradientDescent(LearningRate);
+
         for (int epoch = 0; epoch < Epochs; epoch++)
         {
+            var grad = new double[n];
             for (int i = 0; i < n; i++)
             {
                 double prediction = 0;
@@ -39,13 +43,13 @@ public class KernelSVR : IHasHyperparameters, IRegressionModel
 
                 double error = prediction - y[i];
 
-                if (Math.Abs(error) > Epsilon)
-                {
-                    _alpha[i] -= LearningRate * (
-                        Math.Sign(error) * C
-                    );
-                }
+                // Epsilon-insensitive gradient
+                grad[i] = Math.Abs(error) > Epsilon
+                    ? Math.Sign(error) * C
+                    : 0;
             }
+
+            _alpha = optimizer.Step(_alpha, new VectorN(grad));
         }
 
         _supportX = X;

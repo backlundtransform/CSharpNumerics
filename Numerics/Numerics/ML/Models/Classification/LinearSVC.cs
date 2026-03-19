@@ -1,6 +1,7 @@
 ﻿
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace CSharpNumerics.ML.Models.Classification
             _weights = new VectorN(new double[nFeatures]);
             _bias = 0;
 
+            var optimizer = new GradientDescent(LearningRate);
+
             for (int epoch = 0; epoch < Epochs; epoch++)
             {
                 for (int i = 0; i < nSamples; i++)
@@ -37,15 +40,18 @@ namespace CSharpNumerics.ML.Models.Classification
 
                     double condition = yi * (_weights.Dot(xi) + _bias);
 
+                    VectorN gradient;
                     if (condition >= 1)
                     {
-                        _weights -= LearningRate * _weights;
+                        gradient = _weights;
                     }
                     else
                     {
-                        _weights -= LearningRate * (_weights - C * yi * xi);
+                        gradient = _weights - C * yi * xi;
                         _bias += LearningRate * C * yi;
                     }
+
+                    _weights = optimizer.Step(_weights, gradient);
                 }
             }
         }

@@ -48,9 +48,21 @@ dotnet test --filter "FullyQualifiedName~OptimizationTests"
 
 ## Documentation
 
-- Each section has its own `README.md` inside its folder. **Update the section README after completing work** that adds or changes public API in that section.
+- The library has **five sections**: Numerics, Statistics, ML, Physics, Engines. Each section has its own `README.md` inside its top-level folder.
+- **Sub-sections belong to their parent section's README.** For example, `Optimization/` is a sub-section of Numerics — its documentation goes in `Numerics/README.md`, not in a separate `Optimization/README.md`. Do **not** create per-sub-section READMEs.
+- **Update the section README after completing work** that adds or changes public API in that section.
 - The **root `README.md`** is marketing-facing and should only be updated by a developer — never auto-update it.
 - Section READMEs follow an example-driven style with code samples, tables, and architecture diagrams. See `Engines/GIS/README.md` or `ML/README.md` for reference.
+
+### Section README locations
+
+| Section | README path |
+|---------|-------------|
+| Numerics | `Numerics/Numerics/Numerics/README.md` |
+| Statistics | `Numerics/Numerics/Statistics/README.md` |
+| ML | `Numerics/Numerics/ML/README.md` |
+| Physics | `Numerics/Numerics/Physics/README.md` |
+| Engines | `Numerics/Numerics/Engines/README.md` (sub-engines may have their own, e.g. `Engines/GIS/README.md`) |
 
 ## Code Style
 

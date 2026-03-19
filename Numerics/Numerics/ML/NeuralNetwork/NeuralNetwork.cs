@@ -1,5 +1,6 @@
 using CSharpNumerics.ML.Enums;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -151,6 +152,75 @@ public class NeuralNetwork
             _weights[l] -= (learningRate / batchSize) * (dW[l] + l2 * _weights[l]);
             _biases[l] -= (learningRate / batchSize) * dB[l];
         }
+    }
+
+    /// <summary>
+    /// Apply accumulated gradients using an <see cref="IOptimizer"/>.
+    /// Each layer's weights and biases are flattened to a VectorN,
+    /// stepped through the optimizer, then reshaped back.
+    /// </summary>
+    public void ApplyGradients(List<Matrix> dW, List<VectorN> dB,
+        IOptimizer weightOptimizer, IOptimizer biasOptimizer, int batchSize)
+    {
+        for (int l = 0; l < _weights.Count; l++)
+        {
+            // Flatten weight matrix → VectorN for optimizer
+            int rows = _weights[l].rowLength;
+            int cols = _weights[l].columnLength;
+            var wFlat = new double[rows * cols];
+            var gFlat = new double[rows * cols];
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                {
+                    int idx = r * cols + c;
+                    wFlat[idx] = _weights[l].values[r, c];
+                    gFlat[idx] = dW[l].values[r, c] / batchSize;
+                }
+
+            var updatedW = weightOptimizer.Step(new VectorN(wFlat), new VectorN(gFlat));
+
+            // Reshape back to matrix
+            var newVals = new double[rows, cols];
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    newVals[r, c] = updatedW[r * cols + c];
+            _weights[l] = new Matrix { values = newVals, rowLength = rows, columnLength = cols };
+
+            // Bias update
+            var bGrad = (1.0 / batchSize) * dB[l];
+            _biases[l] = biasOptimizer.Step(_biases[l], bGrad);
+        }
+    }
+
+    /// <summary>
+    /// Backward pass from an external loss gradient using an <see cref="IOptimizer"/>.
+    /// </summary>
+    public void Backward(VectorN lossGradient, IOptimizer weightOptimizer, IOptimizer biasOptimizer)
+    {
+        if (_lastActivations == null)
+            throw new InvalidOperationException("Call Forward before Backward.");
+
+        var activations = _lastActivations;
+        var deltas = new List<VectorN>();
+        deltas.Add(lossGradient);
+
+        for (int i = _weights.Count - 2; i >= 0; i--)
+        {
+            var w = _weights[i + 1];
+            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
+            deltas.Add(delta);
+        }
+        deltas.Reverse();
+
+        var dW = new List<Matrix>();
+        var dB = new List<VectorN>();
+        for (int i = 0; i < _weights.Count; i++)
+        {
+            dW.Add(activations[i].Outer(deltas[i]));
+            dB.Add(deltas[i]);
+        }
+
+        ApplyGradients(dW, dB, weightOptimizer, biasOptimizer, 1);
     }
 
     // ── Weight transfer (DQN target sync, DDPG Polyak) ─────────

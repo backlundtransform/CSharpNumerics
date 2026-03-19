@@ -1,6 +1,7 @@
 ﻿using CSharpNumerics.ML.Enums;
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,9 +35,12 @@ public class KernelSVC :
         int n = X.rowLength;
 
         alpha = new VectorN(n);
+        var optimizer = new GradientDescent(LearningRate);
 
         for (int epoch = 0; epoch < Epochs; epoch++)
         {
+            // Compute gradient for all alphas
+            var grad = new double[n];
             for (int i = 0; i < n; i++)
             {
                 double decision = 0.0;
@@ -48,15 +52,17 @@ public class KernelSVC :
                         decision += alpha[j] * ytrain[j] *
                             KernelFunc(Xtrain.RowSlice(j), Xtrain.RowSlice(i));
                     }
-
- 
                 }
 
-                if (ytrain[i] * decision < 1)
-                {
-                    alpha[i] += LearningRate * C;
-                }
+                // Hinge loss gradient: push alpha up when margin violated
+                grad[i] = (ytrain[i] * decision < 1) ? -C : 0;
             }
+
+            alpha = optimizer.Step(alpha, new VectorN(grad));
+
+            // Clamp alphas to non-negative
+            for (int i = 0; i < n; i++)
+                if (alpha[i] < 0) alpha[i] = 0;
         }
     }
     public IModel Clone()

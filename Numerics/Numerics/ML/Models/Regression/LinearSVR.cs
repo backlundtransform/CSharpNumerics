@@ -1,6 +1,7 @@
 ﻿
 using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
 using System;
 using System.Collections.Generic;
 
@@ -23,6 +24,8 @@ public class LinearSVR : IRegressionModel, IHasHyperparameters
         _weights = new VectorN(new double[nFeatures]);
         _bias = 0;
 
+        var optimizer = new GradientDescent(LearningRate);
+
         for (int epoch = 0; epoch < Epochs; epoch++)
         {
             for (int i = 0; i < nSamples; i++)
@@ -31,16 +34,19 @@ public class LinearSVR : IRegressionModel, IHasHyperparameters
                 double pred = _weights.Dot(xi) + _bias;
                 double error = pred - y[i];
 
+                VectorN gradient;
                 if (Math.Abs(error) <= Epsilon)
                 {
-                    _weights -= LearningRate * _weights;
+                    gradient = _weights;
                 }
                 else
                 {
                     double sign = Math.Sign(error);
-                    _weights -= LearningRate * (_weights + C * sign * xi);
+                    gradient = _weights + C * sign * xi;
                     _bias -= LearningRate * C * sign;
                 }
+
+                _weights = optimizer.Step(_weights, gradient);
             }
         }
     }
