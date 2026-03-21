@@ -182,10 +182,16 @@ public class ClusteringExperimentBuilder
             VectorN labels = pipeline.FitPredict(_data);
             sw.Stop();
 
-            // Evaluate with all evaluators
+            // Evaluate in the same feature space used for clustering
+            Matrix evalData = _data;
+            if (pipeline.Reducer != null)
+                evalData = pipeline.Reducer.Transform(evalData);
+            if (pipeline.Scaler != null)
+                evalData = pipeline.Scaler.Transform(evalData);
+
             var scores = new Dictionary<string, double>();
             foreach (var evaluator in _evaluators)
-                scores[evaluator.Name] = evaluator.Score(_data, labels);
+                scores[evaluator.Name] = evaluator.Score(evalData, labels);
 
             var result = new ClusteringResult
             {
@@ -203,7 +209,7 @@ public class ClusteringExperimentBuilder
 
             // Track elbow curve
             if (inertiaEval != null)
-                elbowCurve.Add((result.ClusterCount, inertiaEval.RawInertia(_data, labels)));
+                elbowCurve.Add((result.ClusterCount, inertiaEval.RawInertia(evalData, labels)));
         }
 
         totalSw.Stop();
