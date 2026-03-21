@@ -56,9 +56,7 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
         int n = X.rowLength;
         int d = X.columnLength;
 
-        if (NComponents > d)
-            throw new ArgumentException(
-                $"NComponents ({NComponents}) cannot exceed number of features ({d}).");
+        int effectiveComponents = Math.Min(NComponents, Math.Min(n, d));
         if (NComponents < 1)
             throw new ArgumentException("NComponents must be at least 1.");
 
@@ -66,41 +64,75 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
         Mean = ComputeMean(X.values, n, d);
         double[,] centered = CenterData(X.values, Mean, n, d);
 
-        // Covariance matrix (d × d)
-        double[,] cov = ComputeCovariance(centered, n, d);
-
-        // Eigen decomposition via power iteration with deflation
-        Components = new double[NComponents, d];
-        ExplainedVariance = new double[NComponents];
+        Components = new double[effectiveComponents, d];
+        ExplainedVariance = new double[effectiveComponents];
 
         var rng = Seed.HasValue ? new Random(Seed.Value) : new Random();
 
-        for (int k = 0; k < NComponents; k++)
+        if (n >= d)
         {
-            var (eigenvalue, eigenvector) = PowerIteration(cov, d, rng);
-            ExplainedVariance[k] = eigenvalue;
+            // Standard PCA: covariance matrix (d × d)
+            double[,] cov = ComputeCovariance(centered, n, d);
 
-            for (int j = 0; j < d; j++)
-                Components[k, j] = eigenvector[j];
+            for (int k = 0; k < effectiveComponents; k++)
+            {
+                var (eigenvalue, eigenvector) = PowerIteration(cov, d, rng);
+                ExplainedVariance[k] = eigenvalue;
 
-            // Deflate: remove the found component from the covariance matrix
-            for (int i = 0; i < d; i++)
                 for (int j = 0; j < d; j++)
-                    cov[i, j] -= eigenvalue * eigenvector[i] * eigenvector[j];
+                    Components[k, j] = eigenvector[j];
+
+                // Deflate
+                for (int i = 0; i < d; i++)
+                    for (int j = 0; j < d; j++)
+                        cov[i, j] -= eigenvalue * eigenvector[i] * eigenvector[j];
+            }
+        }
+        else
+        {
+            // Dual PCA: Gram matrix (n × n) — used when n << d to avoid OOM
+            double[,] gram = ComputeGramMatrix(centered, n, d);
+
+            for (int k = 0; k < effectiveComponents; k++)
+            {
+                var (eigenvalue, eigenvector) = PowerIteration(gram, n, rng);
+
+                // Convert eigenvalue: gram eigenvalue = (n-1) * covariance eigenvalue
+                double covEigenvalue = eigenvalue;
+
+                // Recover d-dimensional eigenvector: v = X^T * u, then normalize
+                var component = new double[d];
+                for (int j = 0; j < d; j++)
+                {
+                    double sum = 0;
+                    for (int i = 0; i < n; i++)
+                        sum += centered[i, j] * eigenvector[i];
+                    component[j] = sum;
+                }
+                NormalizeArray(component);
+
+                ExplainedVariance[k] = covEigenvalue;
+                for (int j = 0; j < d; j++)
+                    Components[k, j] = component[j];
+
+                // Deflate gram matrix
+                for (int i = 0; i < n; i++)
+                    for (int j = 0; j < n; j++)
+                        gram[i, j] -= eigenvalue * eigenvector[i] * eigenvector[j];
+            }
         }
 
-        // Compute explained variance ratio
-        double totalVariance = 0;
-        double[,] fullCov = ComputeCovariance(centered, n, d);
-        for (int i = 0; i < d; i++)
-            totalVariance += fullCov[i, i];
+        // Compute explained variance ratio from column variances (no d×d matrix needed)
+        double totalVariance = ComputeTotalVariance(centered, n, d);
 
-        ExplainedVarianceRatio = new double[NComponents];
-        for (int k = 0; k < NComponents; k++)
+        ExplainedVarianceRatio = new double[effectiveComponents];
+        for (int k = 0; k < effectiveComponents; k++)
             ExplainedVarianceRatio[k] = totalVariance > 0
                 ? ExplainedVariance[k] / totalVariance
                 : 0;
 
+        // Update NComponents to actual count used
+        NComponents = effectiveComponents;
         _isFitted = true;
     }
 
@@ -197,6 +229,41 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
         return cov;
     }
 
+    /// <summary>
+    /// Gram matrix G = (1/(n-1)) * centered * centered^T, shape (n × n).
+    /// Used for dual PCA when n &lt; d to avoid allocating a d×d covariance matrix.
+    /// </summary>
+    private static double[,] ComputeGramMatrix(double[,] centered, int n, int d)
+    {
+        var gram = new double[n, n];
+        for (int i = 0; i < n; i++)
+            for (int j = i; j < n; j++)
+            {
+                double sum = 0;
+                for (int k = 0; k < d; k++)
+                    sum += centered[i, k] * centered[j, k];
+                gram[i, j] = sum / (n - 1);
+                gram[j, i] = gram[i, j];
+            }
+        return gram;
+    }
+
+    /// <summary>
+    /// Compute total variance as sum of column variances without building d×d matrix.
+    /// </summary>
+    private static double ComputeTotalVariance(double[,] centered, int n, int d)
+    {
+        double total = 0;
+        for (int j = 0; j < d; j++)
+        {
+            double sum = 0;
+            for (int i = 0; i < n; i++)
+                sum += centered[i, j] * centered[i, j];
+            total += sum / (n - 1);
+        }
+        return total;
+    }
+
     private (double eigenvalue, double[] eigenvector) PowerIteration(
         double[,] matrix, int d, Random rng)
     {
@@ -253,4 +320,6 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
             for (int i = 0; i < v.Length; i++)
                 v[i] /= norm;
     }
+
+    private static void NormalizeArray(double[] v) => Normalize(v);
 }
