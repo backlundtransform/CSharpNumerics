@@ -1930,3 +1930,57 @@ double inhDose = RadiationDose.InhalationDose(
     exposureTimeSeconds: 3600,
     Isotope.Cs137);
 ```
+
+---
+
+## ⚛️ Quantum Gates
+
+**Namespace:** `CSharpNumerics.Physics.Quantum`
+
+Quantum gates are unitary operators acting on one or more qubits. Each gate is represented by a `ComplexMatrix` and knows how to apply itself to a `ComplexVectorN` state vector.
+
+All gates extend the abstract `QuantumGate` base class:
+
+| Class | Qubits | Matrix | Description |
+|---|---|---|---|
+| `HadamardGate` | 1 | $\frac{1}{\sqrt{2}}\begin{pmatrix}1&1\\1&-1\end{pmatrix}$ | Creates equal superposition |
+| `PauliXGate` | 1 | $\begin{pmatrix}0&1\\1&0\end{pmatrix}$ | Quantum NOT — flips \|0⟩ ↔ \|1⟩ |
+| `CNOTGate` | 2 | 4×4 permutation | Flips target qubit when control is \|1⟩ |
+
+### QuantumGate (abstract)
+
+```csharp
+public abstract class QuantumGate
+{
+    public abstract int QubitCount { get; }
+    public abstract ComplexMatrix GetMatrix();
+    public ComplexVectorN Apply(ComplexVectorN amplitudes, int[] qubitIndices, int totalQubits);
+}
+```
+
+`Apply` uses the gate's unitary matrix to transform the relevant amplitudes in-place (tensor-product expansion) — works for arbitrary qubit counts and target indices.
+
+### Usage
+
+Gates are consumed by `QuantumInstruction` and `QuantumCircuit` in the Engines Quantum section:
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Engines.Quantum;
+
+var circuit = new QuantumCircuit(2);
+circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+circuit.AddInstruction(new QuantumInstruction(new CNOTGate(), new List<int> { 0, 1 }));
+
+var state = new QuantumSimulator().Run(circuit);   // Bell state (|00⟩ + |11⟩)/√2
+```
+
+### Module Structure
+
+```
+Physics/Quantum/
+├── QuantumGate.cs       Abstract base with Apply logic
+├── HadamardGate.cs      H gate
+├── PauliXGate.cs        X gate (Pauli-X)
+└── CNOTGate.cs          Controlled-NOT gate
+```
