@@ -97,15 +97,46 @@ QuantumState result = sim.Run(circuit);
 
 ### Available Gates (from `CSharpNumerics.Physics.Quantum`)
 
+#### Single-Qubit Gates
+
 | Gate | Qubits | Effect |
 |---|---|---|
 | `HadamardGate` | 1 | Equal superposition: H\|0⟩ = (\|0⟩ + \|1⟩)/√2 |
 | `PauliXGate` | 1 | Bit flip: X\|0⟩ = \|1⟩ |
+| `PauliZGate` | 1 | Phase flip: Z\|1⟩ = −\|1⟩ |
+| `SGate` | 1 | π/2 phase: S\|1⟩ = i\|1⟩, $S^2 = Z$ |
+| `TGate` | 1 | π/4 phase: T\|1⟩ = $e^{i\pi/4}$\|1⟩, $T^2 = S$ |
+
+#### Rotation Gates
+
+| Gate | Qubits | Effect |
+|---|---|---|
+| `RxGate(θ)` | 1 | Rotation about X-axis by θ |
+| `RyGate(θ)` | 1 | Rotation about Y-axis by θ |
+| `RzGate(θ)` | 1 | Rotation about Z-axis by θ |
+
+#### Two-Qubit Gates
+
+| Gate | Qubits | Effect |
+|---|---|---|
 | `CNOTGate` | 2 | Controlled-NOT: flips target when control = \|1⟩ |
+| `CZGate` | 2 | Controlled-Z: phase flip on \|11⟩ |
+| `SWAPGate` | 2 | Swaps the states of two qubits |
 
 ---
 
 ### Examples
+
+**Rotation circuit**
+
+```csharp
+var circuit = new QuantumCircuit(1);
+circuit.AddInstruction(new QuantumInstruction(new RyGate(Math.PI / 2), new List<int> { 0 }));
+// Equivalent to Hadamard on |0⟩ — equal superposition
+
+var state = new QuantumSimulator().Run(circuit);
+// P(|0⟩) ≈ 0.5, P(|1⟩) ≈ 0.5
+```
 
 **3-qubit uniform superposition**
 
@@ -139,5 +170,6 @@ Engines/Quantum/
 ├── QuantumCircuit.cs        Circuit definition (qubits + instruction list)
 ├── QuantumInstruction.cs    Gate + target qubit binding
 ├── QuantumSimulator.cs      Stateless circuit executor
-└── QuantumState.cs          Result: amplitudes + probability queries
+├── QuantumState.cs          Result: amplitudes + probability queries
+└── README.md
 ```

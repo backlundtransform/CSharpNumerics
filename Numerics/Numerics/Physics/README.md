@@ -1945,7 +1945,15 @@ All gates extend the abstract `QuantumGate` base class:
 |---|---|---|---|
 | `HadamardGate` | 1 | $\frac{1}{\sqrt{2}}\begin{pmatrix}1&1\\1&-1\end{pmatrix}$ | Creates equal superposition |
 | `PauliXGate` | 1 | $\begin{pmatrix}0&1\\1&0\end{pmatrix}$ | Quantum NOT — flips \|0⟩ ↔ \|1⟩ |
+| `PauliZGate` | 1 | $\begin{pmatrix}1&0\\0&-1\end{pmatrix}$ | Phase flip — \|1⟩ → −\|1⟩ |
+| `SGate` | 1 | $\begin{pmatrix}1&0\\0&i\end{pmatrix}$ | Phase gate (π/2), $S^2 = Z$ |
+| `TGate` | 1 | $\begin{pmatrix}1&0\\0&e^{i\pi/4}\end{pmatrix}$ | π/8 gate, $T^2 = S$ |
+| `RxGate(θ)` | 1 | $\begin{pmatrix}\cos\frac{\theta}{2}&-i\sin\frac{\theta}{2}\\-i\sin\frac{\theta}{2}&\cos\frac{\theta}{2}\end{pmatrix}$ | Rotation about X-axis |
+| `RyGate(θ)` | 1 | $\begin{pmatrix}\cos\frac{\theta}{2}&-\sin\frac{\theta}{2}\\\sin\frac{\theta}{2}&\cos\frac{\theta}{2}\end{pmatrix}$ | Rotation about Y-axis |
+| `RzGate(θ)` | 1 | $\begin{pmatrix}e^{-i\theta/2}&0\\0&e^{i\theta/2}\end{pmatrix}$ | Rotation about Z-axis |
 | `CNOTGate` | 2 | 4×4 permutation | Flips target qubit when control is \|1⟩ |
+| `CZGate` | 2 | $\text{diag}(1,1,1,-1)$ | Phase flip on \|11⟩ |
+| `SWAPGate` | 2 | 4×4 permutation | Swaps two qubit states |
 
 ### QuantumGate (abstract)
 
@@ -1982,5 +1990,13 @@ Physics/Quantum/
 ├── QuantumGate.cs       Abstract base with Apply logic
 ├── HadamardGate.cs      H gate
 ├── PauliXGate.cs        X gate (Pauli-X)
-└── CNOTGate.cs          Controlled-NOT gate
+├── PauliZGate.cs        Z gate (Pauli-Z)
+├── SGate.cs             S gate (Phase, π/2)
+├── TGate.cs             T gate (π/8)
+├── RxGate.cs            Rotation about X-axis
+├── RyGate.cs            Rotation about Y-axis
+├── RzGate.cs            Rotation about Z-axis
+├── CNOTGate.cs          Controlled-NOT gate
+├── CZGate.cs            Controlled-Z gate
+└── SWAPGate.cs          SWAP gate
 ```

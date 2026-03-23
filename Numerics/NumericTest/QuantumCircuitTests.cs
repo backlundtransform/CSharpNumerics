@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CSharpNumerics.Physics.Quantum;
 using CSharpNumerics.Engines.Quantum;
 using CSharpNumerics.Numerics.Objects;
+using System;
 using System.Collections.Generic;
 
 namespace NumericTest;
@@ -213,5 +214,279 @@ public class QuantumCircuitTests
     {
         // CNOT needs 2 qubits, passing 1
         new QuantumInstruction(new CNOTGate(), new List<int> { 0 });
+    }
+
+    // ── PauliZ gate ────────────────────────────────────────────
+
+    [TestMethod]
+    public void PauliZ_LeavesZeroUnchanged()
+    {
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void PauliZ_FlipsPhaseOfOne()
+    {
+        // X|0⟩ = |1⟩, then Z|1⟩ = −|1⟩ (same probability, different phase)
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+        // Amplitude should be -1
+        Assert.AreEqual(-1.0, state.Amplitudes[1].realPart, Tolerance);
+    }
+
+    [TestMethod]
+    public void DoublePauliZ_ReturnsToOriginal()
+    {
+        // Z² = I
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Should be back to H|0⟩ = (|0⟩+|1⟩)/√2
+        Assert.AreEqual(0.5, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(1), Tolerance);
+    }
+
+    // ── S gate ─────────────────────────────────────────────────
+
+    [TestMethod]
+    public void SGate_SquaredEqualsZ()
+    {
+        // S²|ψ⟩ should equal Z|ψ⟩ for any state
+        // Test on H|0⟩ = (|0⟩+|1⟩)/√2
+        var circuitS2 = new QuantumCircuit(1);
+        circuitS2.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuitS2.AddInstruction(new QuantumInstruction(new SGate(), new List<int> { 0 }));
+        circuitS2.AddInstruction(new QuantumInstruction(new SGate(), new List<int> { 0 }));
+
+        var circuitZ = new QuantumCircuit(1);
+        circuitZ.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuitZ.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+
+        var sim = new QuantumSimulator();
+        var stateS2 = sim.Run(circuitS2);
+        var stateZ = sim.Run(circuitZ);
+
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.AreEqual(stateZ.Amplitudes[i].realPart, stateS2.Amplitudes[i].realPart, Tolerance);
+            Assert.AreEqual(stateZ.Amplitudes[i].imaginaryPart, stateS2.Amplitudes[i].imaginaryPart, Tolerance);
+        }
+    }
+
+    // ── T gate ─────────────────────────────────────────────────
+
+    [TestMethod]
+    public void TGate_SquaredEqualsS()
+    {
+        // T²|ψ⟩ = S|ψ⟩
+        var circuitT2 = new QuantumCircuit(1);
+        circuitT2.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuitT2.AddInstruction(new QuantumInstruction(new TGate(), new List<int> { 0 }));
+        circuitT2.AddInstruction(new QuantumInstruction(new TGate(), new List<int> { 0 }));
+
+        var circuitS = new QuantumCircuit(1);
+        circuitS.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuitS.AddInstruction(new QuantumInstruction(new SGate(), new List<int> { 0 }));
+
+        var sim = new QuantumSimulator();
+        var stateT2 = sim.Run(circuitT2);
+        var stateS = sim.Run(circuitS);
+
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.AreEqual(stateS.Amplitudes[i].realPart, stateT2.Amplitudes[i].realPart, Tolerance);
+            Assert.AreEqual(stateS.Amplitudes[i].imaginaryPart, stateT2.Amplitudes[i].imaginaryPart, Tolerance);
+        }
+    }
+
+    // ── Rotation gates ─────────────────────────────────────────
+
+    [TestMethod]
+    public void RxPi_EquivalentToPauliX_UpToGlobalPhase()
+    {
+        // Rx(π) = -iX → same probabilities as X
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RxGate(Math.PI), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void Rx2Pi_ReturnsToOriginal_UpToGlobalPhase()
+    {
+        // Rx(2π) = -I → probabilities unchanged
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RxGate(2 * Math.PI), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void RyPi_EquivalentToPauliY_UpToGlobalPhase()
+    {
+        // Ry(π)|0⟩ = |1⟩
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RyGate(Math.PI), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void RyHalfPi_CreatesEqualSuperposition()
+    {
+        // Ry(π/2)|0⟩ = (|0⟩+|1⟩)/√2
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RyGate(Math.PI / 2), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(0.5, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void RzPi_EquivalentToPauliZ_UpToGlobalPhase()
+    {
+        // Rz(π) = -iZ → same probabilities as Z on H|0⟩
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new RzGate(Math.PI), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(0.5, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void Rz_PreservesProbabilities_OnBasisState()
+    {
+        // Rz on |0⟩ only changes global phase
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RzGate(1.23), new List<int> { 0 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(1), Tolerance);
+    }
+
+    // ── CZ gate ────────────────────────────────────────────────
+
+    [TestMethod]
+    public void CZGate_FlipsPhaseOf11()
+    {
+        // Prepare |11⟩ via X⊗X, then apply CZ
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 1 }));
+        circuit.AddInstruction(new QuantumInstruction(new CZGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Still |11⟩ with probability 1, but amplitude = -1
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(3), Tolerance);
+        Assert.AreEqual(-1.0, state.Amplitudes[3].realPart, Tolerance);
+    }
+
+    [TestMethod]
+    public void CZGate_LeavesOtherStatesUnchanged()
+    {
+        // |01⟩ → |01⟩ (no phase flip)
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 1 }));
+        circuit.AddInstruction(new QuantumInstruction(new CZGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(2), Tolerance); // |01⟩
+        Assert.AreEqual(1.0, state.Amplitudes[2].realPart, Tolerance);
+    }
+
+    // ── SWAP gate ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void SWAPGate_Swaps01To10()
+    {
+        // Prepare |10⟩ (qubit 0 = |1⟩, qubit 1 = |0⟩), SWAP → |01⟩
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // |10⟩ (idx 1) → |01⟩ (idx 2)
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(1), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(2), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(3), Tolerance);
+    }
+
+    [TestMethod]
+    public void SWAPGate_Leaves00Unchanged()
+    {
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+    }
+
+    [TestMethod]
+    public void SWAPGate_Leaves11Unchanged()
+    {
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 1 }));
+        circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        Assert.AreEqual(1.0, state.GetProbability(3), Tolerance);
+    }
+
+    [TestMethod]
+    public void DoubleSWAP_ReturnsToOriginal()
+    {
+        // SWAP² = I
+        var circuit = new QuantumCircuit(2);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { 0, 1 }));
+        circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { 0, 1 }));
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Back to |10⟩
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(2), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(3), Tolerance);
     }
 }
