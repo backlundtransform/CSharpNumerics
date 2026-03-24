@@ -1,4 +1,5 @@
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Physics.Quantum;
 using System;
 
 namespace CSharpNumerics.Engines.Quantum;
@@ -49,6 +50,19 @@ public class QuantumState
             probs[i] = a.realPart * a.realPart + a.imaginaryPart * a.imaginaryPart;
         }
         return new VectorN(probs);
+    }
+
+    /// <summary>
+    /// Returns the Bloch vector for a single-qubit state.
+    /// Throws if the state has more than one qubit.
+    /// </summary>
+    public BlochVector GetBlochVector()
+    {
+        if (QubitCount != 1)
+            throw new InvalidOperationException(
+                $"Bloch vector is only defined for single-qubit states (this state has {QubitCount} qubits).");
+
+        return BlochVector.FromAmplitudes(Amplitudes[0], Amplitudes[1]);
     }
 
     private static int BitLength(int value)

@@ -489,4 +489,131 @@ public class QuantumCircuitTests
         Assert.AreEqual(0.0, state.GetProbability(2), Tolerance);
         Assert.AreEqual(0.0, state.GetProbability(3), Tolerance);
     }
+
+    // ── Bloch vector ───────────────────────────────────────────
+
+    [TestMethod]
+    public void BlochVector_ZeroState_NorthPole()
+    {
+        // |0⟩ → Bloch (0, 0, 1)
+        var circuit = new QuantumCircuit(1);
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(0.0, bloch.X, Tolerance);
+        Assert.AreEqual(0.0, bloch.Y, Tolerance);
+        Assert.AreEqual(1.0, bloch.Z, Tolerance);
+        Assert.AreEqual(1.0, bloch.Radius, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_OneState_SouthPole()
+    {
+        // X|0⟩ = |1⟩ → Bloch (0, 0, -1)
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(0.0, bloch.X, Tolerance);
+        Assert.AreEqual(0.0, bloch.Y, Tolerance);
+        Assert.AreEqual(-1.0, bloch.Z, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_HadamardState_PositiveX()
+    {
+        // H|0⟩ = (|0⟩+|1⟩)/√2 → Bloch (1, 0, 0)
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(1.0, bloch.X, Tolerance);
+        Assert.AreEqual(0.0, bloch.Y, Tolerance);
+        Assert.AreEqual(0.0, bloch.Z, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_MinusState_NegativeX()
+    {
+        // H|0⟩ then Z → (|0⟩−|1⟩)/√2 → Bloch (−1, 0, 0)
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new PauliZGate(), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(-1.0, bloch.X, Tolerance);
+        Assert.AreEqual(0.0, bloch.Y, Tolerance);
+        Assert.AreEqual(0.0, bloch.Z, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_PlusI_PositiveY()
+    {
+        // H|0⟩ then S → (|0⟩+i|1⟩)/√2 → Bloch (0, 1, 0)
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new SGate(), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(0.0, bloch.X, Tolerance);
+        Assert.AreEqual(1.0, bloch.Y, Tolerance);
+        Assert.AreEqual(0.0, bloch.Z, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_RadiusIsOne_ForPureState()
+    {
+        // Any single-qubit pure state should have radius = 1
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RyGate(1.23), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new RzGate(0.77), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        Assert.AreEqual(1.0, bloch.Radius, Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_ThetaPhi_Consistency()
+    {
+        // Verify spherical ↔ Cartesian roundtrip
+        var circuit = new QuantumCircuit(1);
+        circuit.AddInstruction(new QuantumInstruction(new RyGate(Math.PI / 3), new List<int> { 0 }));
+        circuit.AddInstruction(new QuantumInstruction(new RzGate(Math.PI / 4), new List<int> { 0 }));
+        var state = new QuantumSimulator().Run(circuit);
+        var bloch = state.GetBlochVector();
+
+        double theta = bloch.Theta;
+        double phi = bloch.Phi;
+        double r = bloch.Radius;
+
+        Assert.AreEqual(bloch.X, r * Math.Sin(theta) * Math.Cos(phi), Tolerance);
+        Assert.AreEqual(bloch.Y, r * Math.Sin(theta) * Math.Sin(phi), Tolerance);
+        Assert.AreEqual(bloch.Z, r * Math.Cos(theta), Tolerance);
+    }
+
+    [TestMethod]
+    public void BlochVector_ToVector_ReturnsCorrectVector()
+    {
+        var bloch = BlochVector.FromAmplitudes(
+            new ComplexNumber(1, 0), new ComplexNumber(0, 0));
+        var v = bloch.ToVector();
+
+        Assert.AreEqual(bloch.X, v.x, Tolerance);
+        Assert.AreEqual(bloch.Y, v.y, Tolerance);
+        Assert.AreEqual(bloch.Z, v.z, Tolerance);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void BlochVector_MultiQubit_Throws()
+    {
+        var circuit = new QuantumCircuit(2);
+        var state = new QuantumSimulator().Run(circuit);
+        state.GetBlochVector();
+    }
 }

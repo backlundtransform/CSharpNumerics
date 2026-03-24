@@ -1983,11 +1983,57 @@ circuit.AddInstruction(new QuantumInstruction(new CNOTGate(), new List<int> { 0,
 var state = new QuantumSimulator().Run(circuit);   // Bell state (|00⟩ + |11⟩)/√2
 ```
 
+### BlochVector
+
+Represents a single-qubit pure state on the Bloch sphere. Given $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$:
+
+$$x = 2\,\text{Re}(\alpha^*\beta), \quad y = 2\,\text{Im}(\alpha^*\beta), \quad z = |\alpha|^2 - |\beta|^2$$
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Engines.Quantum;
+
+// From a circuit result
+var circuit = new QuantumCircuit(1);
+circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
+var state = new QuantumSimulator().Run(circuit);
+
+BlochVector bloch = state.GetBlochVector();  // (1, 0, 0) — +X axis
+double theta = bloch.Theta;                  // polar angle θ
+double phi   = bloch.Phi;                    // azimuthal angle φ
+double r     = bloch.Radius;                 // 1.0 for pure states
+Vector v     = bloch.ToVector();             // 3D Vector for rendering
+
+// Directly from amplitudes
+var b = BlochVector.FromAmplitudes(
+    new ComplexNumber(1, 0), new ComplexNumber(0, 0));  // |0⟩ → (0, 0, 1)
+```
+
+| Property | Description |
+|---|---|
+| `X`, `Y`, `Z` | Cartesian Bloch coordinates |
+| `Theta` | Polar angle $\theta \in [0, \pi]$ from +Z |
+| `Phi` | Azimuthal angle $\varphi \in (-\pi, \pi]$ |
+| `Radius` | Vector length (1 for pure states) |
+| `ToVector()` | Returns a 3D `Vector` for visualization |
+
+**Canonical states on the sphere:**
+
+| State | Bloch |
+|---|---|
+| $|0\rangle$ | $(0, 0, 1)$ — north pole |
+| $|1\rangle$ | $(0, 0, -1)$ — south pole |
+| $(|0\rangle+|1\rangle)/\sqrt{2}$ | $(1, 0, 0)$ — +X |
+| $(|0\rangle-|1\rangle)/\sqrt{2}$ | $(-1, 0, 0)$ — −X |
+| $(|0\rangle+i|1\rangle)/\sqrt{2}$ | $(0, 1, 0)$ — +Y |
+| $(|0\rangle-i|1\rangle)/\sqrt{2}$ | $(0, -1, 0)$ — −Y |
+
 ### Module Structure
 
 ```
 Physics/Quantum/
 ├── QuantumGate.cs       Abstract base with Apply logic
+├── BlochVector.cs       Bloch sphere representation
 ├── HadamardGate.cs      H gate
 ├── PauliXGate.cs        X gate (Pauli-X)
 ├── PauliZGate.cs        Z gate (Pauli-Z)

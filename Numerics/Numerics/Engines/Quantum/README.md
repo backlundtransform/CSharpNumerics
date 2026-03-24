@@ -81,6 +81,7 @@ ComplexVectorN amps = state.Amplitudes;      // raw amplitude vector
 | `QubitCount` | `int` | Number of qubits |
 | `GetProbability(int basisState)` | `double` | Measurement probability of a specific basis state |
 | `GetProbabilities()` | `VectorN` | All basis-state probabilities |
+| `GetBlochVector()` | `BlochVector` | Bloch sphere coordinates (single-qubit only) |
 
 ---
 
