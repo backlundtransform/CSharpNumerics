@@ -12,10 +12,11 @@ A lightweight quantum circuit simulator that builds, composes, and executes quan
 using CSharpNumerics.Physics.Quantum;
 using CSharpNumerics.Engines.Quantum;
 
-// Build a 2-qubit circuit that creates a Bell state
-var circuit = new QuantumCircuit(2);
-circuit.AddInstruction(new QuantumInstruction(new HadamardGate(), new List<int> { 0 }));
-circuit.AddInstruction(new QuantumInstruction(new CNOTGate(), new List<int> { 0, 1 }));
+// Fluent API — build a Bell state in one chain
+var circuit = QuantumCircuitBuilder.New(2)
+    .H(0)
+    .CNOT(0, 1)
+    .Build();
 
 // Simulate
 var state = new QuantumSimulator().Run(circuit);
@@ -25,6 +26,12 @@ double p00 = state.GetProbability(0);   // 0.5  — |00⟩
 double p11 = state.GetProbability(3);   // 0.5  — |11⟩
 
 VectorN probs = state.GetProbabilities(); // [0.5, 0, 0, 0.5]
+
+// Measurement — collapse to a single outcome
+int result = state.Measure(new Random());
+
+// Sampling — statistical distribution without collapse
+var counts = state.Sample(shots: 10000, new Random());
 ```
 
 ---
@@ -64,9 +71,36 @@ var cnot  = new QuantumInstruction(new CNOTGate(), new List<int> { 0, 1 }); // c
 
 ---
 
+### QuantumCircuitBuilder
+
+Fluent API for building circuits without manual instruction wiring.
+
+```csharp
+var circuit = QuantumCircuitBuilder.New(3)
+    .H(0)                   // Hadamard on qubit 0
+    .X(1)                   // Pauli-X on qubit 1
+    .Ry(2, Math.PI / 4)     // Y-rotation on qubit 2
+    .CNOT(0, 1)             // CNOT: control=0, target=1
+    .CZ(1, 2)               // Controlled-Z
+    .SWAP(0, 2)             // Swap qubits 0 and 2
+    .Gate(new TGate(), 1)   // Arbitrary gate
+    .Build();
+```
+
+| Method | Description |
+|---|---|
+| `New(int qubits)` | Create a builder for an n-qubit circuit |
+| `H(q)`, `X(q)`, `Z(q)`, `S(q)`, `T(q)` | Single-qubit standard gates |
+| `Rx(q, θ)`, `Ry(q, θ)`, `Rz(q, θ)` | Parameterised rotation gates |
+| `CNOT(c, t)`, `CZ(c, t)`, `SWAP(a, b)` | Two-qubit gates |
+| `Gate(gate, params qubits)` | Arbitrary gate on specified qubits |
+| `Build()` | Returns the constructed `QuantumCircuit` |
+
+---
+
 ### QuantumState
 
-Immutable result of a simulation — a complex amplitude vector with convenience methods.
+Result of a simulation — a complex amplitude vector with probability queries, measurement, and sampling.
 
 ```csharp
 double p = state.GetProbability(0);          // |α₀|² for basis state |0…0⟩
@@ -82,6 +116,38 @@ ComplexVectorN amps = state.Amplitudes;      // raw amplitude vector
 | `GetProbability(int basisState)` | `double` | Measurement probability of a specific basis state |
 | `GetProbabilities()` | `VectorN` | All basis-state probabilities |
 | `GetBlochVector()` | `BlochVector` | Bloch sphere coordinates (single-qubit only) |
+| `Measure(Random)` | `int` | Full measurement — collapses state, returns basis index |
+| `MeasureQubit(int, Random)` | `int` | Measure one qubit (0 or 1), renormalising the rest |
+| `Sample(int shots, Random)` | `Dictionary<int,int>` | Sample distribution without collapse |
+
+**Measurement (collapse)**
+
+```csharp
+var state = sim.Run(QuantumCircuitBuilder.New(1).H(0).Build());
+var rng = new Random(42);
+
+// Full measurement — collapses to |0⟩ or |1⟩
+int result = state.Measure(rng);  // 0 or 1
+// State is now a basis state: P(result) = 1.0
+```
+
+**Single-qubit measurement**
+
+```csharp
+// Bell state: (|00⟩+|11⟩)/√2
+var state = sim.Run(QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build());
+
+// Measure only qubit 0 — collapses both qubits due to entanglement
+int q0 = state.MeasureQubit(0, rng);  // 0 or 1
+```
+
+**Sampling (no collapse)**
+
+```csharp
+// Run 10000 shots — state is NOT modified
+var counts = state.Sample(10000, rng);
+// counts = { 0: ~5000, 1: ~5000 } for H|0⟩
+```
 
 ---
 
@@ -168,9 +234,10 @@ var state = new QuantumSimulator().Run(circuit);
 
 ```
 Engines/Quantum/
-├── QuantumCircuit.cs        Circuit definition (qubits + instruction list)
-├── QuantumInstruction.cs    Gate + target qubit binding
-├── QuantumSimulator.cs      Stateless circuit executor
-├── QuantumState.cs          Result: amplitudes + probability queries
+├── QuantumCircuit.cs         Circuit definition (qubits + instruction list)
+├── QuantumCircuitBuilder.cs  Fluent builder API
+├── QuantumInstruction.cs     Gate + target qubit binding
+├── QuantumSimulator.cs       Stateless circuit executor
+├── QuantumState.cs           Result: amplitudes, measurement, sampling
 └── README.md
 ```

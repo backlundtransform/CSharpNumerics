@@ -2028,11 +2028,47 @@ var b = BlochVector.FromAmplitudes(
 | $(|0\rangle+i|1\rangle)/\sqrt{2}$ | $(0, 1, 0)$ — +Y |
 | $(|0\rangle-i|1\rangle)/\sqrt{2}$ | $(0, -1, 0)$ — −Y |
 
+### QuantumFidelity
+
+Static methods for computing the overlap between quantum states. Fidelity ranges from 0 (orthogonal) to 1 (identical).
+
+**State fidelity** — $F = |\langle\psi|\phi\rangle|^2$
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Engines.Quantum;
+
+var sim = new QuantumSimulator();
+var s0    = sim.Run(QuantumCircuitBuilder.New(1).Build());        // |0⟩
+var sPlus = sim.Run(QuantumCircuitBuilder.New(1).H(0).Build());  // |+⟩
+var s1    = sim.Run(QuantumCircuitBuilder.New(1).X(0).Build());  // |1⟩
+
+double f1 = QuantumFidelity.Fidelity(s0, s0);     // 1.0  — identical
+double f2 = QuantumFidelity.Fidelity(s0, sPlus);  // 0.5  — overlap
+double f3 = QuantumFidelity.Fidelity(s0, s1);     // 0.0  — orthogonal
+```
+
+**Vector fidelity** — works directly on `ComplexVectorN`
+
+```csharp
+double f = QuantumFidelity.Fidelity(psi, phi);   // |⟨ψ|φ⟩|²
+```
+
+**Bloch fidelity** — geometric formula for single-qubit states: $F = \frac{1}{2}(1 + \hat{n}_1 \cdot \hat{n}_2)$
+
+```csharp
+var b1 = s1State.GetBlochVector();
+var b2 = s2State.GetBlochVector();
+double f = QuantumFidelity.BlochFidelity(b1, b2);
+// Matches state fidelity for pure single-qubit states
+```
+
 ### Module Structure
 
 ```
 Physics/Quantum/
 ├── QuantumGate.cs       Abstract base with Apply logic
+├── QuantumFidelity.cs   State fidelity metrics
 ├── BlochVector.cs       Bloch sphere representation
 ├── HadamardGate.cs      H gate
 ├── PauliXGate.cs        X gate (Pauli-X)
