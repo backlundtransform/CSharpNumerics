@@ -180,6 +180,87 @@ namespace CSharpNumerics.Engines.GIS.Export
         }
 
         // ═══════════════════════════════════════════════════════════════
+        //  ExposurePolygon
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Exports an <see cref="ExposurePolygon"/> as a GeoJSON Feature
+        /// with Polygon geometry.
+        /// </summary>
+        /// <param name="polygon">The exposure polygon to export.</param>
+        /// <param name="projection">
+        /// Optional projection for converting local coordinates to WGS-84.
+        /// </param>
+        public static string ToGeoJson(ExposurePolygon polygon, Projection projection = null)
+        {
+            if (polygon == null) throw new ArgumentNullException(nameof(polygon));
+            var sb = new StringBuilder();
+            AppendPolygonFeature(sb, polygon, projection);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports multiple <see cref="ExposurePolygon"/> objects as a
+        /// GeoJSON FeatureCollection.
+        /// </summary>
+        public static string ToGeoJson(IList<ExposurePolygon> polygons, Projection projection = null)
+        {
+            if (polygons == null) throw new ArgumentNullException(nameof(polygons));
+            var sb = new StringBuilder();
+            sb.Append("{\"type\":\"FeatureCollection\",");
+            if (projection != null)
+                sb.Append("\"metadata\":{\"crs\":\"WGS84\"},");
+            else
+                sb.Append("\"metadata\":{\"crs\":\"local\"},");
+            sb.Append("\"features\":[");
+            for (int i = 0; i < polygons.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                AppendPolygonFeature(sb, polygons[i], projection);
+            }
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>Save an exposure polygon to a GeoJSON file.</summary>
+        public static void Save(ExposurePolygon polygon, string path, Projection projection = null)
+            => File.WriteAllText(path, ToGeoJson(polygon, projection), Encoding.UTF8);
+
+        private static void AppendPolygonFeature(StringBuilder sb, ExposurePolygon polygon, Projection projection)
+        {
+            sb.Append("{\"type\":\"Feature\",\"geometry\":");
+
+            if (polygon.Boundary == null || polygon.Boundary.Count < 3)
+            {
+                sb.Append("null");
+            }
+            else
+            {
+                sb.Append("{\"type\":\"Polygon\",\"coordinates\":[[");
+                for (int i = 0; i < polygon.Boundary.Count; i++)
+                {
+                    if (i > 0) sb.Append(',');
+                    sb.Append('[');
+                    AppendCoord(sb, polygon.Boundary[i], projection);
+                    sb.Append(']');
+                }
+                sb.Append("]]}");
+            }
+
+            sb.Append(",\"properties\":{");
+            AppendProp(sb, "threshold", polygon.Threshold, true);
+            sb.Append(",\"layerName\":\"");
+            sb.Append(EscapeJson(polygon.LayerName));
+            sb.Append('"');
+            sb.Append(",\"exposureType\":\"");
+            sb.Append(polygon.Type == ExposureType.Peak ? "peak" : "integrated");
+            sb.Append('"');
+            AppendProp(sb, "exceedanceCellCount", polygon.ExceedanceCellCount, false);
+            AppendProp(sb, "areaSquareMetres", polygon.AreaSquareMetres, false);
+            sb.Append("}}");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //  File writers
         // ═══════════════════════════════════════════════════════════════
 

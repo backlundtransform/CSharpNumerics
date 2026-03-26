@@ -372,6 +372,72 @@ Output GeoJSON includes per-feature nuclear properties:
 
 ---
 
+### Exposure Polygons — Peak & Time-Integrated Contours
+
+Generate closed polygons delineating areas where an exposure metric (peak or time-integrated)
+exceeds a threshold. Works with concentration or any named layer (activity, dose).
+
+```csharp
+using CSharpNumerics.Engines.GIS.Analysis;
+
+// Run a scenario with radioactive material
+var result = RiskScenario
+    .ForGaussianPlume(5.0)
+    .FromSource(new Vector(0, 0, 50))
+    .WithWind(10, new Vector(1, 0, 0))
+    .WithStability(StabilityClass.D)
+    .WithMaterial(Materials.Radioisotope("Cs137"))
+    .OverGrid(new GeoGrid(-500, 500, -500, 500, 0, 100, 50))
+    .OverTime(0, 3600, 60)
+    .RunSingle();
+
+// Peak exceedance polygon — where the maximum dose at any time step exceeds threshold
+ExposurePolygon peakDose = result.GeneratePeakExposurePolygon(
+    threshold: 1e-6, layerName: "dose");
+
+// Time-integrated exposure polygon — where cumulative dose exceeds threshold
+ExposurePolygon integratedDose = result.GenerateIntegratedExposurePolygon(
+    threshold: 1e-4, layerName: "dose");
+
+// Polygon properties
+List<Vector> boundary = peakDose.Boundary;      // closed ring of vertices
+int cells = peakDose.ExceedanceCellCount;       // cells above threshold
+double area = peakDose.AreaSquareMetres;         // approximate area (m²)
+ExposureType type = peakDose.Type;               // Peak or Integrated
+
+// Also works with plain concentration (no material needed)
+var concPoly = result.GeneratePeakExposurePolygon(threshold: 1e-6);
+
+// Export to GeoJSON Polygon
+string json = GeoJsonExporter.ToGeoJson(peakDose);
+GeoJsonExporter.Save(peakDose, "peak_dose_zone.geojson");
+
+// Export multiple polygons as FeatureCollection
+string fc = GeoJsonExporter.ToGeoJson(
+    new List<ExposurePolygon> { peakDose, integratedDose });
+```
+
+Output GeoJSON polygon:
+
+```json
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[[100, 50, 0], [150, 75, 0], [200, 50, 0], [100, 50, 0]]]
+  },
+  "properties": {
+    "threshold": 1e-6,
+    "layerName": "dose",
+    "exposureType": "peak",
+    "exceedanceCellCount": 42,
+    "areaSquareMetres": 105000
+  }
+}
+```
+
+---
+
 ### Architecture
 
 ```
@@ -393,9 +459,11 @@ Engines/GIS/
 │   ├── PlumeMonteCarloModel.cs — MC batch runner + IMonteCarloModel
 │   └── ScenarioVariation.cs    — parameter variation ranges
 ├── Analysis/
-│   ├── ScenarioClusterAnalyzer.cs — ML clustering of MC scenarios
-│   ├── ProbabilityMap.cs          — per-cell exceedance probability
-│   └── TimeAnimator.cs            — time-animated probability maps
+│   ├── ScenarioClusterAnalyzer.cs    — ML clustering of MC scenarios
+│   ├── ProbabilityMap.cs             — per-cell exceedance probability
+│   ├── TimeAnimator.cs               — time-animated probability maps
+│   ├── ExposurePolygon.cs            — polygon result type
+│   └── ExposurePolygonGenerator.cs   — marching squares contour extraction
 └── Export/
     ├── GeoJsonExporter.cs      — GeoJSON (local + WGS84 + activity/dose)
     ├── UnityBinaryExporter.cs  — compact binary for Unity3D
@@ -426,7 +494,8 @@ Physics/Materials/
 | 5 | Export (GeoJSON / Unity binary / Cesium CZML) | 24 | ✅ Done |
 | 6 | GIS coordinates (WGS84, UTM, `GeoCoordinate`, `Projection`, `FromLatLon`) | 28 | ✅ Done |
 | 7 | Radioactive fallout & nuclear materials (`Isotope`, `DecayChain`, `RadiationDose`, `.WithMaterial()`) | 58 | ✅ Done |
+| 7.5 | Exposure polygons (`ExposurePolygonGenerator`, `GeneratePeakExposurePolygon`, `GenerateIntegratedExposurePolygon`) | 17 | ✅ Done |
 
-**Total: 192 GIS + nuclear tests**
+**Total: 209 GIS + nuclear tests**
 
 See [ROADMAP.md](ROADMAP.md) for the full design and phase details.
