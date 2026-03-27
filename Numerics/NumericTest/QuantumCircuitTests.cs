@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Physics.Quantum.NoiseModels;
 using CSharpNumerics.Engines.Quantum;
+using CSharpNumerics.ML.ReinforcementLearning.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -944,5 +946,510 @@ public class QuantumCircuitTests
         double f = QuantumFidelity.Fidelity(bell, zero);
         // |⟨00|Bell⟩|² = |1/√2|² = 0.5
         Assert.AreEqual(0.5, f, Tolerance);
+    }
+
+    // ── Noise channel: Kraus operator completeness ─────────────
+
+    [TestMethod]
+    public void DepolarizingNoise_KrausCompleteness()
+    {
+        // Σ E_k† E_k should equal I
+        var noise = new DepolarizingNoise(0.3);
+        AssertKrausCompleteness(noise.GetKrausOperators());
+    }
+
+    [TestMethod]
+    public void DephasingNoise_KrausCompleteness()
+    {
+        var noise = new DephasingNoise(0.5);
+        AssertKrausCompleteness(noise.GetKrausOperators());
+    }
+
+    [TestMethod]
+    public void AmplitudeDampingNoise_KrausCompleteness()
+    {
+        var noise = new AmplitudeDampingNoise(0.7);
+        AssertKrausCompleteness(noise.GetKrausOperators());
+    }
+
+    private void AssertKrausCompleteness(ComplexMatrix[] kraus)
+    {
+        int d = kraus[0].rowLength;
+        var sum = new ComplexMatrix(d, d);
+        foreach (var ek in kraus)
+        {
+            var ekDag = ek.ConjugateTranspose();
+            var product = ekDag * ek;
+            for (int i = 0; i < d; i++)
+                for (int j = 0; j < d; j++)
+                    sum.values[i, j] = sum.values[i, j] + product.values[i, j];
+        }
+        // Should be identity
+        for (int i = 0; i < d; i++)
+            for (int j = 0; j < d; j++)
+            {
+                double expected = i == j ? 1.0 : 0.0;
+                Assert.AreEqual(expected, sum.values[i, j].realPart, 1e-10,
+                    $"Real part at [{i},{j}]");
+                Assert.AreEqual(0.0, sum.values[i, j].imaginaryPart, 1e-10,
+                    $"Imaginary part at [{i},{j}]");
+            }
+    }
+
+    // ── Noise channel: zero noise = identity ───────────────────
+
+    [TestMethod]
+    public void DepolarizingNoise_ZeroProbability_NoEffect()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var noisy = new NoisyQuantumSimulator(new Random(42))
+            .WithNoise(new DepolarizingNoise(0.0))
+            .Run(circuit);
+
+        double f = QuantumFidelity.Fidelity(ideal, noisy);
+        Assert.AreEqual(1.0, f, 1e-10);
+    }
+
+    [TestMethod]
+    public void DephasingNoise_ZeroProbability_NoEffect()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var noisy = new NoisyQuantumSimulator(new Random(42))
+            .WithNoise(new DephasingNoise(0.0))
+            .Run(circuit);
+
+        double f = QuantumFidelity.Fidelity(ideal, noisy);
+        Assert.AreEqual(1.0, f, 1e-10);
+    }
+
+    [TestMethod]
+    public void AmplitudeDamping_ZeroGamma_NoEffect()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).X(0).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var noisy = new NoisyQuantumSimulator(new Random(42))
+            .WithNoise(new AmplitudeDampingNoise(0.0))
+            .Run(circuit);
+
+        double f = QuantumFidelity.Fidelity(ideal, noisy);
+        Assert.AreEqual(1.0, f, 1e-10);
+    }
+
+    // ── Noise channel: noisy output is valid quantum state ─────
+
+    [TestMethod]
+    public void NoisySimulator_ProbabilitiesSumToOne()
+    {
+        var circuit = QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build();
+        var noisy = new NoisyQuantumSimulator(new Random(42))
+            .WithNoise(new DepolarizingNoise(0.1))
+            .Run(circuit);
+
+        var probs = noisy.GetProbabilities();
+        double sum = 0;
+        for (int i = 0; i < probs.Length; i++) sum += probs[i];
+        Assert.AreEqual(1.0, sum, 1e-10);
+    }
+
+    // ── Noise channel: statistical fidelity degradation ────────
+
+    [TestMethod]
+    public void DepolarizingNoise_ReducesFidelity_Statistically()
+    {
+        // Over many runs, noisy simulator should on average have lower fidelity
+        var circuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var rng = new Random(123);
+
+        double totalFidelity = 0;
+        int runs = 200;
+        for (int i = 0; i < runs; i++)
+        {
+            var noisy = new NoisyQuantumSimulator(rng)
+                .WithNoise(new DepolarizingNoise(0.5))
+                .Run(circuit);
+            totalFidelity += QuantumFidelity.Fidelity(ideal, noisy);
+        }
+        double avgFidelity = totalFidelity / runs;
+
+        // With p=0.5 on a single gate, fidelity should be meaningfully below 1
+        Assert.IsTrue(avgFidelity < 0.95, $"Average fidelity {avgFidelity} not degraded enough");
+        Assert.IsTrue(avgFidelity > 0.3, $"Average fidelity {avgFidelity} unexpectedly low");
+    }
+
+    [TestMethod]
+    public void DephasingNoise_AffectsSuperposition()
+    {
+        // Dephasing on |0⟩ should have no visible effect (only phases matter on superpositions)
+        // but on H|0⟩ = (|0⟩+|1⟩)/√2 it should degrade off-diagonal coherence
+        var circuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var rng = new Random(456);
+
+        double totalFidelity = 0;
+        int runs = 200;
+        for (int i = 0; i < runs; i++)
+        {
+            var noisy = new NoisyQuantumSimulator(rng)
+                .WithNoise(new DephasingNoise(0.5))
+                .Run(circuit);
+            totalFidelity += QuantumFidelity.Fidelity(ideal, noisy);
+        }
+        double avgFidelity = totalFidelity / runs;
+
+        Assert.IsTrue(avgFidelity < 0.95, $"Average fidelity {avgFidelity} not degraded");
+        Assert.IsTrue(avgFidelity > 0.3, $"Average fidelity {avgFidelity} unexpectedly low");
+    }
+
+    [TestMethod]
+    public void AmplitudeDamping_DecaysExcitedState()
+    {
+        // |1⟩ with strong damping should shift probability toward |0⟩
+        var circuit = QuantumCircuitBuilder.New(1).X(0).Build();
+        var rng = new Random(789);
+
+        double totalP0 = 0;
+        int runs = 200;
+        for (int i = 0; i < runs; i++)
+        {
+            var noisy = new NoisyQuantumSimulator(rng)
+                .WithNoise(new AmplitudeDampingNoise(0.8))
+                .Run(circuit);
+            totalP0 += noisy.GetProbability(0);
+        }
+        double avgP0 = totalP0 / runs;
+
+        // With γ=0.8, ~80% of trajectories should decay to |0⟩
+        Assert.IsTrue(avgP0 > 0.6, $"Average P(|0⟩) = {avgP0}, expected > 0.6 for γ=0.8");
+    }
+
+    // ── Noise channel: multiple channels stack ──────────────────
+
+    [TestMethod]
+    public void NoisySimulator_MultipleChannels()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var noisy = new NoisyQuantumSimulator(new Random(42))
+            .WithNoise(new DepolarizingNoise(0.1))
+            .WithNoise(new DephasingNoise(0.1))
+            .Run(circuit);
+
+        var probs = noisy.GetProbabilities();
+        double sum = 0;
+        for (int i = 0; i < probs.Length; i++) sum += probs[i];
+        Assert.AreEqual(1.0, sum, 1e-10);
+    }
+
+    // ── Noise channel: validation ──────────────────────────────
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void DepolarizingNoise_InvalidProbability_Throws()
+    {
+        new DepolarizingNoise(1.5);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void DephasingNoise_InvalidProbability_Throws()
+    {
+        new DephasingNoise(-0.1);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void AmplitudeDamping_InvalidGamma_Throws()
+    {
+        new AmplitudeDampingNoise(2.0);
+    }
+
+    // ── Noise: basis state stability ───────────────────────────
+
+    [TestMethod]
+    public void DephasingNoise_BasisState_Unchanged()
+    {
+        // Dephasing only affects off-diagonal elements;
+        // |0⟩ (a basis state) should never be changed by dephasing
+        var circuit = QuantumCircuitBuilder.New(1).Build(); // |0⟩
+        var ideal = new QuantumSimulator().Run(circuit);
+        var rng = new Random(42);
+
+        for (int i = 0; i < 50; i++)
+        {
+            var noisy = new NoisyQuantumSimulator(rng)
+                .WithNoise(new DephasingNoise(0.9))
+                .Run(circuit);
+            double f = QuantumFidelity.Fidelity(ideal, noisy);
+            Assert.AreEqual(1.0, f, 1e-10, "Dephasing should not affect basis states");
+        }
+    }
+
+    [TestMethod]
+    public void AmplitudeDamping_GroundState_Unchanged()
+    {
+        // |0⟩ is the ground state — amplitude damping should have no effect
+        var circuit = QuantumCircuitBuilder.New(1).Build();
+        var ideal = new QuantumSimulator().Run(circuit);
+        var rng = new Random(42);
+
+        for (int i = 0; i < 50; i++)
+        {
+            var noisy = new NoisyQuantumSimulator(rng)
+                .WithNoise(new AmplitudeDampingNoise(0.9))
+                .Run(circuit);
+            double f = QuantumFidelity.Fidelity(ideal, noisy);
+            Assert.AreEqual(1.0, f, 1e-10, "Amplitude damping should not affect ground state");
+        }
+    }
+
+    // ── QuantumEnvironment (RL) ────────────────────────────
+
+    [TestMethod]
+    public void QuantumEnv_ImplementsIEnvironment()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        IEnvironment env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        Assert.IsTrue(env.IsDiscrete);
+        Assert.IsTrue(env.ActionSize > 0);
+        Assert.AreEqual(3, env.ObservationSize); // 2^1 + 1 = 3
+    }
+
+    [TestMethod]
+    public void QuantumEnv_Reset_ReturnsInitialObservation()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).H(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        var (state, info) = env.Reset(seed: 42);
+
+        Assert.AreEqual(3, state.Length); // 2 probs + 1 progress
+        // Initial state is |0⟩: P(0)=1, P(1)=0, step=0
+        Assert.AreEqual(1.0, state[0], Tolerance);
+        Assert.AreEqual(0.0, state[1], Tolerance);
+        Assert.AreEqual(0.0, state[2], Tolerance); // 0/maxGates
+    }
+
+    [TestMethod]
+    public void QuantumEnv_Step_ChangesState()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        env.Reset(seed: 42);
+
+        // Find X gate action index (PauliXGate on qubit 0)
+        // Default actions: H(0), X(0), Z(0), S(0), T(0) — X is index 1
+        var (nextState, reward, done, info) = env.Step(1); // X gate on qubit 0
+
+        Assert.AreEqual(3, nextState.Length);
+        // After X|0⟩ = |1⟩ which IS the target, fidelity = 1.0
+        Assert.IsTrue((double)info["fidelity"] > 0.99);
+    }
+
+    [TestMethod]
+    public void QuantumEnv_OptimalAction_HighReward()
+    {
+        // Target = X|0⟩ = |1⟩. Applying X should get fidelity=1 and bonus reward.
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .WithFidelityThreshold(0.99)
+            .Build();
+
+        env.Reset(seed: 42);
+        var (_, reward, done, info) = env.Step(1); // X gate
+
+        Assert.IsTrue(reward > 1.0, $"Reward {reward} should include bonus");
+        Assert.IsTrue(done, "Should be done when fidelity threshold reached");
+    }
+
+    [TestMethod]
+    public void QuantumEnv_MaxGates_TerminatesEpisode()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).H(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(3)
+            .Build();
+
+        env.Reset(seed: 42);
+
+        bool done = false;
+        for (int i = 0; i < 3; i++)
+        {
+            var result = env.Step(0); // apply H repeatedly
+            done = result.done;
+        }
+
+        Assert.IsTrue(done, "Should terminate after max gates");
+    }
+
+    [TestMethod]
+    public void QuantumEnv_ObservationProbsSumToOne()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build());
+        var env = QuantumEnvironment.Create(2)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        var (state, _) = env.Reset(seed: 42);
+
+        // Probabilities are first 2^n elements
+        double sum = 0;
+        for (int i = 0; i < 4; i++) sum += state[i];
+        Assert.AreEqual(1.0, sum, Tolerance);
+
+        // Take a step and check again
+        var (nextState, _, _, _) = env.Step(0);
+        sum = 0;
+        for (int i = 0; i < 4; i++) sum += nextState[i];
+        Assert.AreEqual(1.0, sum, Tolerance);
+    }
+
+    [TestMethod]
+    public void QuantumEnv_TwoQubit_DefaultActions_IncludesCNOT()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build());
+        var env = QuantumEnvironment.Create(2)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        // 2 qubits: 5 single-gates * 2 qubits + 2 CNOT pairs = 12
+        Assert.AreEqual(12, env.ActionSize);
+        Assert.AreEqual(5, env.ObservationSize); // 2^2 + 1 = 5
+    }
+
+    [TestMethod]
+    public void QuantumEnv_WithTargetCircuit()
+    {
+        var bellCircuit = QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build();
+        var env = QuantumEnvironment.Create(2)
+            .WithTargetCircuit(bellCircuit)
+            .WithMaxGates(10)
+            .Build();
+
+        var (state, _) = env.Reset();
+        Assert.AreEqual(5, state.Length);
+    }
+
+    [TestMethod]
+    public void QuantumEnv_CustomActions()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).H(0).Build());
+
+        var customActions = new List<QuantumInstruction>
+        {
+            new QuantumInstruction(new HadamardGate(), new List<int> { 0 }),
+            new QuantumInstruction(new PauliXGate(), new List<int> { 0 })
+        };
+
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithActions(customActions)
+            .WithMaxGates(5)
+            .Build();
+
+        Assert.AreEqual(2, env.ActionSize);
+    }
+
+    [TestMethod]
+    public void QuantumEnv_Reset_ResetsCircuit()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        env.Reset(seed: 42);
+        env.Step(1); // X gate
+
+        // Reset and verify we're back to |0⟩
+        var (state, _) = env.Reset(seed: 42);
+        Assert.AreEqual(1.0, state[0], Tolerance); // P(|0⟩) = 1
+        Assert.AreEqual(0.0, state[1], Tolerance); // P(|1⟩) = 0
+    }
+
+    [TestMethod]
+    public void QuantumEnv_StepVectorN_DelegatesToDiscrete()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        env.Reset(seed: 42);
+        var (_, _, _, info) = env.Step(new VectorN(new[] { 1.0 })); // X gate
+        Assert.IsTrue((double)info["fidelity"] > 0.99);
+    }
+
+    [TestMethod]
+    public void QuantumEnv_FidelityInfo_Tracked()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).H(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        env.Reset(seed: 42);
+
+        // Apply H — should reach target
+        var (_, _, _, info) = env.Step(0); // H gate
+        double fidelity = (double)info["fidelity"];
+
+        Assert.AreEqual(1.0, fidelity, Tolerance);
+        Assert.AreEqual(1, (int)info["gates"]);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void QuantumEnv_NoTarget_Throws()
+    {
+        QuantumEnvironment.Create(1)
+            .WithMaxGates(10)
+            .Build();
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void QuantumEnv_InvalidAction_Throws()
+    {
+        var target = new QuantumSimulator().Run(
+            QuantumCircuitBuilder.New(1).X(0).Build());
+        var env = QuantumEnvironment.Create(1)
+            .WithTargetState(target)
+            .WithMaxGates(10)
+            .Build();
+
+        env.Reset(seed: 42);
+        env.Step(999); // invalid action
     }
 }

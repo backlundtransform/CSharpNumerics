@@ -162,6 +162,41 @@ QuantumState result = sim.Run(circuit);
 
 ---
 
+### NoisyQuantumSimulator
+
+Simulator with quantum noise channels applied after each gate using **Monte Carlo trajectory selection** (stochastic Kraus operator sampling). Noise channels come from `CSharpNumerics.Physics.Quantum.NoiseModels`.
+
+```csharp
+using CSharpNumerics.Physics.Quantum.NoiseModels;
+
+var noisy = new NoisyQuantumSimulator(new Random(42))
+    .WithNoise(new DepolarizingNoise(0.01))      // 1% depolarizing
+    .WithNoise(new DephasingNoise(0.02))          // 2% dephasing
+    .Run(circuit);
+
+double fidelity = QuantumFidelity.Fidelity(idealState, noisy);
+```
+
+| Method | Description |
+|---|---|
+| `NoisyQuantumSimulator(Random)` | Constructor with RNG for trajectory sampling |
+| `WithNoise(INoiseChannel)` | Adds a noise channel (fluent, stackable) |
+| `Run(QuantumCircuit)` | Executes with noise after each gate |
+
+**How it works:** After each gate, every registered noise channel is applied independently to each qubit the gate acted on. For each channel the simulator computes $p_k = \langle\psi|E_k^\dagger E_k|\psi\rangle$ for all Kraus operators $\{E_k\}$, samples one operator, and renormalises.
+
+**Noise channels** (from `CSharpNumerics.Physics.Quantum.NoiseModels`):
+
+| Channel | Parameter | Effect |
+|---|---|---|
+| `DepolarizingNoise(p)` | $p \in [0,1]$ | Replaces qubit with maximally mixed state with probability $p$ |
+| `DephasingNoise(p)` | $p \in [0,1]$ | Randomises relative phase (T₂ decoherence) |
+| `AmplitudeDampingNoise(γ)` | $\gamma \in [0,1]$ | Energy dissipation: \|1⟩ decays to \|0⟩ (T₁ decay) |
+
+All channels implement `INoiseChannel` and provide Kraus operators satisfying $\sum E_k^\dagger E_k = I$.
+
+---
+
 ### Available Gates (from `CSharpNumerics.Physics.Quantum`)
 
 #### Single-Qubit Gates
@@ -230,14 +265,76 @@ var state = new QuantumSimulator().Run(circuit);
 
 ---
 
+### QuantumEnvironment (RL Integration)
+
+An `IEnvironment` implementation for reinforcement learning — the agent learns a gate sequence to prepare a target quantum state from |0…0⟩.
+
+| Property | Description |
+|---|---|
+| **Observation** | State probabilities (2ⁿ values) + normalised step progress |
+| **Actions** | Discrete — each index maps to a (gate, qubit) pair |
+| **Reward** | Fidelity delta + bonus when threshold reached |
+| **Done** | Max gates reached or fidelity ≥ threshold |
+
+**Quick start**
+
+```csharp
+using CSharpNumerics.Engines.Quantum;
+using CSharpNumerics.Physics.Quantum;
+
+// Target: Bell state (|00⟩+|11⟩)/√2
+var bellCircuit = QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build();
+
+var env = QuantumEnvironment.Create(2)
+    .WithTargetCircuit(bellCircuit)
+    .WithMaxGates(20)
+    .WithFidelityThreshold(0.99)
+    .Build();
+
+// Use with the RL framework
+var result = RLExperiment
+    .For(env)
+    .WithAgent(agent)
+    .WithPolicy(new EpsilonGreedy())
+    .WithEpisodes(1000)
+    .Run();
+```
+
+**Builder methods**
+
+| Method | Description |
+|---|---|
+| `Create(int qubits)` | Start building an environment |
+| `.WithTargetState(QuantumState)` | Set the target state directly |
+| `.WithTargetCircuit(QuantumCircuit)` | Set the target by simulating a circuit |
+| `.WithMaxGates(int)` | Maximum gates per episode (default 20) |
+| `.WithFidelityThreshold(double)` | Early termination threshold (default 0.99) |
+| `.WithActions(List<QuantumInstruction>)` | Custom action set |
+| `.Build()` | Construct the environment |
+
+**Default action set** (auto-generated when no custom actions provided):
+- Single-qubit gates: H, X, Z, S, T on each qubit (5 × n)
+- Two-qubit gates: CNOT on all ordered qubit pairs (n × (n−1))
+
+**Step info dictionary**
+
+| Key | Type | Description |
+|---|---|---|
+| `"fidelity"` | `double` | Current fidelity to target state |
+| `"gates"` | `int` | Number of gates placed so far |
+
+---
+
 ### Module Structure
 
 ```
 Engines/Quantum/
-├── QuantumCircuit.cs         Circuit definition (qubits + instruction list)
-├── QuantumCircuitBuilder.cs  Fluent builder API
-├── QuantumInstruction.cs     Gate + target qubit binding
-├── QuantumSimulator.cs       Stateless circuit executor
-├── QuantumState.cs           Result: amplitudes, measurement, sampling
+├── QuantumCircuit.cs          Circuit definition (qubits + instruction list)
+├── QuantumCircuitBuilder.cs   Fluent builder API
+├── QuantumInstruction.cs      Gate + target qubit binding
+├── QuantumSimulator.cs        Stateless ideal circuit executor
+├── NoisyQuantumSimulator.cs   Noisy simulator (Monte Carlo trajectories)
+├── QuantumEnvironment.cs      RL environment for circuit synthesis
+├── QuantumState.cs            Result: amplitudes, measurement, sampling
 └── README.md
 ```

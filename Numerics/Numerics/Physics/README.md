@@ -2063,6 +2063,46 @@ double f = QuantumFidelity.BlochFidelity(b1, b2);
 // Matches state fidelity for pure single-qubit states
 ```
 
+### Noise Models
+
+The `Physics.Quantum.NoiseModels` namespace provides quantum noise channels using the **Kraus operator** formalism. Each channel implements `INoiseChannel` and satisfies the completeness relation $\sum E_k^\dagger E_k = I$.
+
+| Channel | Parameter | Kraus Operators | Physical Model |
+|---|---|---|---|
+| `DepolarizingNoise(p)` | $p \in [0,1]$ | $E_0 = \sqrt{1 - 3p/4}\,I$, $E_{1,2,3} = \sqrt{p/4}\,\{X, Y, Z\}$ | Random Pauli error — qubit replaced by maximally mixed state with probability $p$ |
+| `DephasingNoise(p)` | $p \in [0,1]$ | $E_0 = \sqrt{1-p}\,I$, $E_1 = \sqrt{p}\,Z$ | Phase-flip error — $T_2$ decoherence |
+| `AmplitudeDampingNoise(\gamma)` | $\gamma \in [0,1]$ | $E_0 = [[1,0],[0,\sqrt{1-\gamma}]]$, $E_1 = [[0,\sqrt{\gamma}],[0,0]]$ | Energy dissipation — $\|1\rangle \to \|0\rangle$ decay ($T_1$) |
+
+**Usage with NoisyQuantumSimulator** (from `CSharpNumerics.Engines.Quantum`):
+
+```csharp
+using CSharpNumerics.Physics.Quantum.NoiseModels;
+using CSharpNumerics.Engines.Quantum;
+
+var circuit = QuantumCircuitBuilder.New(2).H(0).CNOT(0, 1).Build();
+
+// Ideal simulation
+var ideal = new QuantumSimulator().Run(circuit);
+
+// Noisy simulation — channels stacked, applied after each gate
+var noisy = new NoisyQuantumSimulator(new Random(42))
+    .WithNoise(new DepolarizingNoise(0.01))
+    .WithNoise(new AmplitudeDampingNoise(0.005))
+    .Run(circuit);
+
+double fidelity = QuantumFidelity.Fidelity(ideal, noisy);
+```
+
+**INoiseChannel interface**
+
+```csharp
+public interface INoiseChannel
+{
+    int QubitCount { get; }
+    ComplexMatrix[] GetKrausOperators();
+}
+```
+
 ### Module Structure
 
 ```
@@ -2070,6 +2110,12 @@ Physics/Quantum/
 ├── QuantumGate.cs       Abstract base with Apply logic
 ├── QuantumFidelity.cs   State fidelity metrics
 ├── BlochVector.cs       Bloch sphere representation
+├── Interfaces/
+│   └── INoiseChannel.cs Noise channel contract
+├── NoiseModels/
+│   ├── DepolarizingNoise.cs      Depolarizing channel
+│   ├── DephasingNoise.cs         Dephasing (phase-flip) channel
+│   └── AmplitudeDampingNoise.cs  Amplitude damping (T₁ decay)
 ├── HadamardGate.cs      H gate
 ├── PauliXGate.cs        X gate (Pauli-X)
 ├── PauliZGate.cs        Z gate (Pauli-Z)
