@@ -190,13 +190,29 @@ namespace CSharpNumerics.Engines.GIS.Scenario
             int minK = 2,
             int maxK = 6)
         {
-            var analysis = ScenarioClusterAnalyzer
+            return AnalyzeWith(algorithm, new[] { evaluator }, minK, maxK);
+        }
+
+        /// <summary>
+        /// Run clustering analysis with multiple evaluators.
+        /// The first evaluator is used as the primary ranking metric;
+        /// additional evaluators are recorded for comparison.
+        /// </summary>
+        public AnalysisStageResult AnalyzeWith(
+            IClusteringModel algorithm,
+            IClusteringEvaluator[] evaluators,
+            int minK = 2,
+            int maxK = 6)
+        {
+            var builder = ScenarioClusterAnalyzer
                 .For(McResult)
                 .WithAlgorithm(algorithm)
-                .TryClusterCounts(minK, maxK)
-                .WithEvaluator(evaluator)
-                .Run();
+                .TryClusterCounts(minK, maxK);
 
+            foreach (var eval in evaluators)
+                builder = builder.WithEvaluator(eval);
+
+            var analysis = builder.Run();
             return new AnalysisStageResult(McResult, analysis);
         }
 
@@ -208,12 +224,25 @@ namespace CSharpNumerics.Engines.GIS.Scenario
             ClusteringGrid grid,
             IClusteringEvaluator evaluator)
         {
-            var analysis = ScenarioClusterAnalyzer
-                .For(McResult)
-                .WithGrid(grid)
-                .WithEvaluator(evaluator)
-                .Run();
+            return AnalyzeWith(grid, new[] { evaluator });
+        }
 
+        /// <summary>
+        /// Run clustering analysis using a full <see cref="ClusteringGrid"/>
+        /// with multiple evaluators.
+        /// </summary>
+        public AnalysisStageResult AnalyzeWith(
+            ClusteringGrid grid,
+            IClusteringEvaluator[] evaluators)
+        {
+            var builder = ScenarioClusterAnalyzer
+                .For(McResult)
+                .WithGrid(grid);
+
+            foreach (var eval in evaluators)
+                builder = builder.WithEvaluator(eval);
+
+            var analysis = builder.Run();
             return new AnalysisStageResult(McResult, analysis);
         }
 

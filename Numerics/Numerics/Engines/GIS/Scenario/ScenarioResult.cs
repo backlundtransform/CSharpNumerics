@@ -120,6 +120,65 @@ namespace CSharpNumerics.Engines.GIS.Scenario
         }
 
         // ═══════════════════════════════════════════════════════════════
+        //  Exposure polygon generation
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Generates a polygon bounding the area where the peak instantaneous
+        /// value of the specified layer exceeds <paramref name="threshold"/>
+        /// across all time steps.
+        /// </summary>
+        /// <param name="threshold">Exceedance threshold (in layer units).</param>
+        /// <param name="layerName">
+        /// Layer to use: <c>null</c> for concentration,
+        /// or a named layer such as "activity" or "dose".
+        /// </param>
+        public ExposurePolygon GeneratePeakExposurePolygon(
+            double threshold, string layerName = null)
+        {
+            var snaps = GetRepresentativeSnapshots();
+            return ExposurePolygonGenerator.PeakExposure(snaps, threshold, layerName);
+        }
+
+        /// <summary>
+        /// Generates a polygon bounding the area where the time-integrated
+        /// (cumulative) exposure of the specified layer exceeds
+        /// <paramref name="threshold"/>.
+        /// </summary>
+        /// <param name="threshold">Exceedance threshold (in layer-units × seconds).</param>
+        /// <param name="layerName">
+        /// Layer to use: <c>null</c> for concentration,
+        /// or a named layer such as "activity" or "dose".
+        /// </param>
+        public ExposurePolygon GenerateIntegratedExposurePolygon(
+            double threshold, string layerName = null)
+        {
+            var snaps = GetRepresentativeSnapshots();
+            double step = TimeFrame?.StepSeconds ?? 1.0;
+            return ExposurePolygonGenerator.IntegratedExposure(snaps, step, threshold, layerName);
+        }
+
+        /// <summary>
+        /// Returns the snapshot list most appropriate for polygon generation:
+        /// deterministic snapshots, dominant-cluster mean snapshots, or the
+        /// first MC iteration.
+        /// </summary>
+        private List<GridSnapshot> GetRepresentativeSnapshots()
+        {
+            if (Snapshots != null && Snapshots.Count > 0)
+                return Snapshots;
+
+            if (ClusterAnalysis != null && MonteCarloResult != null)
+                return ClusterAnalysis
+                    .GetClusterMeanSnapshots(ClusterAnalysis.DominantCluster);
+
+            if (MonteCarloResult != null && MonteCarloResult.Snapshots.Count > 0)
+                return MonteCarloResult.Snapshots[0];
+
+            return new List<GridSnapshot>();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //  Export — GeoJSON
         // ═══════════════════════════════════════════════════════════════
 
