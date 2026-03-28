@@ -1945,15 +1945,23 @@ All gates extend the abstract `QuantumGate` base class:
 |---|---|---|---|
 | `HadamardGate` | 1 | $\frac{1}{\sqrt{2}}\begin{pmatrix}1&1\\1&-1\end{pmatrix}$ | Creates equal superposition |
 | `PauliXGate` | 1 | $\begin{pmatrix}0&1\\1&0\end{pmatrix}$ | Quantum NOT — flips \|0⟩ ↔ \|1⟩ |
+| `PauliYGate` | 1 | $\begin{pmatrix}0&-i\\i&0\end{pmatrix}$ | Bit + phase flip, $Y^2 = I$ |
 | `PauliZGate` | 1 | $\begin{pmatrix}1&0\\0&-1\end{pmatrix}$ | Phase flip — \|1⟩ → −\|1⟩ |
 | `SGate` | 1 | $\begin{pmatrix}1&0\\0&i\end{pmatrix}$ | Phase gate (π/2), $S^2 = Z$ |
 | `TGate` | 1 | $\begin{pmatrix}1&0\\0&e^{i\pi/4}\end{pmatrix}$ | π/8 gate, $T^2 = S$ |
+| `PhaseGate(θ)` | 1 | $\begin{pmatrix}1&0\\0&e^{i\theta}\end{pmatrix}$ | General phase gate, $P(\pi) = Z$ |
 | `RxGate(θ)` | 1 | $\begin{pmatrix}\cos\frac{\theta}{2}&-i\sin\frac{\theta}{2}\\-i\sin\frac{\theta}{2}&\cos\frac{\theta}{2}\end{pmatrix}$ | Rotation about X-axis |
 | `RyGate(θ)` | 1 | $\begin{pmatrix}\cos\frac{\theta}{2}&-\sin\frac{\theta}{2}\\\sin\frac{\theta}{2}&\cos\frac{\theta}{2}\end{pmatrix}$ | Rotation about Y-axis |
 | `RzGate(θ)` | 1 | $\begin{pmatrix}e^{-i\theta/2}&0\\0&e^{i\theta/2}\end{pmatrix}$ | Rotation about Z-axis |
 | `CNOTGate` | 2 | 4×4 permutation | Flips target qubit when control is \|1⟩ |
 | `CZGate` | 2 | $\text{diag}(1,1,1,-1)$ | Phase flip on \|11⟩ |
+| `CPhaseGate(θ)` | 2 | $\text{diag}(1,1,1,e^{i\theta})$ | Controlled phase, $CP(\pi) = CZ$ |
 | `SWAPGate` | 2 | 4×4 permutation | Swaps two qubit states |
+| `ToffoliGate` | 3 | 8×8 permutation | CCNOT — flips target when both controls are \|1⟩ |
+| `FredkinGate` | 3 | 8×8 permutation | CSWAP — swaps targets when control is \|1⟩ |
+| `PhaseOracle(n, states)` | n | 2ⁿ×2ⁿ diagonal | Flips phase of marked basis states: \|w⟩ → −\|w⟩ |
+| `ControlledGate(U)` | n+1 | 2ⁿ⁺¹×2ⁿ⁺¹ block | Applies U when control qubit is \|1⟩ |
+| `ModularMultiplyGate(a,N,n)` | n | 2ⁿ×2ⁿ permutation | \|y⟩ → \|ay mod N⟩, used in Shor's algorithm |
 
 ### QuantumGate (abstract)
 

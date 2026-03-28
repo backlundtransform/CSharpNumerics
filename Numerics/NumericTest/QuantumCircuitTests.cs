@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CSharpNumerics.Physics.Quantum;
 using CSharpNumerics.Physics.Quantum.NoiseModels;
 using CSharpNumerics.Engines.Quantum;
+using CSharpNumerics.Engines.Quantum.Algorithms;
 using CSharpNumerics.ML.ReinforcementLearning.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -1451,5 +1452,888 @@ public class QuantumCircuitTests
 
         env.Reset(seed: 42);
         env.Step(999); // invalid action
+    }
+
+    // ── PauliY gate tests ──────────────────────────────────────
+
+    [TestMethod]
+    public void PauliYGate_MatrixIs2x2()
+    {
+        var gate = new PauliYGate();
+        var m = gate.GetMatrix();
+        Assert.AreEqual(2, m.rowLength);
+        Assert.AreEqual(2, m.columnLength);
+    }
+
+    [TestMethod]
+    public void PauliYGate_AppliedTwice_ReturnsToOriginal()
+    {
+        // Y² = I
+        var circuit = QuantumCircuitBuilder.New(1).Y(0).Y(0).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void PauliYGate_FlipsZeroToOne()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).Y(0).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+    }
+
+    // ── PhaseGate tests ────────────────────────────────────────
+
+    [TestMethod]
+    public void PhaseGate_MatrixIs2x2()
+    {
+        var gate = new PhaseGate(Math.PI / 4);
+        var m = gate.GetMatrix();
+        Assert.AreEqual(2, m.rowLength);
+        Assert.AreEqual(2, m.columnLength);
+    }
+
+    [TestMethod]
+    public void PhaseGate_Pi_EquivalentToZ()
+    {
+        // P(π) = Z
+        var zCircuit = QuantumCircuitBuilder.New(1).H(0).Z(0).Build();
+        var pCircuit = QuantumCircuitBuilder.New(1).H(0).Phase(0, Math.PI).Build();
+        var sim = new QuantumSimulator();
+        var zState = sim.Run(zCircuit);
+        var pState = sim.Run(pCircuit);
+
+        for (int i = 0; i < 2; i++)
+            Assert.AreEqual(zState.GetProbability(i), pState.GetProbability(i), Tolerance);
+    }
+
+    [TestMethod]
+    public void PhaseGate_LeavesZeroUnchanged()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).Phase(0, Math.PI / 3).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+    }
+
+    // ── CPhaseGate tests ───────────────────────────────────────
+
+    [TestMethod]
+    public void CPhaseGate_MatrixIs4x4()
+    {
+        var gate = new CPhaseGate(Math.PI / 4);
+        var m = gate.GetMatrix();
+        Assert.AreEqual(4, m.rowLength);
+        Assert.AreEqual(4, m.columnLength);
+    }
+
+    [TestMethod]
+    public void CPhaseGate_Pi_EquivalentToCZ()
+    {
+        // CPhase(π) = CZ
+        // Apply to |+1⟩ = H⊗X |00⟩, compare probabilities
+        var czCircuit = QuantumCircuitBuilder.New(2).H(0).X(1).CZ(0, 1).Build();
+        var cpCircuit = QuantumCircuitBuilder.New(2).H(0).X(1).CPhase(0, 1, Math.PI).Build();
+        var sim = new QuantumSimulator();
+        var czState = sim.Run(czCircuit);
+        var cpState = sim.Run(cpCircuit);
+
+        for (int i = 0; i < 4; i++)
+            Assert.AreEqual(czState.GetProbability(i), cpState.GetProbability(i), Tolerance);
+    }
+
+    [TestMethod]
+    public void CPhaseGate_Leaves00Unchanged()
+    {
+        var circuit = QuantumCircuitBuilder.New(2).CPhase(0, 1, Math.PI / 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance);
+    }
+
+    // ── ToffoliGate tests ──────────────────────────────────────
+
+    [TestMethod]
+    public void ToffoliGate_MatrixIs8x8()
+    {
+        var gate = new ToffoliGate();
+        var m = gate.GetMatrix();
+        Assert.AreEqual(8, m.rowLength);
+        Assert.AreEqual(8, m.columnLength);
+    }
+
+    [TestMethod]
+    public void ToffoliGate_FlipsTarget_WhenBothControlsAreOne()
+    {
+        // |110⟩ → |111⟩ (controls=q0,q1, target=q2)
+        var circuit = QuantumCircuitBuilder.New(3).X(0).X(1).Toffoli(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |111⟩ = index 7
+        Assert.AreEqual(1.0, state.GetProbability(7), Tolerance);
+    }
+
+    [TestMethod]
+    public void ToffoliGate_DoesNotFlip_WhenOneControlIsZero()
+    {
+        // |100⟩ → still |100⟩ (only control0 is 1)
+        var circuit = QuantumCircuitBuilder.New(3).X(0).Toffoli(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |100⟩ = index 1
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void ToffoliGate_DoubleToffoli_ReturnsToOriginal()
+    {
+        // Toffoli² = I for any basis state
+        var circuit = QuantumCircuitBuilder.New(3)
+            .X(0).X(1)  // |110⟩
+            .Toffoli(0, 1, 2)
+            .Toffoli(0, 1, 2)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // Should return to |110⟩ = index 3
+        Assert.AreEqual(1.0, state.GetProbability(3), Tolerance);
+    }
+
+    // ── FredkinGate tests ──────────────────────────────────────
+
+    [TestMethod]
+    public void FredkinGate_MatrixIs8x8()
+    {
+        var gate = new FredkinGate();
+        var m = gate.GetMatrix();
+        Assert.AreEqual(8, m.rowLength);
+        Assert.AreEqual(8, m.columnLength);
+    }
+
+    [TestMethod]
+    public void FredkinGate_SwapsTargets_WhenControlIsOne()
+    {
+        // |110⟩ (q0=1,q1=1,q2=0), Fredkin(0,1,2) → swap q1,q2 → |101⟩
+        var circuit = QuantumCircuitBuilder.New(3).X(0).X(1).Fredkin(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |101⟩ = index 5
+        Assert.AreEqual(1.0, state.GetProbability(5), Tolerance);
+    }
+
+    [TestMethod]
+    public void FredkinGate_DoesNotSwap_WhenControlIsZero()
+    {
+        // |010⟩ (q0=0,q1=1,q2=0), Fredkin(0,1,2) → no swap → |010⟩
+        var circuit = QuantumCircuitBuilder.New(3).X(1).Fredkin(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |010⟩ = index 2
+        Assert.AreEqual(1.0, state.GetProbability(2), Tolerance);
+    }
+
+    [TestMethod]
+    public void FredkinGate_DoubleFredkin_ReturnsToOriginal()
+    {
+        var circuit = QuantumCircuitBuilder.New(3)
+            .X(0).X(1)  // |110⟩
+            .Fredkin(0, 1, 2)
+            .Fredkin(0, 1, 2)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(3), Tolerance);
+    }
+
+    // ── QFT tests ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void QFT_SingleQubit_IsHadamard()
+    {
+        // QFT on 1 qubit = Hadamard
+        var qftCircuit = QFT.CreateCircuit(1, 0);
+        var hCircuit = QuantumCircuitBuilder.New(1).H(0).Build();
+        var sim = new QuantumSimulator();
+        var qftState = sim.Run(qftCircuit);
+        var hState = sim.Run(hCircuit);
+
+        for (int i = 0; i < 2; i++)
+            Assert.AreEqual(hState.GetProbability(i), qftState.GetProbability(i), Tolerance);
+    }
+
+    [TestMethod]
+    public void QFT_UniformSuperposition_FromZero()
+    {
+        // QFT(|0...0⟩) produces uniform superposition
+        int n = 3;
+        var circuit = QFT.CreateCircuit(n, 0, 1, 2);
+        var state = new QuantumSimulator().Run(circuit);
+
+        double expectedProb = 1.0 / (1 << n);
+        for (int i = 0; i < (1 << n); i++)
+            Assert.AreEqual(expectedProb, state.GetProbability(i), 1e-8,
+                $"State |{i}⟩ probability should be {expectedProb}");
+    }
+
+    [TestMethod]
+    public void InverseQFT_UndoesQFT()
+    {
+        // InverseQFT(QFT(|ψ⟩)) = |ψ⟩
+        // Prepare |101⟩ (index 5)
+        int n = 3;
+        var prepCircuit = QuantumCircuitBuilder.New(n).X(0).X(2).Build();
+        var sim = new QuantumSimulator();
+        var original = sim.Run(prepCircuit);
+
+        // Apply QFT then InverseQFT
+        var circuit = QuantumCircuitBuilder.New(n)
+            .X(0).X(2)
+            .ApplyQFT(0, 1, 2)
+            .ApplyInverseQFT(0, 1, 2)
+            .Build();
+        var result = sim.Run(circuit);
+
+        for (int i = 0; i < (1 << n); i++)
+            Assert.AreEqual(original.GetProbability(i), result.GetProbability(i), 1e-8,
+                $"QFT†∘QFT should be identity for state |{i}⟩");
+    }
+
+    [TestMethod]
+    public void InverseQFT_UndoesQFT_TwoQubits()
+    {
+        // 2-qubit case: prepare |10⟩, apply QFT then InverseQFT
+        var circuit = QuantumCircuitBuilder.New(2)
+            .X(0)
+            .ApplyQFT(0, 1)
+            .ApplyInverseQFT(0, 1)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Should return to |10⟩ = index 1
+        Assert.AreEqual(0.0, state.GetProbability(0), 1e-8);
+        Assert.AreEqual(1.0, state.GetProbability(1), 1e-8);
+        Assert.AreEqual(0.0, state.GetProbability(2), 1e-8);
+        Assert.AreEqual(0.0, state.GetProbability(3), 1e-8);
+    }
+
+    [TestMethod]
+    public void QFT_CorrectPhases_TwoQubits()
+    {
+        // QFT on |10⟩ should produce specific amplitudes
+        // |10⟩ in standard basis → QFT → (1/2)(|00⟩ + i|01⟩ - |10⟩ - i|11⟩)
+        // Actually, for 2-qubit QFT on input |j⟩ with j = binary value:
+        // QFT|j⟩ = (1/√N) Σ_k e^(2πijk/N) |k⟩
+        // For j=1 (|10⟩ → binary 01 → value 1 after bit reversal... 
+        // Let's verify via probabilities: all should be 0.25
+        var circuit = QuantumCircuitBuilder.New(2).X(0).ApplyQFT(0, 1).Build();
+        var state = new QuantumSimulator().Run(circuit);
+
+        for (int i = 0; i < 4; i++)
+            Assert.AreEqual(0.25, state.GetProbability(i), 1e-8,
+                $"QFT of |10⟩ should produce uniform probabilities");
+    }
+
+    [TestMethod]
+    public void QFT_Builder_MatchesStandalone()
+    {
+        // Builder .ApplyQFT() should produce same result as QFT.CreateCircuit()
+        int n = 3;
+        var sim = new QuantumSimulator();
+
+        var standalone = QFT.CreateCircuit(n, 0, 1, 2);
+        var standaloneState = sim.Run(standalone);
+
+        var builderCircuit = QuantumCircuitBuilder.New(n).ApplyQFT(0, 1, 2).Build();
+        var builderState = sim.Run(builderCircuit);
+
+        for (int i = 0; i < (1 << n); i++)
+            Assert.AreEqual(standaloneState.GetProbability(i), builderState.GetProbability(i), Tolerance);
+    }
+
+    [TestMethod]
+    public void QFT_InverseQFT_SuperpositionState()
+    {
+        // Test with a superposition input: H|0⟩ ⊗ |0⟩
+        var circuit = QuantumCircuitBuilder.New(2)
+            .H(0)
+            .ApplyQFT(0, 1)
+            .ApplyInverseQFT(0, 1)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Should return to H|0⟩ ⊗ |0⟩: prob(|00⟩)=0.5, prob(|10⟩)=0.5
+        Assert.AreEqual(0.5, state.GetProbability(0), 1e-8);
+        Assert.AreEqual(0.5, state.GetProbability(1), 1e-8);
+        Assert.AreEqual(0.0, state.GetProbability(2), 1e-8);
+        Assert.AreEqual(0.0, state.GetProbability(3), 1e-8);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void QFT_EmptyQubits_Throws()
+    {
+        QFT.CreateCircuit(2);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void InverseQFT_EmptyQubits_Throws()
+    {
+        InverseQFT.CreateCircuit(2);
+    }
+
+    // ── Builder methods for new gates ──────────────────────────
+
+    [TestMethod]
+    public void Builder_Y_AppliesToCircuit()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).Y(0).Build();
+        Assert.AreEqual(1, circuit.Instructions.Count);
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void Builder_Phase_AppliesToCircuit()
+    {
+        var circuit = QuantumCircuitBuilder.New(1).Phase(0, Math.PI).Build();
+        Assert.AreEqual(1, circuit.Instructions.Count);
+    }
+
+    [TestMethod]
+    public void Builder_CPhase_AppliesToCircuit()
+    {
+        var circuit = QuantumCircuitBuilder.New(2).X(0).X(1).CPhase(0, 1, Math.PI / 4).Build();
+        Assert.AreEqual(3, circuit.Instructions.Count);
+    }
+
+    [TestMethod]
+    public void Builder_Toffoli_AppliesToCircuit()
+    {
+        var circuit = QuantumCircuitBuilder.New(3).X(0).X(1).Toffoli(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(7), Tolerance);
+    }
+
+    [TestMethod]
+    public void Builder_Fredkin_AppliesToCircuit()
+    {
+        var circuit = QuantumCircuitBuilder.New(3).X(0).X(1).Fredkin(0, 1, 2).Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(5), Tolerance);
+    }
+
+    // ── PhaseOracle tests ──────────────────────────────────────
+
+    [TestMethod]
+    public void PhaseOracle_SingleQubit_MarksState1()
+    {
+        // Oracle marks |1⟩ → phase flip. Apply to |+⟩ = (|0⟩+|1⟩)/√2
+        // After oracle: (|0⟩-|1⟩)/√2 = |−⟩
+        var gate = new PhaseOracle(1, 1);
+        Assert.AreEqual(1, gate.QubitCount);
+
+        var circuit = QuantumCircuitBuilder.New(1)
+            .H(0)
+            .Gate(new PhaseOracle(1, 1), 0)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+
+        // |−⟩ = (|0⟩−|1⟩)/√2, probabilities still 0.5/0.5
+        Assert.AreEqual(0.5, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(1), Tolerance);
+    }
+
+    [TestMethod]
+    public void PhaseOracle_TwoQubit_MarksState3()
+    {
+        var gate = new PhaseOracle(2, 3);
+        Assert.AreEqual(2, gate.QubitCount);
+        var m = gate.GetMatrix();
+        Assert.AreEqual(4, m.rowLength);
+
+        // Diagonal: +1, +1, +1, -1
+        Assert.AreEqual(1.0, m.values[0, 0].realPart, Tolerance);
+        Assert.AreEqual(1.0, m.values[1, 1].realPart, Tolerance);
+        Assert.AreEqual(1.0, m.values[2, 2].realPart, Tolerance);
+        Assert.AreEqual(-1.0, m.values[3, 3].realPart, Tolerance);
+    }
+
+    [TestMethod]
+    public void PhaseOracle_MultipleMarked()
+    {
+        // Mark states 1 and 2 in a 2-qubit space
+        var gate = new PhaseOracle(2, 1, 2);
+        var m = gate.GetMatrix();
+
+        Assert.AreEqual(1.0, m.values[0, 0].realPart, Tolerance);
+        Assert.AreEqual(-1.0, m.values[1, 1].realPart, Tolerance);
+        Assert.AreEqual(-1.0, m.values[2, 2].realPart, Tolerance);
+        Assert.AreEqual(1.0, m.values[3, 3].realPart, Tolerance);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void PhaseOracle_InvalidState_Throws()
+    {
+        new PhaseOracle(2, 5); // 5 out of range for 2-qubit space (0..3)
+    }
+
+    // ── Grover search tests ────────────────────────────────────
+
+    [TestMethod]
+    public void GroverSearch_OptimalIterations_SingleMarked()
+    {
+        // 3 qubits, 1 marked: optimal = floor(π/4 · √8) ≈ floor(2.22) = 2
+        int iters = GroverSearch.OptimalIterations(3, 1);
+        Assert.AreEqual(2, iters);
+    }
+
+    [TestMethod]
+    public void GroverSearch_OptimalIterations_TwoMarked()
+    {
+        // 3 qubits, 2 marked: optimal = floor(π/4 · √4) ≈ floor(1.57) = 1
+        int iters = GroverSearch.OptimalIterations(3, 2);
+        Assert.AreEqual(1, iters);
+    }
+
+    [TestMethod]
+    public void GroverSearch_2Qubit_FindsTarget()
+    {
+        // 2 qubits (N=4), 1 marked state: optimal iterations = 1
+        // After 1 Grover iteration, target should have high probability
+        int target = 2; // |10⟩
+        var circuit = GroverSearch.CreateCircuit(2, new[] { 0, 1 }, new[] { target });
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Target probability should be close to 1.0
+        Assert.IsTrue(state.GetProbability(target) > 0.9,
+            $"Target |{target}⟩ probability = {state.GetProbability(target)}, expected > 0.9");
+    }
+
+    [TestMethod]
+    public void GroverSearch_3Qubit_FindsTarget()
+    {
+        // 3 qubits (N=8), 1 marked state, optimal = 2 iterations
+        int target = 5; // |101⟩
+        var circuit = GroverSearch.CreateCircuit(3, new[] { 0, 1, 2 }, new[] { target });
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Target probability should be dominant
+        Assert.IsTrue(state.GetProbability(target) > 0.9,
+            $"Target |{target}⟩ probability = {state.GetProbability(target)}, expected > 0.9");
+    }
+
+    [TestMethod]
+    public void GroverSearch_3Qubit_AllTargets_HighProbability()
+    {
+        // Verify each possible target can be found
+        for (int target = 0; target < 8; target++)
+        {
+            var circuit = GroverSearch.CreateCircuit(3, new[] { 0, 1, 2 }, new[] { target });
+            var state = new QuantumSimulator().Run(circuit);
+            Assert.IsTrue(state.GetProbability(target) > 0.9,
+                $"Target |{target}⟩ probability = {state.GetProbability(target)}, expected > 0.9");
+        }
+    }
+
+    [TestMethod]
+    public void GroverSearch_MultipleMarked_FindsAny()
+    {
+        // 3 qubits, 2 marked states → should find one of them with high combined probability
+        int[] targets = { 3, 5 };
+        var circuit = GroverSearch.CreateCircuit(3, new[] { 0, 1, 2 }, targets);
+        var state = new QuantumSimulator().Run(circuit);
+
+        double combinedProb = state.GetProbability(3) + state.GetProbability(5);
+        Assert.IsTrue(combinedProb > 0.9,
+            $"Combined probability of marked states = {combinedProb}, expected > 0.9");
+    }
+
+    [TestMethod]
+    public void GroverSearch_ExplicitIterations()
+    {
+        // 2 qubits, target = 0, 1 iteration (explicit)
+        var circuit = GroverSearch.CreateCircuit(2, new[] { 0, 1 }, new[] { 0 }, iterations: 1);
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.IsTrue(state.GetProbability(0) > 0.9,
+            $"Target |0⟩ probability = {state.GetProbability(0)}, expected > 0.9");
+    }
+
+    [TestMethod]
+    public void GroverSearch_Builder_MatchesStandalone()
+    {
+        // Builder ApplyGrover should produce same result as GroverSearch.CreateCircuit
+        int target = 6;
+        var sim = new QuantumSimulator();
+
+        var standalone = GroverSearch.CreateCircuit(3, new[] { 0, 1, 2 }, new[] { target });
+        var standaloneState = sim.Run(standalone);
+
+        var builderCircuit = QuantumCircuitBuilder.New(3)
+            .ApplyGrover(new[] { target }, new[] { 0, 1, 2 })
+            .Build();
+        var builderState = sim.Run(builderCircuit);
+
+        for (int i = 0; i < 8; i++)
+            Assert.AreEqual(standaloneState.GetProbability(i), builderState.GetProbability(i), Tolerance,
+                $"Mismatch at state |{i}⟩");
+    }
+
+    [TestMethod]
+    public void GroverSearch_Builder_WithIterations()
+    {
+        int target = 1;
+        var circuit = QuantumCircuitBuilder.New(3)
+            .ApplyGrover(new[] { target }, 2, 0, 1, 2)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.IsTrue(state.GetProbability(target) > 0.9,
+            $"Target probability = {state.GetProbability(target)}, expected > 0.9");
+    }
+
+    [TestMethod]
+    public void GroverSearch_SubsetQubits()
+    {
+        // Grover on qubits 1,2 in a 4-qubit circuit (qubit 0 untouched)
+        int target = 2; // |10⟩ in the 2-qubit search subspace
+        var circuit = GroverSearch.CreateCircuit(4, new[] { 1, 2 }, new[] { target });
+        var state = new QuantumSimulator().Run(circuit);
+
+        // Qubit 0 stays |0⟩. The search space (qubits 1,2) should find target.
+        // |target⟩ in qubits 1,2 with qubit 0=0: global index = target mapped via qubit positions
+        // qubit 1 and 2 represent the search space; qubit 0 = |0⟩
+        // We need to sum over states where qubits 1,2 form the target pattern
+        double targetProb = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            // Extract bits for qubit 1 and qubit 2
+            int q1 = (i >> 1) & 1;
+            int q2 = (i >> 2) & 1;
+            int searchVal = q1 + 2 * q2; // gate-local ordering
+            if (searchVal == target)
+                targetProb += state.GetProbability(i);
+        }
+        Assert.IsTrue(targetProb > 0.9,
+            $"Search-space target probability = {targetProb}, expected > 0.9");
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void GroverSearch_EmptySearchQubits_Throws()
+    {
+        GroverSearch.CreateCircuit(2, new int[0], new[] { 0 });
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void GroverSearch_EmptyMarkedStates_Throws()
+    {
+        GroverSearch.CreateCircuit(2, new[] { 0, 1 }, new int[0]);
+    }
+
+    // ── ControlledGate tests ───────────────────────────────────
+
+    [TestMethod]
+    public void ControlledGate_WrapsHadamard_MatrixIs4x4()
+    {
+        var ch = new ControlledGate(new HadamardGate());
+        Assert.AreEqual(2, ch.QubitCount);
+        var m = ch.GetMatrix();
+        Assert.AreEqual(4, m.rowLength);
+        Assert.AreEqual(4, m.columnLength);
+    }
+
+    [TestMethod]
+    public void ControlledGate_OfX_EquivalentToCNOT()
+    {
+        // Controlled-X should behave like CNOT
+        var cx = new ControlledGate(new PauliXGate());
+        var cnot = new CNOTGate();
+
+        // Apply to |10⟩ (control=1, target=0) → should flip target
+        var circuitCX = QuantumCircuitBuilder.New(2)
+            .X(0) // control = |1⟩
+            .Gate(cx, 0, 1)
+            .Build();
+        var circuitCNOT = QuantumCircuitBuilder.New(2)
+            .X(0)
+            .CNOT(0, 1)
+            .Build();
+
+        var sim = new QuantumSimulator();
+        var stateCX = sim.Run(circuitCX);
+        var stateCNOT = sim.Run(circuitCNOT);
+
+        for (int i = 0; i < 4; i++)
+            Assert.AreEqual(stateCNOT.GetProbability(i), stateCX.GetProbability(i), Tolerance,
+                $"Mismatch at state |{i}⟩");
+    }
+
+    [TestMethod]
+    public void ControlledGate_ControlZero_NoEffect()
+    {
+        // Controlled-X with control = |0⟩: target should stay |0⟩
+        var cx = new ControlledGate(new PauliXGate());
+        var circuit = QuantumCircuitBuilder.New(2)
+            .Gate(cx, 0, 1) // control=0, no flip
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.AreEqual(1.0, state.GetProbability(0), Tolerance); // |00⟩
+    }
+
+    [TestMethod]
+    public void ControlledGate_ControlOne_AppliesInnerGate()
+    {
+        // Controlled-Z with control=|1⟩, target in superposition
+        var cz = new ControlledGate(new PauliZGate());
+        // Prepare |1⟩⊗|+⟩, apply CZ → |1⟩⊗|−⟩ (same probabilities)
+        var circuit = QuantumCircuitBuilder.New(2)
+            .X(0)
+            .H(1)
+            .Gate(cz, 0, 1)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // Probabilities: |10⟩=0.5, |11⟩=0.5
+        Assert.AreEqual(0.0, state.GetProbability(0), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(1), Tolerance);
+        Assert.AreEqual(0.0, state.GetProbability(2), Tolerance);
+        Assert.AreEqual(0.5, state.GetProbability(3), Tolerance);
+    }
+
+    [TestMethod]
+    public void ControlledGate_Builder_Controlled()
+    {
+        // Builder's .Controlled() method
+        var circuit = QuantumCircuitBuilder.New(2)
+            .X(0)
+            .Controlled(new PauliXGate(), 0, 1)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |10⟩ → CNOT → |11⟩ = index 3
+        Assert.AreEqual(1.0, state.GetProbability(3), Tolerance);
+    }
+
+    // ── ModularMultiplyGate tests ──────────────────────────────
+
+    [TestMethod]
+    public void ModularMultiplyGate_BasicPermutation()
+    {
+        // a=2, N=3, 2 qubits: |0⟩→|0⟩, |1⟩→|2⟩, |2⟩→|1⟩, |3⟩→|3⟩ (identity for ≥N)
+        var gate = new ModularMultiplyGate(2, 3, 2);
+        Assert.AreEqual(2, gate.QubitCount);
+        var m = gate.GetMatrix();
+        Assert.AreEqual(4, m.rowLength);
+
+        // |0⟩→|0⟩
+        Assert.AreEqual(1.0, m.values[0, 0].realPart, Tolerance);
+        // |1⟩→|2·1 mod 3=2⟩
+        Assert.AreEqual(1.0, m.values[2, 1].realPart, Tolerance);
+        // |2⟩→|2·2 mod 3=1⟩
+        Assert.AreEqual(1.0, m.values[1, 2].realPart, Tolerance);
+        // |3⟩→|3⟩ (identity for y≥N)
+        Assert.AreEqual(1.0, m.values[3, 3].realPart, Tolerance);
+    }
+
+    [TestMethod]
+    public void ModularMultiplyGate_Mod5()
+    {
+        // a=3, N=5, 3 qubits: |y⟩ → |3y mod 5⟩
+        var gate = new ModularMultiplyGate(3, 5, 3);
+        Assert.AreEqual(3, gate.QubitCount);
+
+        // Check specific mappings: 0→0, 1→3, 2→1, 3→4, 4→2
+        var m = gate.GetMatrix();
+        Assert.AreEqual(1.0, m.values[0, 0].realPart, Tolerance); // |0⟩→|0⟩
+        Assert.AreEqual(1.0, m.values[3, 1].realPart, Tolerance); // |1⟩→|3⟩
+        Assert.AreEqual(1.0, m.values[1, 2].realPart, Tolerance); // |2⟩→|1⟩
+        Assert.AreEqual(1.0, m.values[4, 3].realPart, Tolerance); // |3⟩→|4⟩
+        Assert.AreEqual(1.0, m.values[2, 4].realPart, Tolerance); // |4⟩→|2⟩
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void ModularMultiplyGate_NotCoprime_Throws()
+    {
+        new ModularMultiplyGate(4, 6, 3); // gcd(4,6) = 2 ≠ 1
+    }
+
+    [TestMethod]
+    public void ModularMultiplyGate_AppliedInCircuit()
+    {
+        // Apply U_2 mod 3 to |1⟩ → should give |2⟩
+        var gate = new ModularMultiplyGate(2, 3, 2);
+        var circuit = QuantumCircuitBuilder.New(2)
+            .X(0)                    // |01⟩ = |1⟩
+            .Gate(gate, 0, 1)
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        // |2⟩ = index 2 (bit pattern: q0=0, q1=1)
+        Assert.AreEqual(1.0, state.GetProbability(2), Tolerance);
+    }
+
+    // ── QPE tests ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void QPE_PhaseGate_EstimatesQuarterPhase()
+    {
+        // Phase gate P(π/2) has eigenvalue e^(iπ/2) on |1⟩, so φ = 1/4
+        // With 2 counting qubits, we expect to measure |01⟩ = 1 (since φ·4 = 1)
+        // Circuit: counting=[0,1], target=[2]
+        // Target register must be in eigenstate |1⟩
+
+        int totalQubits = 3;
+        int[] counting = { 0, 1 };
+        int[] target = { 2 };
+
+        var circuit = new QuantumCircuit(totalQubits);
+        // Prepare eigenstate |1⟩ on target qubit
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 2 }));
+
+        // Run QPE
+        var qpeCircuit = QPE.CreateCircuit(totalQubits, counting, target, new PhaseGate(Math.PI / 2));
+        foreach (var instr in qpeCircuit.Instructions)
+            circuit.AddInstruction(instr);
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // After QPE, counting register reads φ·2^t = 1.
+        // MSB convention: countingQubits[0]=MSB. Value 1 in binary = "01" → q0=0(MSB), q1=1(LSB)
+        // Global index: q0·1 + q1·2 + q2·4 = 0 + 2 + 4 = 6
+        double prob = state.GetProbability(6);
+        Assert.IsTrue(prob > 0.9,
+            $"Expected φ=1/4 to produce counting result 1, but P(6) = {prob}");
+    }
+
+    [TestMethod]
+    public void QPE_PhaseGate_EstimatesHalfPhase()
+    {
+        // Phase gate P(π) = Z has eigenvalue e^(iπ) = -1 on |1⟩, so φ = 1/2
+        // With 2 counting qubits, we expect counting = φ·4 = 2
+        int totalQubits = 3;
+        int[] counting = { 0, 1 };
+        int[] target = { 2 };
+
+        var circuit = new QuantumCircuit(totalQubits);
+        circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 2 }));
+
+        var qpeCircuit = QPE.CreateCircuit(totalQubits, counting, target, new PhaseGate(Math.PI));
+        foreach (var instr in qpeCircuit.Instructions)
+            circuit.AddInstruction(instr);
+
+        var state = new QuantumSimulator().Run(circuit);
+
+        // counting = 2 → binary "10" → q0=1(MSB), q1=0(LSB)
+        // Global index: 1 + 0 + 4(target) = 5
+        double prob = state.GetProbability(5);
+        Assert.IsTrue(prob > 0.9,
+            $"Expected φ=1/2 to produce counting result 2, but P(5) = {prob}");
+    }
+
+    [TestMethod]
+    public void QPE_Builder_ApplyQPE()
+    {
+        // Same as quarter-phase test but via builder
+        var circuit = QuantumCircuitBuilder.New(3)
+            .X(2) // eigenstate
+            .ApplyQPE(new[] { 0, 1 }, new[] { 2 }, new PhaseGate(Math.PI / 2))
+            .Build();
+        var state = new QuantumSimulator().Run(circuit);
+        Assert.IsTrue(state.GetProbability(6) > 0.9);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void QPE_MismatchedQubits_Throws()
+    {
+        // PhaseGate acts on 1 qubit, but we pass 2 target qubits
+        QPE.CreateCircuit(4, new[] { 0, 1 }, new[] { 2, 3 }, new PhaseGate(Math.PI));
+    }
+
+    // ── Shor helpers tests ─────────────────────────────────────
+
+    [TestMethod]
+    public void Shor_ContinuedFraction_SimpleRationals()
+    {
+        // 1/4 = 0.25 → convergents should include (1, 4)
+        var convergents = ShorAlgorithm.ContinuedFractionConvergents(1, 4);
+        Assert.IsTrue(convergents.Count > 0);
+        bool found = false;
+        foreach (var (n, d) in convergents)
+            if (n == 1 && d == 4) found = true;
+        Assert.IsTrue(found, "Expected convergent (1, 4)");
+    }
+
+    [TestMethod]
+    public void Shor_ContinuedFraction_ThreeOverEight()
+    {
+        // 3/8 → convergents: (0,1),(1,3),(3,8)... should include (3,8)
+        var convergents = ShorAlgorithm.ContinuedFractionConvergents(3, 8);
+        bool found = false;
+        foreach (var (n, d) in convergents)
+            if (n == 3 && d == 8) found = true;
+        Assert.IsTrue(found, "Expected convergent (3, 8)");
+    }
+
+    [TestMethod]
+    public void Shor_ModPow_Basic()
+    {
+        Assert.AreEqual(1, ShorAlgorithm.ModPow(2, 0, 5));  // 2^0 = 1
+        Assert.AreEqual(2, ShorAlgorithm.ModPow(2, 1, 5));  // 2^1 = 2
+        Assert.AreEqual(4, ShorAlgorithm.ModPow(2, 2, 5));  // 2^2 = 4
+        Assert.AreEqual(3, ShorAlgorithm.ModPow(2, 3, 5));  // 2^3 = 8 mod 5 = 3
+        Assert.AreEqual(1, ShorAlgorithm.ModPow(2, 4, 5));  // 2^4 = 16 mod 5 = 1
+    }
+
+    [TestMethod]
+    public void Shor_GCD_Basic()
+    {
+        Assert.AreEqual(1, ShorAlgorithm.GCD(3, 5));
+        Assert.AreEqual(3, ShorAlgorithm.GCD(9, 6));
+        Assert.AreEqual(5, ShorAlgorithm.GCD(15, 10));
+    }
+
+    [TestMethod]
+    public void Shor_ExtractOrder_KnownPhase()
+    {
+        // For a=2, N=15: order is 4. If QPE measures 4/16 = 1/4, 
+        // continued fractions should give denominator 4.
+        long order = ShorAlgorithm.ExtractOrder(4, 4, 15, 2);
+        Assert.AreEqual(4, order, "Expected order 4 for a=2, N=15");
+    }
+
+    [TestMethod]
+    public void Shor_Factor_Even()
+    {
+        // Even numbers are trivially factored
+        var result = ShorAlgorithm.Factor(6, new Random(42));
+        Assert.IsTrue(result.Success);
+        Assert.AreEqual(2, result.Factor1);
+        Assert.AreEqual(3, result.Factor2);
+    }
+
+    [TestMethod]
+    public void Shor_Factor_PrimePower()
+    {
+        // 9 = 3^2 — detected by prime power check
+        var result = ShorAlgorithm.Factor(9, new Random(42));
+        Assert.IsTrue(result.Success);
+        Assert.AreEqual(3, result.Factor1);
+        Assert.AreEqual(3, result.Factor2);
+    }
+
+    [TestMethod]
+    public void Shor_Factor_15()
+    {
+        // 15 = 3 × 5 — classic Shor demonstration
+        var result = ShorAlgorithm.Factor(15, new Random(42));
+        Assert.IsTrue(result.Success, "Should factor 15 successfully");
+        Assert.IsTrue(
+            (result.Factor1 == 3 && result.Factor2 == 5) ||
+            (result.Factor1 == 5 && result.Factor2 == 3),
+            $"Expected 3×5 but got {result.Factor1}×{result.Factor2}");
+    }
+
+    [TestMethod]
+    public void Shor_OrderFindingCircuit_Creates()
+    {
+        // Verify the order-finding circuit can be created and has correct qubit count
+        var circuit = ShorAlgorithm.CreateOrderFindingCircuit(2, 15, 8, 4);
+        Assert.AreEqual(12, circuit.QubitCount);
+        Assert.IsTrue(circuit.Instructions.Count > 0, "Circuit should have instructions");
     }
 }

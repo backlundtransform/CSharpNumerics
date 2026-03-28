@@ -90,9 +90,18 @@ var circuit = QuantumCircuitBuilder.New(3)
 | Method | Description |
 |---|---|
 | `New(int qubits)` | Create a builder for an n-qubit circuit |
-| `H(q)`, `X(q)`, `Z(q)`, `S(q)`, `T(q)` | Single-qubit standard gates |
+| `H(q)`, `X(q)`, `Y(q)`, `Z(q)`, `S(q)`, `T(q)` | Single-qubit standard gates |
+| `Phase(q, θ)` | General phase gate $P(\theta)$ |
 | `Rx(q, θ)`, `Ry(q, θ)`, `Rz(q, θ)` | Parameterised rotation gates |
-| `CNOT(c, t)`, `CZ(c, t)`, `SWAP(a, b)` | Two-qubit gates |
+| `CNOT(c, t)`, `CZ(c, t)`, `CPhase(c, t, θ)`, `SWAP(a, b)` | Two-qubit gates |
+| `Toffoli(c1, c2, t)` | Three-qubit CCNOT gate |
+| `Fredkin(c, t1, t2)` | Three-qubit CSWAP gate |
+| `ApplyQFT(params qubits)` | Quantum Fourier Transform on specified qubits |
+| `ApplyInverseQFT(params qubits)` | Inverse QFT (QFT†) on specified qubits |
+| `ApplyGrover(marked, params qubits)` | Grover search with optimal iterations |
+| `ApplyGrover(marked, iters, params qubits)` | Grover search with explicit iteration count |
+| `ApplyQPE(counting[], target[], gate)` | Quantum Phase Estimation |
+| `Controlled(gate, control, params targets)` | Controlled version of any gate |
 | `Gate(gate, params qubits)` | Arbitrary gate on specified qubits |
 | `Build()` | Returns the constructed `QuantumCircuit` |
 
@@ -205,9 +214,11 @@ All channels implement `INoiseChannel` and provide Kraus operators satisfying $\
 |---|---|---|
 | `HadamardGate` | 1 | Equal superposition: H\|0⟩ = (\|0⟩ + \|1⟩)/√2 |
 | `PauliXGate` | 1 | Bit flip: X\|0⟩ = \|1⟩ |
+| `PauliYGate` | 1 | Bit + phase flip: $Y^2 = I$ |
 | `PauliZGate` | 1 | Phase flip: Z\|1⟩ = −\|1⟩ |
 | `SGate` | 1 | π/2 phase: S\|1⟩ = i\|1⟩, $S^2 = Z$ |
 | `TGate` | 1 | π/4 phase: T\|1⟩ = $e^{i\pi/4}$\|1⟩, $T^2 = S$ |
+| `PhaseGate(θ)` | 1 | General phase: $P(\theta)\|1\rangle = e^{i\theta}\|1\rangle$, $P(\pi) = Z$ |
 
 #### Rotation Gates
 
@@ -223,7 +234,23 @@ All channels implement `INoiseChannel` and provide Kraus operators satisfying $\
 |---|---|---|
 | `CNOTGate` | 2 | Controlled-NOT: flips target when control = \|1⟩ |
 | `CZGate` | 2 | Controlled-Z: phase flip on \|11⟩ |
+| `CPhaseGate(θ)` | 2 | Controlled phase: $e^{i\theta}$ on \|11⟩, $CP(\pi) = CZ$ |
 | `SWAPGate` | 2 | Swaps the states of two qubits |
+
+#### Three-Qubit Gates
+
+| Gate | Qubits | Effect |
+|---|---|---|
+| `ToffoliGate` | 3 | CCNOT: flips target when both controls = \|1⟩ |
+| `FredkinGate` | 3 | CSWAP: swaps targets when control = \|1⟩ |
+
+#### N-Qubit Gates
+
+| Gate | Qubits | Effect |
+|---|---|---|
+| `PhaseOracle(n, states)` | n | Flips phase of marked basis states |
+| `ControlledGate(U)` | n+1 | Applies U when control = \|1⟩ (wraps any gate) |
+| `ModularMultiplyGate(a,N,n)` | n | Permutation: \|y⟩ → \|ay mod N⟩ |
 
 ---
 
@@ -325,10 +352,155 @@ var result = RLExperiment
 
 ---
 
+### Algorithms
+
+**Namespace:** `CSharpNumerics.Engines.Quantum.Algorithms`
+
+#### Quantum Fourier Transform (QFT)
+
+Generates a circuit implementing the standard QFT: Hadamard gates, controlled-phase rotations $CP(\pi/2^k)$, and a SWAP cascade to reverse qubit order.
+
+```csharp
+using CSharpNumerics.Engines.Quantum.Algorithms;
+
+// Standalone — returns a QuantumCircuit
+var qftCircuit = QFT.CreateCircuit(totalQubits: 3, 0, 1, 2);
+var state = new QuantumSimulator().Run(qftCircuit);
+
+// Via builder — inline into a larger circuit
+var circuit = QuantumCircuitBuilder.New(4)
+    .X(0).X(2)                   // Prepare |0101⟩
+    .ApplyQFT(0, 1, 2, 3)       // QFT on all 4 qubits
+    .Build();
+```
+
+QFT on $|0\rangle^{\otimes n}$ produces a uniform superposition: each basis state has probability $1/2^n$.
+
+#### Inverse QFT (QFT†)
+
+
+Reverses the QFT: SWAP cascade, then reversed controlled-phase rotations with negated angles and Hadamards.
+
+```csharp
+// Round-trip: InverseQFT(QFT(|ψ⟩)) = |ψ⟩
+var circuit = QuantumCircuitBuilder.New(3)
+    .X(0).X(2)                        // |101⟩
+    .ApplyQFT(0, 1, 2)
+    .ApplyInverseQFT(0, 1, 2)
+    .Build();
+
+var state = new QuantumSimulator().Run(circuit);
+// state ≡ |101⟩ with fidelity ≈ 1.0
+```
+
+#### Grover's Search Algorithm
+
+Amplifies the amplitude of marked basis states in an unstructured search space. Given M marked states in N = 2ⁿ, the algorithm finds a marked state with high probability after ≈ (π/4)√(N/M) iterations.
+
+```csharp
+using CSharpNumerics.Engines.Quantum.Algorithms;
+
+// Standalone — search for |101⟩ in a 3-qubit space
+var circuit = GroverSearch.CreateCircuit(
+    totalQubits: 3,
+    searchQubits: new[] { 0, 1, 2 },
+    markedStates: new[] { 5 });         // |101⟩ = index 5
+
+var state = new QuantumSimulator().Run(circuit);
+double pTarget = state.GetProbability(5); // > 0.94
+
+// Via builder
+var circuit2 = QuantumCircuitBuilder.New(3)
+    .ApplyGrover(new[] { 5 }, new[] { 0, 1, 2 })
+    .Build();
+
+// Multiple targets
+var circuit3 = GroverSearch.CreateCircuit(3,
+    new[] { 0, 1, 2 }, new[] { 3, 5 }); // find |011⟩ or |101⟩
+
+// Query optimal iteration count
+int iters = GroverSearch.OptimalIterations(
+    searchSpaceQubits: 3, markedCount: 1); // 2
+```
+
+The algorithm uses a `PhaseOracle` gate (from `CSharpNumerics.Physics.Quantum`) — an n-qubit diagonal unitary that flips the phase of specified basis states.
+
+#### Quantum Phase Estimation (QPE)
+
+Estimates the eigenvalue phase φ of a unitary gate U, where $U|\psi\rangle = e^{2\pi i\varphi}|\psi\rangle$. Uses t counting qubits for t bits of precision.
+
+```csharp
+using CSharpNumerics.Engines.Quantum.Algorithms;
+
+// Standalone — estimate phase of PhaseGate(π/2), eigenstate |1⟩
+// φ = 1/4, with 2 counting qubits → measures 1 (= φ·2²)
+int totalQubits = 3;
+var circuit = new QuantumCircuit(totalQubits);
+circuit.AddInstruction(new QuantumInstruction(new PauliXGate(), new List<int> { 2 })); // |1⟩ eigenstate
+var qpe = QPE.CreateCircuit(totalQubits,
+    countingQubits: new[] { 0, 1 },
+    targetQubits: new[] { 2 },
+    unitaryGate: new PhaseGate(Math.PI / 2));
+foreach (var instr in qpe.Instructions)
+    circuit.AddInstruction(instr);
+
+var state = new QuantumSimulator().Run(circuit);
+// Counting register encodes φ·2^t = 1
+
+// Via builder
+var circuit2 = QuantumCircuitBuilder.New(3)
+    .X(2)
+    .ApplyQPE(new[] { 0, 1 }, new[] { 2 }, new PhaseGate(Math.PI / 2))
+    .Build();
+```
+
+QPE uses `ControlledGate` (from `CSharpNumerics.Physics.Quantum`) to create controlled-U operations automatically. The `countingQubits[0]` is the MSB of the result.
+
+#### Shor's Factoring Algorithm
+
+Factors composite integers using quantum order-finding (QPE + modular multiplication).
+
+```csharp
+using CSharpNumerics.Engines.Quantum.Algorithms;
+
+// Factor 15 = 3 × 5
+var result = ShorAlgorithm.Factor(15, new Random(42));
+Console.WriteLine($"{result.Factor1} × {result.Factor2}"); // 3 × 5
+Console.WriteLine($"Success: {result.Success}");           // True
+Console.WriteLine($"Base: {result.Base}, Order: {result.Order}");
+
+// Access the quantum circuit directly
+var circuit = ShorAlgorithm.CreateOrderFindingCircuit(
+    a: 2, N: 15, countingQubits: 8, targetQubits: 4);
+
+// Helper utilities
+int iters = GroverSearch.OptimalIterations(3);              // Grover
+long order = ShorAlgorithm.ExtractOrder(4, 4, 15, 2);      // continued fractions
+long g = ShorAlgorithm.GCD(12, 8);                         // 4
+long p = ShorAlgorithm.ModPow(2, 10, 1000);                // 1024 mod 1000 = 24
+```
+
+The quantum core uses `ModularMultiplyGate` (from `CSharpNumerics.Physics.Quantum`) — a permutation gate implementing $|y\rangle \to |ay \bmod N\rangle$.
+
+| Class | Role |
+|---|---|
+| `ShorAlgorithm` | Full factor algorithm (classical + quantum) |
+| `ShorResult` | Result with factors, base, order, attempt count |
+| `ModularMultiplyGate` | Permutation oracle $U_a\|y\rangle = \|ay \bmod N\rangle$ |
+| `ControlledGate` | Wraps any gate with a control qubit |
+
+---
+
 ### Module Structure
 
 ```
 Engines/Quantum/
+├── Algorithms/
+│   ├── QFT.cs                 Quantum Fourier Transform circuit generator
+│   ├── InverseQFT.cs          Inverse QFT circuit generator
+│   ├── GroverSearch.cs        Grover's search algorithm
+│   ├── QPE.cs                 Quantum Phase Estimation
+│   └── ShorAlgorithm.cs       Shor's factoring algorithm
 ├── QuantumCircuit.cs          Circuit definition (qubits + instruction list)
 ├── QuantumCircuitBuilder.cs   Fluent builder API
 ├── QuantumInstruction.cs      Gate + target qubit binding

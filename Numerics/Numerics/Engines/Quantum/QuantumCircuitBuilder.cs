@@ -1,3 +1,4 @@
+using CSharpNumerics.Engines.Quantum.Algorithms;
 using CSharpNumerics.Physics.Quantum;
 using System;
 using System.Collections.Generic;
@@ -97,10 +98,120 @@ public class QuantumCircuitBuilder
         return this;
     }
 
+    /// <summary>Controlled-Phase gate CP(θ) with <paramref name="control"/> and <paramref name="target"/>.</summary>
+    public QuantumCircuitBuilder CPhase(int control, int target, double theta)
+    {
+        _circuit.AddInstruction(new QuantumInstruction(new CPhaseGate(theta), new List<int> { control, target }));
+        return this;
+    }
+
     /// <summary>SWAP gate between qubit <paramref name="qubit1"/> and <paramref name="qubit2"/>.</summary>
     public QuantumCircuitBuilder SWAP(int qubit1, int qubit2)
     {
         _circuit.AddInstruction(new QuantumInstruction(new SWAPGate(), new List<int> { qubit1, qubit2 }));
+        return this;
+    }
+
+    // ── Three-qubit gates ──────────────────────────────────────
+
+    /// <summary>Toffoli (CCNOT) gate with two controls and one target.</summary>
+    public QuantumCircuitBuilder Toffoli(int control1, int control2, int target)
+    {
+        _circuit.AddInstruction(new QuantumInstruction(new ToffoliGate(), new List<int> { control1, control2, target }));
+        return this;
+    }
+
+    /// <summary>Fredkin (CSWAP) gate: swaps target1 and target2 when control is |1⟩.</summary>
+    public QuantumCircuitBuilder Fredkin(int control, int target1, int target2)
+    {
+        _circuit.AddInstruction(new QuantumInstruction(new FredkinGate(), new List<int> { control, target1, target2 }));
+        return this;
+    }
+
+    // ── Additional single-qubit gates ──────────────────────────
+
+    /// <summary>Pauli-Y gate on qubit <paramref name="qubit"/>.</summary>
+    public QuantumCircuitBuilder Y(int qubit)
+    {
+        _circuit.AddInstruction(new QuantumInstruction(new PauliYGate(), new List<int> { qubit }));
+        return this;
+    }
+
+    /// <summary>General phase gate P(θ) on qubit <paramref name="qubit"/>.</summary>
+    public QuantumCircuitBuilder Phase(int qubit, double theta)
+    {
+        _circuit.AddInstruction(new QuantumInstruction(new PhaseGate(theta), new List<int> { qubit }));
+        return this;
+    }
+
+    // ── Composite algorithms ───────────────────────────────────
+
+    /// <summary>Applies the Quantum Fourier Transform to the specified qubits.</summary>
+    public QuantumCircuitBuilder ApplyQFT(params int[] qubits)
+    {
+        var qftCircuit = QFT.CreateCircuit(_circuit.QubitCount, qubits);
+        foreach (var instruction in qftCircuit.Instructions)
+            _circuit.AddInstruction(instruction);
+        return this;
+    }
+
+    /// <summary>Applies the inverse Quantum Fourier Transform to the specified qubits.</summary>
+    public QuantumCircuitBuilder ApplyInverseQFT(params int[] qubits)
+    {
+        var iqftCircuit = InverseQFT.CreateCircuit(_circuit.QubitCount, qubits);
+        foreach (var instruction in iqftCircuit.Instructions)
+            _circuit.AddInstruction(instruction);
+        return this;
+    }
+
+    /// <summary>
+    /// Applies Grover's search algorithm to the specified qubits, searching for the given marked states.
+    /// </summary>
+    /// <param name="markedStates">Basis-state indices to search for (relative to the search qubit space).</param>
+    /// <param name="searchQubits">Qubit indices forming the search space.</param>
+    public QuantumCircuitBuilder ApplyGrover(int[] markedStates, params int[] searchQubits)
+    {
+        var groverCircuit = GroverSearch.CreateCircuit(_circuit.QubitCount, searchQubits, markedStates);
+        foreach (var instruction in groverCircuit.Instructions)
+            _circuit.AddInstruction(instruction);
+        return this;
+    }
+
+    /// <summary>
+    /// Applies Grover's search algorithm with a specified number of iterations.
+    /// </summary>
+    public QuantumCircuitBuilder ApplyGrover(int[] markedStates, int iterations, params int[] searchQubits)
+    {
+        var groverCircuit = GroverSearch.CreateCircuit(_circuit.QubitCount, searchQubits, markedStates, iterations);
+        foreach (var instruction in groverCircuit.Instructions)
+            _circuit.AddInstruction(instruction);
+        return this;
+    }
+
+    /// <summary>
+    /// Applies Quantum Phase Estimation: H on counting qubits, controlled-U^(2^k), inverse QFT.
+    /// </summary>
+    /// <param name="countingQubits">Qubit indices for the counting register.</param>
+    /// <param name="targetQubits">Qubit indices for the target register (must hold eigenstate).</param>
+    /// <param name="unitaryGate">The unitary gate whose eigenvalue phase is estimated.</param>
+    public QuantumCircuitBuilder ApplyQPE(int[] countingQubits, int[] targetQubits, QuantumGate unitaryGate)
+    {
+        var qpeCircuit = QPE.CreateCircuit(_circuit.QubitCount, countingQubits, targetQubits, unitaryGate);
+        foreach (var instruction in qpeCircuit.Instructions)
+            _circuit.AddInstruction(instruction);
+        return this;
+    }
+
+    /// <summary>
+    /// Applies a controlled version of <paramref name="innerGate"/>.
+    /// First qubit index is the control, remaining are the inner gate's targets.
+    /// </summary>
+    public QuantumCircuitBuilder Controlled(QuantumGate innerGate, int control, params int[] targets)
+    {
+        var controlled = new ControlledGate(innerGate);
+        var qubits = new List<int> { control };
+        qubits.AddRange(targets);
+        _circuit.AddInstruction(new QuantumInstruction(controlled, qubits));
         return this;
     }
 
