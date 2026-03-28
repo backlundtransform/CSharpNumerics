@@ -204,6 +204,15 @@ namespace CSharpNumerics.Engines.GIS.Simulation
         {
             if (Material == null) return;
 
+            if (Material.IsNuclear)
+                ApplyNuclearLayers(snapshot, timeStepSeconds);
+
+            if (Material.IsChemical)
+                ApplyChemicalLayers(snapshot, timeStepSeconds);
+        }
+
+        private void ApplyNuclearLayers(GridSnapshot snapshot, double timeStepSeconds)
+        {
             var iso = Material.Isotope;
             var concentrations = snapshot.GetValues();
             int n = concentrations.Length;
@@ -227,6 +236,28 @@ namespace CSharpNumerics.Engines.GIS.Simulation
 
             snapshot.SetLayer("activity", activity);
             snapshot.SetLayer("dose", dose);
+        }
+
+        private void ApplyChemicalLayers(GridSnapshot snapshot, double timeStepSeconds)
+        {
+            var substance = Material.Substance.Value;
+            var concentrations = snapshot.GetValues();
+            int n = concentrations.Length;
+
+            var ppm = new double[n];
+            var toxicDose = new double[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                // Convert kg/m³ → ppm
+                ppm[i] = substance.KgM3ToPpm(concentrations[i]);
+
+                // Toxic dose: ppm × time (ppm·s) — probit/Haber's rule cumulative
+                toxicDose[i] = ppm[i] * timeStepSeconds;
+            }
+
+            snapshot.SetLayer("ppm", ppm);
+            snapshot.SetLayer("toxicDose", toxicDose);
         }
     }
 }

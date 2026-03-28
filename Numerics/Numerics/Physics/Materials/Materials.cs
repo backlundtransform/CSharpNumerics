@@ -1,3 +1,4 @@
+using CSharpNumerics.Physics.Materials.Chemical;
 using CSharpNumerics.Physics.Materials.Nuclear.DecayChains;
 using CSharpNumerics.Physics.Materials.Nuclear.Isotopes;
 using System;
@@ -5,15 +6,17 @@ using System;
 namespace CSharpNumerics.Physics.Materials
 {
     /// <summary>
-    /// Descriptor that couples an <see cref="Isotope"/> (and optional <see cref="DecayChain"/>)
-    /// to a dispersion scenario so the simulator can compute activity and dose alongside concentration.
+    /// Describes a material attached to a dispersion scenario.
+    /// Can represent either a radioactive isotope (with optional decay chain)
+    /// or a hazardous chemical substance — or both.
     /// <para>
-    /// Created via the static factory: <c>Materials.Radioisotope("Cs137")</c>.
+    /// Created via the static factory: <c>Materials.Radioisotope("Cs137")</c>
+    /// or <c>Materials.Chemical("Cl2")</c>.
     /// </para>
     /// </summary>
     public class MaterialDescriptor
     {
-        /// <summary>The primary isotope being dispersed.</summary>
+        /// <summary>The primary isotope being dispersed. Null for chemical-only materials.</summary>
         public Isotope Isotope { get; }
 
         /// <summary>
@@ -21,10 +24,34 @@ namespace CSharpNumerics.Physics.Materials
         /// </summary>
         public DecayChain Chain { get; }
 
+        /// <summary>
+        /// The chemical substance being dispersed. Null for nuclear-only materials.
+        /// When set, the simulator computes ppm concentrations and toxic-dose layers.
+        /// </summary>
+        public ChemicalSubstance? Substance { get; }
+
+        /// <summary>Whether this descriptor contains a radioactive isotope.</summary>
+        public bool IsNuclear => Isotope.Name != null;
+
+        /// <summary>Whether this descriptor contains a chemical substance.</summary>
+        public bool IsChemical => Substance.HasValue;
+
         internal MaterialDescriptor(Isotope isotope, DecayChain chain = null)
         {
             Isotope = isotope;
             Chain = chain;
+        }
+
+        internal MaterialDescriptor(ChemicalSubstance substance)
+        {
+            Substance = substance;
+        }
+
+        internal MaterialDescriptor(Isotope isotope, DecayChain chain, ChemicalSubstance substance)
+        {
+            Isotope = isotope;
+            Chain = chain;
+            Substance = substance;
         }
     }
 
@@ -67,6 +94,30 @@ namespace CSharpNumerics.Physics.Materials
         public static MaterialDescriptor Radioisotope(Isotope isotope, DecayChain chain)
         {
             return new MaterialDescriptor(isotope, chain);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Chemical substances
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Creates a material descriptor for the named chemical substance.
+        /// Looks up the substance in <see cref="ChemicalLibrary"/>.
+        /// </summary>
+        /// <param name="formula">Chemical formula (e.g. "Cl2", "NH3"). Case-insensitive.</param>
+        public static MaterialDescriptor Chemical(string formula)
+        {
+            if (formula == null) throw new ArgumentNullException(nameof(formula));
+            var substance = ChemicalLibrary.Get(formula);
+            return new MaterialDescriptor(substance);
+        }
+
+        /// <summary>
+        /// Creates a material descriptor from an explicit chemical substance instance.
+        /// </summary>
+        public static MaterialDescriptor Chemical(ChemicalSubstance substance)
+        {
+            return new MaterialDescriptor(substance);
         }
 
         private static DecayChain TryGetKnownChain(Isotope isotope)
