@@ -501,6 +501,9 @@ Engines/Quantum/
 │   ├── GroverSearch.cs        Grover's search algorithm
 │   ├── QPE.cs                 Quantum Phase Estimation
 │   └── ShorAlgorithm.cs       Shor's factoring algorithm
+├── ErrorCorrection/
+│   ├── SyndromeDecoder.cs     Classical syndrome → correction lookup
+│   └── ErrorCorrectionSimulator.cs  Full QEC simulation orchestrator
 ├── QuantumCircuit.cs          Circuit definition (qubits + instruction list)
 ├── QuantumCircuitBuilder.cs   Fluent builder API
 ├── QuantumInstruction.cs      Gate + target qubit binding
@@ -510,3 +513,128 @@ Engines/Quantum/
 ├── QuantumState.cs            Result: amplitudes, measurement, sampling
 └── README.md
 ```
+
+### Quantum Error Correction — Simulation
+
+**Namespace:** `CSharpNumerics.Engines.Quantum.ErrorCorrection`
+
+The `ErrorCorrection` sub-namespace provides the simulation layer for quantum error-correcting codes defined in `Physics.Quantum.ErrorCorrection`.
+
+#### SyndromeDecoder
+
+Classical lookup table that maps measured syndrome bits to corrective operations:
+
+```csharp
+using CSharpNumerics.Physics.Quantum.ErrorCorrection;
+using CSharpNumerics.Engines.Quantum.ErrorCorrection;
+
+var decoder = new SyndromeDecoder(new BitFlipCode3());
+
+// From integer syndrome
+var ops = decoder.Decode(0b01);     // → [(0, 'X')]  — apply X to qubit 0
+
+// From measurement bit array
+var ops2 = decoder.Decode(new[] { 1, 1 });  // → [(1, 'X')]  — apply X to qubit 1
+```
+
+#### ErrorCorrectionSimulator
+
+Orchestrates the full QEC cycle: **encode → inject error → extract syndrome → decode → correct → decode → measure fidelity**.
+
+**Bit-flip correction:**
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Physics.Quantum.ErrorCorrection;
+using CSharpNumerics.Engines.Quantum.ErrorCorrection;
+using CSharpNumerics.Numerics.Objects;
+
+var code = new BitFlipCode3();
+var sim  = new ErrorCorrectionSimulator();
+var rng  = new Random(42);
+
+// Prepare a superposition state to protect
+var initial = new ComplexVectorN(2);
+initial[0] = new ComplexNumber(0.6, 0);   // α
+initial[1] = new ComplexNumber(0, 0.8);   // β
+
+// Inject a single bit-flip error on qubit 1
+var errors = new List<(QuantumGate, int)> { (new PauliXGate(), 1) };
+
+var result = sim.RunBitFlipCorrection(code, initial, errors, rng);
+
+Console.WriteLine(result.Fidelity);   // ≈ 1.0 — error fully corrected
+Console.WriteLine(result.Syndrome);   // 3 (0b11) — both stabilizers triggered
+```
+
+**Phase-flip correction:**
+
+```csharp
+var pfCode = new PhaseFlipCode3();
+var zError = new List<(QuantumGate, int)> { (new PauliZGate(), 0) };
+
+var pfResult = sim.RunPhaseFlipCorrection(pfCode, initial, zError, rng);
+// pfResult.Fidelity ≈ 1.0
+```
+
+**Monte Carlo comparison — protected vs. unprotected:**
+
+```csharp
+var (protectedFidelity, unprotectedFidelity) = sim.RunMonteCarloComparison(
+    code, initial,
+    errorRate: 0.10,  // 10% bit-flip probability per qubit
+    rounds: 1000,
+    random: rng);
+
+// protectedFidelity > unprotectedFidelity — QEC provides net benefit
+```
+
+**Shor 9-qubit code — corrects any single-qubit error (X, Z, or Y):**
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Physics.Quantum.ErrorCorrection;
+using CSharpNumerics.Engines.Quantum.ErrorCorrection;
+using CSharpNumerics.Numerics.Objects;
+
+var shor = new ShorCode9();
+var sim  = new ErrorCorrectionSimulator();
+var rng  = new Random(42);
+
+var initial = new ComplexVectorN(2);
+initial[0] = new ComplexNumber(0.6, 0);
+initial[1] = new ComplexNumber(0, 0.8);
+
+// Y error = combined bit-flip + phase-flip
+var errors = new List<(QuantumGate, int)> { (new PauliYGate(), 4) };
+var result = sim.RunShorCorrection(shor, initial, errors, rng);
+// result.Fidelity ≈ 1.0 — Y error fully corrected
+```
+
+**Steane 7-qubit code — the smallest CSS code correcting any single-qubit error:**
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+using CSharpNumerics.Physics.Quantum.ErrorCorrection;
+using CSharpNumerics.Engines.Quantum.ErrorCorrection;
+using CSharpNumerics.Numerics.Objects;
+
+var steane = new SteaneCode7();
+var sim    = new ErrorCorrectionSimulator();
+var rng    = new Random(42);
+
+var initial = new ComplexVectorN(2);
+initial[0] = new ComplexNumber(0.6, 0);
+initial[1] = new ComplexNumber(0, 0.8);
+
+// Z (phase-flip) error on qubit 3
+var errors = new List<(QuantumGate, int)> { (new PauliZGate(), 3) };
+var result = sim.RunSteaneCorrection(steane, initial, errors, rng);
+// result.Fidelity ≈ 1.0 — CSS structure detects and corrects Z error
+// result.Syndrome bits 3-5 identify the Z error via Hamming decoding
+```
+
+| Return Type | Fields |
+|---|---|
+| `Result` | `Fidelity` (double), `Syndrome` (int), `Corrections` (list), `RecoveredState` (QuantumState) |
+| Monte Carlo | `(protectedFidelity, unprotectedFidelity)` tuple |

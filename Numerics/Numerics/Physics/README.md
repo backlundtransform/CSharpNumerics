@@ -2124,6 +2124,14 @@ Physics/Quantum/
 │   ├── DepolarizingNoise.cs      Depolarizing channel
 │   ├── DephasingNoise.cs         Dephasing (phase-flip) channel
 │   └── AmplitudeDampingNoise.cs  Amplitude damping (T₁ decay)
+├── ErrorCorrection/
+│   ├── Interfaces/
+│   │   └── IQuantumErrorCorrectionCode.cs  QEC code contract
+│   └── Codes/
+│       ├── BitFlipCode3.cs       [[3,1,1]] bit-flip code
+│       ├── PhaseFlipCode3.cs     [[3,1,1]] phase-flip code
+│       ├── ShorCode9.cs          [[9,1,3]] Shor code
+│       └── SteaneCode7.cs        [[7,1,3]] Steane (CSS) code
 ├── HadamardGate.cs      H gate
 ├── PauliXGate.cs        X gate (Pauli-X)
 ├── PauliZGate.cs        Z gate (Pauli-Z)
@@ -2135,4 +2143,118 @@ Physics/Quantum/
 ├── CNOTGate.cs          Controlled-NOT gate
 ├── CZGate.cs            Controlled-Z gate
 └── SWAPGate.cs          SWAP gate
+```
+
+### Quantum Error Correction — Code Definitions
+
+**Namespace:** `CSharpNumerics.Physics.Quantum.ErrorCorrection`
+
+The `ErrorCorrection` sub-namespace defines quantum error-correcting codes as mathematical objects — stabilizers, correction maps, and logical operators. The simulation/orchestration layer lives in `Engines.Quantum.ErrorCorrection`.
+
+#### IQuantumErrorCorrectionCode
+
+Interface for any [[n, k, d]] stabilizer code:
+
+| Property / Method | Description |
+|---|---|
+| `PhysicalQubits` | Number of physical qubits (n) |
+| `LogicalQubits` | Number of logical qubits (k) |
+| `Distance` | Code distance (d) |
+| `SyndromeQubits` | Number of ancilla qubits for syndrome extraction |
+| `GetStabilizers()` | Returns stabilizer generators as (qubit, Pauli) lists |
+| `GetCorrectionMap()` | Syndrome integer → corrective (qubit, Pauli) operations |
+| `GetLogicalX(i)` | Logical X̄ operator for logical qubit i |
+| `GetLogicalZ(i)` | Logical Z̄ operator for logical qubit i |
+
+#### BitFlipCode3 — [[3,1,1]]
+
+Encodes $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$ into $\alpha|000\rangle + \beta|111\rangle$. Corrects any single-qubit X (bit-flip) error.
+
+**Stabilizers:** $Z_0 Z_1$, $Z_1 Z_2$
+
+| Syndrome | Error | Correction |
+|---|---|---|
+| 00 | None | — |
+| 01 | $X_0$ | Apply X to qubit 0 |
+| 10 | $X_2$ | Apply X to qubit 2 |
+| 11 | $X_1$ | Apply X to qubit 1 |
+
+**Logical operators:** $\bar{X} = X_0 X_1 X_2$, $\bar{Z} = Z_0$
+
+#### PhaseFlipCode3 — [[3,1,1]]
+
+Encodes $|\psi\rangle$ into $\alpha|{+}{+}{+}\rangle + \beta|{-}{-}{-}\rangle$. Corrects any single-qubit Z (phase-flip) error.
+
+**Stabilizers:** $X_0 X_1$, $X_1 X_2$
+
+| Syndrome | Error | Correction |
+|---|---|---|
+| 00 | None | — |
+| 01 | $Z_0$ | Apply Z to qubit 0 |
+| 10 | $Z_2$ | Apply Z to qubit 2 |
+| 11 | $Z_1$ | Apply Z to qubit 1 |
+
+**Logical operators:** $\bar{X} = X_0$, $\bar{Z} = Z_0 Z_1 Z_2$
+
+```csharp
+using CSharpNumerics.Physics.Quantum.ErrorCorrection;
+
+var code = new BitFlipCode3();
+var stabs = code.GetStabilizers();       // [{(0,'Z'),(1,'Z')}, {(1,'Z'),(2,'Z')}]
+var map   = code.GetCorrectionMap();     // 0→[], 1→[(0,'X')], 2→[(2,'X')], 3→[(1,'X')]
+var logX  = code.GetLogicalX();          // [(0,'X'),(1,'X'),(2,'X')]
+```
+
+#### ShorCode9 — [[9,1,3]]
+
+Shor's 9-qubit code — the first code to correct **any** single-qubit error (X, Z, or Y). Uses three blocks of three qubits: inner bit-flip repetition within blocks, outer phase-flip repetition across blocks.
+
+$$|0\rangle_L = \frac{(|000\rangle+|111\rangle)(|000\rangle+|111\rangle)(|000\rangle+|111\rangle)}{2\sqrt{2}}$$
+$$|1\rangle_L = \frac{(|000\rangle-|111\rangle)(|000\rangle-|111\rangle)(|000\rangle-|111\rangle)}{2\sqrt{2}}$$
+
+**8 stabilizer generators:**
+
+| Generator | Operator | Type |
+|---|---|---|
+| $g_1 \ldots g_6$ | $Z_i Z_{i+1}$ within each block | Bit-flip detection |
+| $g_7$ | $X_0 X_1 X_2 X_3 X_4 X_5$ | Phase-flip detection (blocks 0–1) |
+| $g_8$ | $X_3 X_4 X_5 X_6 X_7 X_8$ | Phase-flip detection (blocks 1–2) |
+
+**Correction:** The 8-bit syndrome (256 values) maps to at most one X correction + one Z correction. Each block's 2-bit sub-syndrome identifies bit-flip errors exactly as in `BitFlipCode3`. The 2-bit phase-flip sub-syndrome identifies which block suffered a Z error.
+
+**Logical operators:** $\bar{X} = X_0 X_1 \ldots X_8$, $\bar{Z} = Z_0 Z_3 Z_6$
+
+```csharp
+var shor = new ShorCode9();
+var stabs = shor.GetStabilizers();  // 8 generators
+var map   = shor.GetCorrectionMap(); // 256 syndrome entries
+```
+
+#### SteaneCode7 — [[7,1,3]]
+
+The Steane code — the smallest CSS (Calderbank-Shor-Steane) code, correcting **any** single-qubit error using only 7 physical qubits. Built from the classical [7,4,3] Hamming code and its dual [7,3,4] code.
+
+$$|0\rangle_L = \frac{1}{\sqrt{8}} \sum_{x \in C_2} |x\rangle \qquad |1\rangle_L = \frac{1}{\sqrt{8}} \sum_{x \in C_2 + v} |x\rangle$$
+
+where $C_2$ is the [7,3,4] dual Hamming code and $v = (1110000)$.
+
+**6 stabilizer generators:**
+
+| Generator | Operator | Type |
+|---|---|---|
+| $g_1$ | $Z_3 Z_4 Z_5 Z_6$ | X-error detection |
+| $g_2$ | $Z_1 Z_2 Z_5 Z_6$ | X-error detection |
+| $g_3$ | $Z_0 Z_2 Z_4 Z_6$ | X-error detection |
+| $g_4$ | $X_3 X_4 X_5 X_6$ | Z-error detection |
+| $g_5$ | $X_1 X_2 X_5 X_6$ | Z-error detection |
+| $g_6$ | $X_0 X_2 X_4 X_6$ | Z-error detection |
+
+**Correction:** The 6-bit syndrome has two independent 3-bit halves — Z-stabilizer syndrome (bits 0–2) identifies X errors, X-stabilizer syndrome (bits 3–5) identifies Z errors, using the Hamming decoding map: syndrome $s \to$ qubit $j$ where column $j$ of the parity-check matrix equals the binary expansion of $s$.
+
+**Logical operators:** $\bar{X} = X_0 X_1 \ldots X_6$, $\bar{Z} = Z_0 Z_1 \ldots Z_6$
+
+```csharp
+var steane = new SteaneCode7();
+var stabs  = steane.GetStabilizers();   // 6 generators (3 Z-type + 3 X-type)
+var map    = steane.GetCorrectionMap();  // 64 syndrome entries
 ```
