@@ -308,5 +308,79 @@ namespace CSharpNumerics.Numerics.FiniteDifference
                     return 0.0;
             }
         }
+
+        // ──────────────────────────────────────────────
+        //  Poisson solver: ∇²u = f (Gauss-Seidel)
+        // ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Iterative Gauss-Seidel solver for the 2D Poisson equation ∇²u = f
+        /// on a <see cref="Grid2D"/> with Dirichlet boundary conditions.
+        /// Boundary values are supplied via <paramref name="boundaryMask"/>
+        /// and <paramref name="boundaryValues"/>; interior nodes are iterated.
+        /// </summary>
+        /// <param name="rhs">Right-hand side f at each grid point (flat VectorN).</param>
+        /// <param name="grid">The computational grid.</param>
+        /// <param name="boundaryMask">True for nodes that are fixed (Dirichlet).</param>
+        /// <param name="boundaryValues">Fixed values at Dirichlet nodes.</param>
+        /// <param name="initialGuess">Starting solution (or null for zeros).</param>
+        /// <param name="tolerance">Convergence tolerance on max absolute residual change.</param>
+        /// <param name="maxIterations">Maximum iteration count.</param>
+        /// <returns>
+        /// The converged solution u and the number of iterations used.
+        /// </returns>
+        public static (VectorN solution, int iterations) SolvePoisson2D(
+            VectorN rhs,
+            Grid2D grid,
+            bool[] boundaryMask,
+            double[] boundaryValues,
+            VectorN? initialGuess = null,
+            double tolerance = 1e-6,
+            int maxIterations = 10000)
+        {
+            int nx = grid.Nx, ny = grid.Ny, len = grid.Length;
+            double dx2 = grid.Dx * grid.Dx;
+            double dy2 = grid.Dy * grid.Dy;
+            double factor = 2.0 / dx2 + 2.0 / dy2;
+
+            // Working solution — mutable copy
+            double[] u = new double[len];
+            if (initialGuess.HasValue)
+                for (int i = 0; i < len; i++) u[i] = initialGuess.Value[i];
+
+            // Apply boundary values
+            for (int i = 0; i < len; i++)
+                if (boundaryMask[i]) u[i] = boundaryValues[i];
+
+            int iter;
+            for (iter = 0; iter < maxIterations; iter++)
+            {
+                double maxChange = 0;
+
+                for (int iy = 0; iy < ny; iy++)
+                {
+                    for (int ix = 0; ix < nx; ix++)
+                    {
+                        int idx = grid.Index(ix, iy);
+                        if (boundaryMask[idx]) continue;
+
+                        double uLeft = ix > 0 ? u[grid.Index(ix - 1, iy)] : boundaryValues[idx];
+                        double uRight = ix < nx - 1 ? u[grid.Index(ix + 1, iy)] : boundaryValues[idx];
+                        double uDown = iy > 0 ? u[grid.Index(ix, iy - 1)] : boundaryValues[idx];
+                        double uUp = iy < ny - 1 ? u[grid.Index(ix, iy + 1)] : boundaryValues[idx];
+
+                        double newVal = ((uLeft + uRight) / dx2 + (uDown + uUp) / dy2 - rhs[idx]) / factor;
+
+                        double change = Math.Abs(newVal - u[idx]);
+                        if (change > maxChange) maxChange = change;
+                        u[idx] = newVal;
+                    }
+                }
+
+                if (maxChange < tolerance) { iter++; break; }
+            }
+
+            return (new VectorN(u), iter);
+        }
     }
 }

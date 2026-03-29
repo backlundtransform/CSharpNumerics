@@ -918,6 +918,34 @@ Func<(double t, VectorN y), VectorN> rhs = args =>
 var result = rhs.RungeKutta(0, 5.0, 0.001, u0);
 ```
 
+### Poisson Solver (Gauss-Seidel)
+
+Iterative solver for $\nabla^2 u = f$ on a `Grid2D` with arbitrary Dirichlet boundary masks:
+
+```csharp
+// Solve ∇²φ = rhs on a 50×50 grid with Dirichlet BCs
+var grid = new Grid2D(50, 50, 0.02);
+var rhs = grid.Zeros();                      // source term
+
+// Mark boundary cells
+bool[] mask = new bool[grid.Length];
+double[] bcValues = new double[grid.Length];
+for (int iy = 0; iy < 50; iy++)
+{
+    mask[grid.Index(0, iy)] = true;           // left = 0 V
+    mask[grid.Index(49, iy)] = true;          // right = 100 V
+    bcValues[grid.Index(49, iy)] = 100.0;
+}
+
+var (solution, iterations) = GridOperators.SolvePoisson2D(
+    rhs, grid, mask, bcValues,
+    tolerance: 1e-8,
+    maxIterations: 20000);
+
+// solution is a VectorN, unpack to 2D:
+double[,] phi = grid.ToArray(solution);
+```
+
 ---
 
 ## �📏 Linear Systems

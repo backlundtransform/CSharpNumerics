@@ -2097,6 +2097,64 @@ for (double x = 0; x <= 1.0; x += 0.1)
 
 ---
 
+## 🏭 Engineering Materials
+
+The `EngineeringMaterial` immutable struct bundles thermo-mechanical-electrical properties for multiphysics simulations. The `EngineeringLibrary` provides common pre-defined materials.
+
+**Namespace:** `CSharpNumerics.Physics.Materials.Engineering`
+
+### Material Properties
+
+| Property | Unit | Description |
+|----------|------|-------------|
+| `ThermalConductivity` | W/(m·K) | Heat conduction coefficient $k$ |
+| `SpecificHeat` | J/(kg·K) | Specific heat capacity $c_p$ |
+| `Density` | kg/m³ | Mass density $\rho$ |
+| `DynamicViscosity` | Pa·s | Dynamic viscosity $\mu$ |
+| `ElectricPermittivity` | F/m | Dielectric permittivity $\varepsilon$ |
+| `YoungsModulus` | Pa | Young's modulus $E$ |
+| `PoissonsRatio` | — | Poisson's ratio $\nu$ |
+
+**Computed properties:**
+
+| Computed | Formula | Description |
+|----------|---------|-------------|
+| `ThermalDiffusivity` | $\alpha = k/(\rho c_p)$ | Heat diffusion rate |
+| `KinematicViscosity` | $\nu = \mu/\rho$ | Flow diffusion rate |
+
+### Pre-defined Materials
+
+```csharp
+using CSharpNumerics.Physics.Materials.Engineering;
+
+var steel = EngineeringLibrary.Steel;       // E=200 GPa, k=50 W/(m·K)
+var al    = EngineeringLibrary.Aluminum;    // E=69 GPa, k=237 W/(m·K)
+var cu    = EngineeringLibrary.Copper;      // E=117 GPa, k=401 W/(m·K)
+var water = EngineeringLibrary.Water;       // μ=1e-3 Pa·s, ρ=1000 kg/m³
+var air   = EngineeringLibrary.Air;         // μ=1.81e-5 Pa·s
+var conc  = EngineeringLibrary.Concrete;    // E=30 GPa
+var glass = EngineeringLibrary.Glass;       // E=70 GPa
+
+double alpha = steel.ThermalDiffusivity;     // k/(ρ·cp)
+double nu    = water.KinematicViscosity;     // μ/ρ
+```
+
+### Custom Materials
+
+```csharp
+var titanium = new EngineeringMaterial(
+    name: "Titanium",
+    thermalConductivity: 21.9,        // W/(m·K)
+    specificHeat: 523,                // J/(kg·K)
+    density: 4507,                    // kg/m³
+    dynamicViscosity: 0,              // not a fluid
+    electricPermittivity: 0,
+    youngsModulus: 116e9,             // Pa
+    poissonsRatio: 0.34);
+```
+
+---
+
 ## ⚛️ Quantum Gates
 
 **Namespace:** `CSharpNumerics.Physics.Quantum`
