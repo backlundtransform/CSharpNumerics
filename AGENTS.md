@@ -64,6 +64,55 @@ dotnet test --filter "FullyQualifiedName~OptimizationTests"
 | Physics | `Numerics/Numerics/Physics/README.md` |
 | Engines | `Numerics/Numerics/Engines/README.md` (sub-engines may have their own, e.g. `Engines/GIS/README.md`) |
 
+## Feature Roadmaps
+
+Feature work follows a **research → plan → implement → complete** lifecycle tracked via roadmap files in `docs/`.
+
+### Workflow
+
+1. **Research phase** — investigate the feature, gather context, and produce a `docs/<FeatureName>RoadMap.md`.
+2. **Planning phase** — divide the roadmap into numbered **phases** with checkable tasks (`- [ ]`).
+3. **Implementation phases** — work through each phase, checking off tasks (`- [x]`) as they are completed.
+4. **Completion** — when every task is checked, move the file to `docs/completed/`.
+
+### Rules
+
+- File naming: `docs/<FeatureName>RoadMap.md` (PascalCase feature name).
+- Multiple roadmaps may be active in `docs/` at the same time.
+- Each roadmap must be divided into **phases** (e.g., Phase 1, Phase 2, …). Phases group related tasks and are implemented in order.
+- Use Markdown checkboxes (`- [ ]` / `- [x]`) inside each phase to track individual tasks.
+- A roadmap is considered **complete** only when all checkboxes across all phases are checked.
+- Completed roadmaps are moved to `docs/completed/` — do not delete them.
+
+### Example structure
+
+```
+docs/
+  QuaternionAlgebraRoadMap.md   ← active
+  AudioDSPRoadMap.md            ← active
+  completed/
+    MonteCarloRoadMap.md        ← finished
+```
+
+### Example roadmap template
+
+```markdown
+# <Feature Name> Roadmap
+
+## Phase 1 — Research & Design
+- [ ] Investigate existing API surface
+- [ ] Define public types and interfaces
+- [ ] Draft architecture
+
+## Phase 2 — Core Implementation
+- [ ] Implement primary classes
+- [ ] Add unit tests
+
+## Phase 3 — Integration & Docs
+- [ ] Wire into consuming sections
+- [ ] Update section README
+```
+
 ## Code Style
 
 - File-scoped namespaces (`namespace X;`).

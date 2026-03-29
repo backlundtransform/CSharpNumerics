@@ -877,6 +877,12 @@ var div = GridOperators.Divergence2D(fx, fy, grid);
 var adv = GridOperators.Advection2D(u, vx, vy, grid);
 ```
 
+**Biharmonic (4th derivative)** — d⁴u/dx⁴ (5-point central stencil, for Euler–Bernoulli beam equation)
+
+```csharp
+var d4u = GridOperators.Biharmonic1D(u, dx, BoundaryCondition.Neumann);
+```
+
 ### Example: 2D Heat Equation
 
 $$\frac{\partial u}{\partial t} = \alpha \nabla^2 u$$

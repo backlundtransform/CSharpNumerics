@@ -88,6 +88,49 @@ namespace CSharpNumerics.Numerics.FiniteDifference
             return new VectorN(result);
         }
 
+        /// <summary>
+        /// Fourth derivative d⁴u/dx⁴ using the 5-point central stencil:
+        /// (u[i−2] − 4u[i−1] + 6u[i] − 4u[i+1] + u[i+2]) / dx⁴.
+        /// Used for Euler-Bernoulli beam equation EIu⁗ = q.
+        /// </summary>
+        public static VectorN Biharmonic1D(VectorN u, double dx,
+            BoundaryCondition bc = BoundaryCondition.Dirichlet)
+        {
+            int n = u.Length;
+            var result = new double[n];
+            double invDx4 = 1.0 / (dx * dx * dx * dx);
+
+            for (int i = 0; i < n; i++)
+            {
+                double um2 = GetValue1D(u, i - 2, n, bc);
+                double um1 = GetValue1D(u, i - 1, n, bc);
+                double u0 = u[i];
+                double up1 = GetValue1D(u, i + 1, n, bc);
+                double up2 = GetValue1D(u, i + 2, n, bc);
+
+                result[i] = (um2 - 4.0 * um1 + 6.0 * u0 - 4.0 * up1 + up2) * invDx4;
+            }
+
+            return new VectorN(result);
+        }
+
+        private static double GetValue1D(VectorN u, int i, int n, BoundaryCondition bc)
+        {
+            if (i >= 0 && i < n) return u[i];
+
+            switch (bc)
+            {
+                case BoundaryCondition.Dirichlet:
+                    return 0.0;
+                case BoundaryCondition.Neumann:
+                    return u[Math.Max(0, Math.Min(n - 1, i))];
+                case BoundaryCondition.Periodic:
+                    return u[((i % n) + n) % n];
+                default:
+                    return 0.0;
+            }
+        }
+
         // ──────────────────────────────────────────────
         //  2-D operators (Grid2D, row-major VectorN)
         // ──────────────────────────────────────────────
