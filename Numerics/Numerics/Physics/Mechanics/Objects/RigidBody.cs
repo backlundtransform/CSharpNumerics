@@ -1,7 +1,7 @@
 using CSharpNumerics.Numerics.Objects;
 using System;
 
-namespace CSharpNumerics.Physics.Objects
+namespace CSharpNumerics.Physics.Mechanics.Objects
 {
     /// <summary>
     /// Represents a rigid body with mass, inertia, position, velocity, and orientation.

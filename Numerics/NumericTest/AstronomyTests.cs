@@ -1,4 +1,4 @@
-using CSharpNumerics.Physics;
+using CSharpNumerics.Physics.Astro;
 
 namespace NumericTest
 {

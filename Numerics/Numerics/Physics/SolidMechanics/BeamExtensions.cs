@@ -2,130 +2,15 @@ using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics.FiniteDifference;
 using System;
 
-namespace CSharpNumerics.Physics;
+namespace CSharpNumerics.Physics.SolidMechanics;
 
 /// <summary>
-/// Provides extension methods for solid mechanics calculations:
-/// Hooke's law (stress/strain), second moment of area,
-/// the Euler–Bernoulli beam equation EIu⁗ = q,
-/// flexure formula, and analytical beam deflections.
+/// Extension methods for the Euler–Bernoulli beam equation and
+/// analytical beam deflection formulas for common configurations
+/// (cantilever, simply supported).
 /// </summary>
-public static class SolidExtensions
+public static class BeamExtensions
 {
-    // ═══════════════════════════════════════════════════════════════
-    //  Stress & Strain — Hooke's Law
-    // ═══════════════════════════════════════════════════════════════
-
-    #region Stress & Strain
-
-    /// <summary>
-    /// Normal (axial) stress: σ = F / A.
-    /// </summary>
-    /// <param name="force">Applied force F in newtons.</param>
-    /// <param name="area">Cross-sectional area A in m².</param>
-    /// <returns>Normal stress σ in Pa.</returns>
-    public static double NormalStress(this double force, double area)
-    {
-        if (area <= 0) throw new ArgumentException("Area must be greater than zero.");
-        return force / area;
-    }
-
-    /// <summary>
-    /// Normal strain from Hooke's law: ε = σ / E.
-    /// </summary>
-    /// <param name="stress">Normal stress σ in Pa.</param>
-    /// <param name="youngsModulus">Young's modulus E in Pa.</param>
-    /// <returns>Dimensionless strain ε.</returns>
-    public static double NormalStrain(this double stress, double youngsModulus)
-    {
-        if (youngsModulus <= 0) throw new ArgumentException("Young's modulus must be greater than zero.");
-        return stress / youngsModulus;
-    }
-
-    /// <summary>
-    /// Hooke's law: σ = E · ε.
-    /// </summary>
-    /// <param name="youngsModulus">Young's modulus E in Pa.</param>
-    /// <param name="strain">Dimensionless strain ε.</param>
-    /// <returns>Normal stress σ in Pa.</returns>
-    public static double HookesLaw(this double youngsModulus, double strain)
-    {
-        return youngsModulus * strain;
-    }
-
-    /// <summary>
-    /// Average shear stress: τ = V / A.
-    /// </summary>
-    /// <param name="shearForce">Transverse shear force V in newtons.</param>
-    /// <param name="area">Cross-sectional area A in m².</param>
-    /// <returns>Shear stress τ in Pa.</returns>
-    public static double ShearStress(this double shearForce, double area)
-    {
-        if (area <= 0) throw new ArgumentException("Area must be greater than zero.");
-        return shearForce / area;
-    }
-
-    /// <summary>
-    /// Shear modulus from Young's modulus and Poisson's ratio: G = E / (2(1 + ν)).
-    /// </summary>
-    /// <param name="youngsModulus">Young's modulus E in Pa.</param>
-    /// <param name="poissonsRatio">Poisson's ratio ν (dimensionless, typically 0–0.5).</param>
-    /// <returns>Shear modulus G in Pa.</returns>
-    public static double ShearModulus(this double youngsModulus, double poissonsRatio)
-    {
-        return youngsModulus / (2.0 * (1.0 + poissonsRatio));
-    }
-
-    #endregion
-
-    // ═══════════════════════════════════════════════════════════════
-    //  Second Moment of Area (Area Moment of Inertia)
-    // ═══════════════════════════════════════════════════════════════
-
-    #region Second Moment of Area
-
-    /// <summary>
-    /// Second moment of area for a solid rectangle about the centroidal axis: I = bh³ / 12.
-    /// </summary>
-    /// <param name="width">Width b in metres.</param>
-    /// <param name="height">Height h in metres.</param>
-    /// <returns>Second moment of area I in m⁴.</returns>
-    public static double RectangularSecondMoment(this double width, double height)
-    {
-        if (width <= 0) throw new ArgumentException("Width must be greater than zero.");
-        if (height <= 0) throw new ArgumentException("Height must be greater than zero.");
-        return width * height * height * height / 12.0;
-    }
-
-    /// <summary>
-    /// Second moment of area for a solid circle about a diametral axis: I = πr⁴ / 4.
-    /// </summary>
-    /// <param name="radius">Radius r in metres.</param>
-    /// <returns>Second moment of area I in m⁴.</returns>
-    public static double CircularSecondMoment(this double radius)
-    {
-        if (radius <= 0) throw new ArgumentException("Radius must be greater than zero.");
-        return Math.PI * radius * radius * radius * radius / 4.0;
-    }
-
-    /// <summary>
-    /// Second moment of area for a hollow tube: I = π(R⁴ − r⁴) / 4.
-    /// </summary>
-    /// <param name="outerRadius">Outer radius R in metres.</param>
-    /// <param name="innerRadius">Inner radius r in metres.</param>
-    /// <returns>Second moment of area I in m⁴.</returns>
-    public static double TubularSecondMoment(this double outerRadius, double innerRadius)
-    {
-        if (outerRadius <= 0) throw new ArgumentException("Outer radius must be greater than zero.");
-        if (innerRadius < 0 || innerRadius >= outerRadius)
-            throw new ArgumentException("Inner radius must be non-negative and less than outer radius.");
-        double R4 = outerRadius * outerRadius * outerRadius * outerRadius;
-        double r4 = innerRadius * innerRadius * innerRadius * innerRadius;
-        return Math.PI * (R4 - r4) / 4.0;
-    }
-
-    #endregion
-
     // ═══════════════════════════════════════════════════════════════
     //  Euler–Bernoulli Beam Equation: EIu⁗ = q
     // ═══════════════════════════════════════════════════════════════

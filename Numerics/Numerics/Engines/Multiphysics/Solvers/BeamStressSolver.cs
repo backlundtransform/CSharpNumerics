@@ -1,7 +1,7 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
 
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics;
+using CSharpNumerics.Physics.SolidMechanics;
 using System;
 using System.Collections.Generic;
 using System.Linq;

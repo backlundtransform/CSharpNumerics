@@ -1,4 +1,4 @@
-using CSharpNumerics.Physics;
+using CSharpNumerics.Physics.SolidMechanics;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics.FiniteDifference;
 

@@ -1,4 +1,4 @@
-namespace CSharpNumerics.Physics.Oscillations
+namespace CSharpNumerics.Physics.Mechanics.Oscillations
 {
     /// <summary>
     /// Describes the damping regime of a damped oscillator.

@@ -3,7 +3,7 @@ using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics;
 using System;
 
-namespace CSharpNumerics.Physics
+namespace CSharpNumerics.Physics.Thermodynamics
 {
     /// <summary>
     /// Provides extension methods for heat transfer calculations:

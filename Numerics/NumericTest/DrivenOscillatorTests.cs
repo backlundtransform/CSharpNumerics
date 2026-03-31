@@ -1,5 +1,5 @@
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Oscillations;
+using CSharpNumerics.Physics.Mechanics.Oscillations;
 using CSharpNumerics.Statistics.Data;
 using System;
 using System.Linq;

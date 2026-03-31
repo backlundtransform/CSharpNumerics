@@ -1,4 +1,4 @@
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 
 namespace CSharpNumerics.Engines.Game.Constraints
 {

@@ -10,12 +10,19 @@ The framework reuses the existing GIS engine infrastructure: `GeoGrid` for the s
 
 ```
 Physics/
-├── Fire/                  ← NEW — Rothermel fire physics (pure math, no grid)
-│   ├── RothermelModel.cs       Core Rothermel equations (R, IR, φw, φs)
-│   ├── FuelModel.cs            Rothermel fuel parameters (Anderson 13)
-│   ├── FuelLibrary.cs          Static registry of standard fuel models
-│   └── Enums/
-│       └── FuelModelType.cs    Enum: ShortGrass, TimberLitter, …
+├── Materials/
+│   ├── Chemical/              ← existing (ChemicalSubstance, ChemicalLibrary)
+│   ├── Nuclear/               ← existing (Isotope, IsotopeLibrary, Decay, …)
+│   ├── Engineering/           ← existing (EngineeringMaterial, EngineeringLibrary)
+│   └── Fire/                  ← NEW — fuel model data (same pattern as Chemical/Nuclear)
+│       ├── FuelModel.cs            Rothermel fuel parameters (Anderson 13)
+│       ├── FuelLibrary.cs          Static registry of standard fuel models
+│       └── Enums/
+│           └── FuelModelType.cs    Enum: ShortGrass, TimberLitter, …
+├── Environmental/
+│   └── Fire/                  ← NEW — fire spread physics (pure math, no grid)
+│       └── RothermelModel.cs       Core Rothermel equations (R, IR, φw, φs)
+├── EnvironmentalExtensions.cs ← existing (GaussianPlume, GaussianPuff)
 
 Engines/GIS/
 ├── Grid/                  ← existing (GeoGrid, GridSnapshot, GeoCell)
@@ -27,7 +34,7 @@ Engines/GIS/
 │   ├── SpreadResult.cs         Timeline of SpreadSnapshot (layers per step)
 │   ├── SpreadSnapshot.cs       Per-step cell state (burning, burned, unburned, flame length, ROS)
 │   └── Wildfire/
-│       ├── WildfireSimulator.cs     Cell-automaton spread using Physics.Fire.RothermelModel
+│       ├── WildfireSimulator.cs     Cell-automaton spread using Physics.Environmental.Fire.RothermelModel
 │       ├── WildfireParameters.cs    Runtime config (ignition, wind, moisture)
 │       └── Enums/
 │           └── CellBurnState.cs     Unburned, Burning, Burned, Firebreak
@@ -44,17 +51,21 @@ Engines/GIS/
 ### Cross-section Dependencies
 
 ```
-Physics.Fire.RothermelModel     →  Physics.Fire.FuelModel  (pure math, no grid deps)
-Physics.Fire.FuelLibrary        →  Physics.Fire.FuelModel
+Physics.Environmental.Fire.RothermelModel  →  Physics.Materials.Fire.FuelModel  (pure math, no grid deps)
+Physics.Materials.Fire.FuelLibrary         →  Physics.Materials.Fire.FuelModel
 
-Engines.GIS.WildfireSimulator   →  Physics.Fire.RothermelModel  (fire spread physics)
-                                →  Engines.GIS.TerrainGrid      (slope/aspect)
-                                →  Engines.GIS.FuelMap           (fuel per cell, wraps Physics.Fire.FuelModel)
-                                →  Engines.GIS.GeoGrid           (spatial domain, existing)
-                                →  Engines.GIS.GridSnapshot      (layers, existing)
+Engines.GIS.WildfireSimulator  →  Physics.Environmental.Fire.RothermelModel  (fire spread physics)
+                               →  Physics.Materials.Fire.FuelModel           (fuel data)
+                               →  Engines.GIS.TerrainGrid                   (slope/aspect)
+                               →  Engines.GIS.FuelMap                       (fuel per cell, wraps FuelModel)
+                               →  Engines.GIS.GeoGrid                      (spatial domain, existing)
+                               →  Engines.GIS.GridSnapshot                 (layers, existing)
 ```
 
-This follows the same separation as the plume pipeline: `Physics.Environmental.GaussianPlume()` provides the math, `Engines.GIS.PlumeSimulator` wires it to the grid.
+This follows the same separation as the plume pipeline:
+- **Materials:** `Physics.Materials.Fire.FuelModel` sits alongside `Physics.Materials.Chemical` and `Physics.Materials.Nuclear`
+- **Physics:** `Physics.Environmental.Fire.RothermelModel` extends the environmental physics alongside `EnvironmentalExtensions.GaussianPlume()`
+- **Engine:** `Engines.GIS.WildfireSimulator` wires everything to the grid, just like `Engines.GIS.PlumeSimulator`
 
 ### Rothermel Model Summary
 
@@ -78,15 +89,17 @@ Fuel parameters per model: surface-area-to-volume ratio σ, fuel bed depth δ, o
 
 ## Phase 1 — Fire Physics & Fuel Library (Physics section)
 
-Pure math and data — no grid or simulation. Lives in `CSharpNumerics.Physics.Fire`.
+Pure math and data — no grid or simulation. Two namespaces following existing conventions:
+- **Materials:** `CSharpNumerics.Physics.Materials.Fire` (alongside Chemical, Nuclear, Engineering)
+- **Physics:** `CSharpNumerics.Physics.Environmental.Fire` (alongside GaussianPlume)
 
-### Fuel models (Anderson 13) — `Physics/Fire/`
+### Fuel models (Anderson 13) — `Physics/Materials/Fire/`
 
 - [ ] `FuelModel` immutable record: `FuelModelType Type`, `string Name`, `double SurfaceAreaToVolumeRatio` (1/m), `double FuelBedDepth` (m), `double OvendryFuelLoad` (kg/m²), `double MoistureOfExtinction` (fraction), `double LowHeatContent` (kJ/kg), `double ParticleDensity` (kg/m³ — default 513 for wood)
 - [ ] `FuelModelType` enum for Anderson 13: `ShortGrass (1)`, `TimberGrassUnderstory (2)`, `TallGrass (3)`, `Chaparral (4)`, `Brush (5)`, `DormantBrush (6)`, `SouthernRough (7)`, `ClosedTimberLitter (8)`, `HardwoodLitter (9)`, `TimberLitterUnderstory (10)`, `LightLoggingSlash (11)`, `MediumLoggingSlash (12)`, `HeavyLoggingSlash (13)`, `NoFuel (0)`
 - [ ] `FuelLibrary` static class: `Get(FuelModelType)`, `TryGet(type, out fuel)`, `All`, `Register(FuelModel)` — pre-loaded with all 13 Anderson models
 
-### Rothermel core equations — `Physics/Fire/RothermelModel.cs`
+### Rothermel core equations — `Physics/Environmental/Fire/RothermelModel.cs`
 
 - [ ] `RothermelModel` static class with:
   - `RateOfSpread(FuelModel fuel, double moistureContent, double windSpeed, double slopeRadians)` → `double` (m/min)
@@ -129,7 +142,7 @@ Build the elevation surface and per-cell fuel assignment. These are grid-aware w
 
 ### Fuel map — `Engines/GIS/Terrain/FuelMap.cs`
 
-- [ ] `FuelMap` class: assigns a `Physics.Fire.FuelModel` per (ix,iy) cell on a `GeoGrid`
+- [ ] `FuelMap` class: assigns a `Physics.Materials.Fire.FuelModel` per (ix,iy) cell on a `GeoGrid`
   - `SetFuel(ix, iy, FuelModelType)`
   - `SetUniformFuel(FuelModelType)` — fill entire grid
   - `SetFuelByElevation(ranges)` — assign fuel models to elevation bands
@@ -148,7 +161,7 @@ Build the elevation surface and per-cell fuel assignment. These are grid-aware w
 
 ## Phase 3 — Cell-Automaton Fire Spread Simulator
 
-Wire `Physics.Fire.RothermelModel` to the `GeoGrid` via a cellular automaton that propagates fire across the terrain surface.
+Wire `Physics.Environmental.Fire.RothermelModel` to the `GeoGrid` via a cellular automaton that propagates fire across the terrain surface.
 
 ### Spread engine
 
@@ -275,11 +288,11 @@ Extend the existing export pipeline with fire-specific outputs.
 
 - [ ] Update `Physics/README.md` with Fire section:
   - RothermelModel overview and equations
-  - FuelModel / FuelLibrary / FuelModelType reference
+  - FuelModel / FuelLibrary / FuelModelType reference (Physics.Materials.Fire)
   - Standalone usage examples (ROS calculation without grid)
 - [ ] Update `Engines/GIS/README.md` with Wildfire / Terrain Spread section:
   - TerrainGrid, FuelMap overview
-  - WildfireSimulator usage (consuming Physics.Fire)
+  - WildfireSimulator usage (consuming Physics.Environmental.Fire + Physics.Materials.Fire)
   - Fluent API examples
   - Monte Carlo fire probability workflow
   - Export examples

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CSharpNumerics.Physics.Oscillations
+namespace CSharpNumerics.Physics.Mechanics.Oscillations
 {
     /// <summary>
     /// Models a simple (undamped) harmonic oscillator: ẍ + ω₀²x = 0.

@@ -1,7 +1,7 @@
 using CSharpNumerics.Statistics.Data;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.Physics.Oscillations
+namespace CSharpNumerics.Physics.Mechanics.Oscillations
 {
     /// <summary>
     /// Common interface for one-dimensional oscillators.

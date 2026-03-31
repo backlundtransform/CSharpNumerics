@@ -7,7 +7,7 @@ using CSharpNumerics.ML.ReinforcementLearning.Experiment;
 using CSharpNumerics.ML.ReinforcementLearning.Interfaces;
 using CSharpNumerics.ML.ReinforcementLearning.Policies;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using System;
 using System.Linq;
 

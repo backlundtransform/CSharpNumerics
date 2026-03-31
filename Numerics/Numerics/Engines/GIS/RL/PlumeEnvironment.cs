@@ -3,7 +3,7 @@ using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Simulation;
 using CSharpNumerics.ML.ReinforcementLearning.Interfaces;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;

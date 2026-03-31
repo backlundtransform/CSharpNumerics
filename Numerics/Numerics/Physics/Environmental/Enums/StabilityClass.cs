@@ -1,4 +1,4 @@
-namespace CSharpNumerics.Physics.Enums
+namespace CSharpNumerics.Physics.Environmental.Enums
 {
     /// <summary>
     /// Pasquill–Gifford atmospheric stability classes used by the Gaussian plume model.

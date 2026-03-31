@@ -2,7 +2,7 @@ using CSharpNumerics.Engines.Game;
 using CSharpNumerics.Engines.Game.BroadPhase;
 using CSharpNumerics.Engines.Game.Constraints;
 using CSharpNumerics.Engines.Game.Objects;
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using CSharpNumerics.Numerics.Objects;
 
 namespace NumericTest

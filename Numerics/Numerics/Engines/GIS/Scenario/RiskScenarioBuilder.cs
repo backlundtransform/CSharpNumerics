@@ -4,7 +4,7 @@ using CSharpNumerics.Engines.GIS.Simulation;
 using CSharpNumerics.ML.Clustering;
 using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using CSharpNumerics.Physics.Materials;
 using System;
 

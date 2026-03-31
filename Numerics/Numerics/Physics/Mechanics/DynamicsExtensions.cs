@@ -1,11 +1,11 @@
 using CSharpNumerics.Physics.Constants;
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using System;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics;
 
 
-namespace CSharpNumerics.Physics
+namespace CSharpNumerics.Physics.Mechanics
 {
     /// <summary>
     /// Provides extension methods for particle dynamics — forces, momentum, energy, work, and power.

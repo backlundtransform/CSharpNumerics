@@ -1,8 +1,8 @@
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental;
+using CSharpNumerics.Physics.Environmental.Enums;
 using CSharpNumerics.Physics.Materials;
 using NuclearDecay = CSharpNumerics.Physics.Materials.Nuclear.Decay.Decay;
 using NuclearDose = CSharpNumerics.Physics.Materials.Nuclear.RadiationDose.RadiationDose;

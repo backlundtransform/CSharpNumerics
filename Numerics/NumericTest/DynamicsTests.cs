@@ -1,6 +1,6 @@
-using CSharpNumerics.Physics;
+using CSharpNumerics.Physics.Mechanics;
 using CSharpNumerics.Physics.Constants;
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using CSharpNumerics.Numerics.Objects;
 
 namespace NumericTest

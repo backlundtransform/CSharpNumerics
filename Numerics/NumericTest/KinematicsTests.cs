@@ -1,4 +1,4 @@
-﻿using CSharpNumerics.Physics;
+using CSharpNumerics.Physics.Mechanics;
 using CSharpNumerics.Physics.Constants;
 using CSharpNumerics.Numerics.Objects;
 
@@ -109,7 +109,7 @@ namespace NumericTest
         [TestMethod]
         public void AngularSpeed_FromTangentialSpeed()
         {
-            // v = 10 m/s, r = 5 m → ω = 2 rad/s
+            // v = 10 m/s, r = 5 m ? ? = 2 rad/s
             double omega = 10.0.AngularSpeed(5);
             Assert.AreEqual(2, omega, 1e-10);
         }
@@ -117,7 +117,7 @@ namespace NumericTest
         [TestMethod]
         public void AngularVelocity_InXYPlane()
         {
-            // Object at (5,0,0) moving along +Y at 10 m/s → ω along +Z
+            // Object at (5,0,0) moving along +Y at 10 m/s ? ? along +Z
             var vel = new Vector(0, 10, 0);
             var radius = new Vector(5, 0, 0);
 
@@ -125,7 +125,7 @@ namespace NumericTest
 
             Assert.AreEqual(0, omega.x, 1e-10);
             Assert.AreEqual(0, omega.y, 1e-10);
-            Assert.AreEqual(2, omega.z, 1e-10); // ω = v/r = 10/5 = 2
+            Assert.AreEqual(2, omega.z, 1e-10); // ? = v/r = 10/5 = 2
         }
 
         [TestMethod]
@@ -143,7 +143,7 @@ namespace NumericTest
         [TestMethod]
         public void Period_FromSpeedAndRadius()
         {
-            // v = 2π m/s, r = 1 m → T = 2π·1 / 2π = 1 s
+            // v = 2p m/s, r = 1 m ? T = 2p�1 / 2p = 1 s
             double T = (2 * Math.PI).Period(1);
             Assert.AreEqual(1, T, 1e-10);
         }
@@ -151,7 +151,7 @@ namespace NumericTest
         [TestMethod]
         public void Period_GeneralCase()
         {
-            // T = 2πr/v
+            // T = 2pr/v
             double v = 10.0;
             double r = 5.0;
             double T = v.Period(r);
@@ -171,7 +171,7 @@ namespace NumericTest
         [TestMethod]
         public void TangentialVelocity_FromAngularVelocity()
         {
-            // ω along +Z, object at (3,0,0) → v = ω × r = (0,0,2) × (3,0,0) = (0,6,0)
+            // ? along +Z, object at (3,0,0) ? v = ? � r = (0,0,2) � (3,0,0) = (0,6,0)
             var omega = new Vector(0, 0, 2);
             var radius = new Vector(3, 0, 0);
 
@@ -190,7 +190,7 @@ namespace NumericTest
 
             var v = omega.TangentialVelocity(radius);
 
-            Assert.AreEqual(20, v.GetMagnitude(), 1e-10); // |v| = ω·r = 5·4
+            Assert.AreEqual(20, v.GetMagnitude(), 1e-10); // |v| = ?�r = 5�4
         }
 
         [TestMethod]
@@ -208,7 +208,7 @@ namespace NumericTest
         [TestMethod]
         public void AngularVelocity_TangentialVelocity_RoundTrip()
         {
-            // Start with ω and r, get v, then recover ω from v and r
+            // Start with ? and r, get v, then recover ? from v and r
             var omegaIn = new Vector(0, 0, 4);
             var radius = new Vector(3, 0, 0);
 
@@ -223,7 +223,7 @@ namespace NumericTest
         [TestMethod]
         public void AngularSpeed_Period_Consistent()
         {
-            // ω = 2π/T ↔ T = 2π/ω
+            // ? = 2p/T ? T = 2p/?
             double v = 8.0;
             double r = 2.0;
             double omega = v.AngularSpeed(r);
@@ -237,7 +237,7 @@ namespace NumericTest
         public void ProjectileVelocityFromAngle_45Degrees()
         {
             double speed = 20.0;
-            double angle = Math.PI / 4; // 45°
+            double angle = Math.PI / 4; // 45�
             var v0 = speed.ProjectileVelocityFromAngle(angle);
 
             double expected = 20 * Math.Cos(Math.PI / 4);
@@ -291,7 +291,7 @@ namespace NumericTest
         [TestMethod]
         public void ProjectileTimeOfFlight_Scalar_45Degrees()
         {
-            // T = 2 * v0 * sin(45°) / g
+            // T = 2 * v0 * sin(45�) / g
             double speed = 20.0;
             double angle = Math.PI / 4;
             double g = 9.80665;
@@ -304,7 +304,7 @@ namespace NumericTest
         [TestMethod]
         public void ProjectileMaxHeight_Scalar_45Degrees()
         {
-            // H = v0² sin²(θ) / (2g)
+            // H = v0� sin�(?) / (2g)
             double speed = 20.0;
             double angle = Math.PI / 4;
             double g = 9.80665;
@@ -318,7 +318,7 @@ namespace NumericTest
         [TestMethod]
         public void ProjectileRange_Scalar_45Degrees_IsMaximum()
         {
-            // Range is maximized at 45°
+            // Range is maximized at 45�
             double speed = 20.0;
             double range45 = speed.ProjectileRange(Math.PI / 4);
             double range30 = speed.ProjectileRange(Math.PI / 6);
@@ -331,7 +331,7 @@ namespace NumericTest
         [TestMethod]
         public void ProjectileRange_Scalar_EqualsFormula()
         {
-            // R = v₀² sin(2θ) / g
+            // R = v0� sin(2?) / g
             double speed = 30.0;
             double angle = Math.PI / 6;
             double g = 9.80665;
@@ -433,7 +433,7 @@ namespace NumericTest
         [TestMethod]
         public void GravitationalFieldStrength_EarthSurface()
         {
-            // g = GM/R² ≈ 9.82 m/s² (slightly differs from standard g due to rounding)
+            // g = GM/R� � 9.82 m/s� (slightly differs from standard g due to rounding)
             double g = PhysicsConstants.EarthMass.GravitationalFieldStrength(PhysicsConstants.EarthRadius);
             Assert.AreEqual(9.82, g, 0.01);
         }
@@ -441,17 +441,17 @@ namespace NumericTest
         [TestMethod]
         public void GravitationalForce_EarthMoon()
         {
-            // F = G·M·m/r²
-            double r = 3.844e8; // Earth–Moon distance in meters
+            // F = G�M�m/r�
+            double r = 3.844e8; // Earth�Moon distance in meters
             double F = PhysicsConstants.EarthMass.GravitationalForce(PhysicsConstants.MoonMass, r);
-            // ≈ 1.98e20 N
+            // � 1.98e20 N
             Assert.AreEqual(1.98e20, F, 0.02e20);
         }
 
         [TestMethod]
         public void OrbitalSpeed_ISS()
         {
-            // ISS orbits at ~408 km altitude → r = R_earth + 408km
+            // ISS orbits at ~408 km altitude ? r = R_earth + 408km
             double r = PhysicsConstants.EarthRadius + 408000;
             double v = PhysicsConstants.EarthMass.OrbitalSpeed(r);
             // Expected ~7660 m/s
@@ -461,7 +461,7 @@ namespace NumericTest
         [TestMethod]
         public void OrbitalPeriod_ISS()
         {
-            // ISS orbital period ≈ 92.6 min ≈ 5556 s
+            // ISS orbital period � 92.6 min � 5556 s
             double r = PhysicsConstants.EarthRadius + 408000;
             double T = PhysicsConstants.EarthMass.OrbitalPeriod(r);
             Assert.AreEqual(5556, T, 20);
@@ -471,7 +471,7 @@ namespace NumericTest
         public void EscapeVelocity_Earth()
         {
             double v = PhysicsConstants.EarthMass.EscapeVelocity(PhysicsConstants.EarthRadius);
-            // Expected ≈ 11186 m/s (matches PhysicsConstants.EscapeVelocityEarth)
+            // Expected � 11186 m/s (matches PhysicsConstants.EscapeVelocityEarth)
             Assert.AreEqual(PhysicsConstants.EscapeVelocityEarth, v, 10);
         }
 
@@ -546,7 +546,7 @@ namespace NumericTest
             var acc = M.OrbitalAcceleration(r, 800);
 
             // Acceleration should be antiparallel to position (points inward)
-            // Normalize both and check: â = -r̂
+            // Normalize both and check: � = -r^
             var rHat = pos.GetUnitVector();
             var aHat = acc.GetUnitVector();
 
@@ -696,7 +696,7 @@ namespace NumericTest
         {
             // Object A at x=-100 moving right at 10 m/s
             // Object B at x=+100 moving left at 10 m/s
-            // They meet at t = 100/10 = 10 s (relative speed 20, gap 200 → t=10)
+            // They meet at t = 100/10 = 10 s (relative speed 20, gap 200 ? t=10)
             var vA = new Vector(10, 0, 0);
             var vB = new Vector(-10, 0, 0);
             var pA = new Vector(-100, 0, 0);
@@ -718,7 +718,7 @@ namespace NumericTest
             var pRef = new Vector(0, 10, 0);
 
             double t = vObj.TimeOfClosestApproach(vRef, pObj, pRef);
-            // No relative motion → t=0
+            // No relative motion ? t=0
             Assert.AreEqual(0, t, 1e-10);
         }
 

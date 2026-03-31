@@ -1,7 +1,7 @@
 using CSharpNumerics.Physics.Constants;
 using System;
 
-namespace CSharpNumerics.Physics
+namespace CSharpNumerics.Physics.Astro
 {
     /// <summary>
     /// Provides extension methods for astronomical calculations:

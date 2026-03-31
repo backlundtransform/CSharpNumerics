@@ -1,6 +1,6 @@
 using CSharpNumerics.Engines.Game;
 using CSharpNumerics.Engines.Game.Constraints;
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using CSharpNumerics.Numerics.Objects;
 
 namespace NumericTest

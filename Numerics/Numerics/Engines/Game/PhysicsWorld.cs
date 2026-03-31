@@ -1,7 +1,7 @@
 using CSharpNumerics.Engines.Game.BroadPhase;
 using CSharpNumerics.Engines.Game.Constraints;
 using CSharpNumerics.Engines.Game.Objects;
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;

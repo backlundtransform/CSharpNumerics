@@ -1,9 +1,9 @@
-﻿using CSharpNumerics.Physics.Constants;
+using CSharpNumerics.Physics.Constants;
 using System;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Numerics;
 
-namespace CSharpNumerics.Physics
+namespace CSharpNumerics.Physics.Mechanics
 {
     /// <summary>
     /// Provides extension methods for kinematic calculations involving scalars and vectors.
@@ -93,7 +93,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes position assuming constant acceleration: s = s0 + v0*t + 0.5*a*t².
+        /// Computes position assuming constant acceleration: s = s0 + v0*t + 0.5*a*t�.
         /// </summary>
         public static double PositionFromConstantAcceleration(
             this double acceleration,
@@ -107,7 +107,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes position vector assuming constant acceleration: r = r0 + v0*t + 0.5*a*t².
+        /// Computes position vector assuming constant acceleration: r = r0 + v0*t + 0.5*a*t�.
         /// </summary>
         public static Vector PositionFromConstantAcceleration(
             this Vector acceleration,
@@ -125,7 +125,7 @@ namespace CSharpNumerics.Physics
         #region Time-Independent & Helper Equations (SUVAT)
 
         /// <summary>
-        /// Computes final velocity when time is unknown (Torricelli's Law): v = sqrt(v0² + 2*a*Δs).
+        /// Computes final velocity when time is unknown (Torricelli's Law): v = sqrt(v0� + 2*a*?s).
         /// </summary>
         public static double VelocityFromDisplacement(
             this double acceleration,
@@ -136,7 +136,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes final velocity vector when time is unknown: v = sqrt(v0² + 2*a*Δs) in each component.
+        /// Computes final velocity vector when time is unknown: v = sqrt(v0� + 2*a*?s) in each component.
         /// </summary>
         public static Vector VelocityFromDisplacement(this Vector acceleration, Vector displacement, Vector? initialVelocity = null)
         {
@@ -149,7 +149,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes displacement when time is unknown: Δs = (v² - v0²) / (2*a).
+        /// Computes displacement when time is unknown: ?s = (v� - v0�) / (2*a).
         /// </summary>
         public static double DisplacementFromVelocities(
             this double acceleration,
@@ -161,7 +161,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes displacement vector from velocities: Δs = (v² - v0²) / (2*a) component-wise.
+        /// Computes displacement vector from velocities: ?s = (v� - v0�) / (2*a) component-wise.
         /// </summary>
         public static Vector DisplacementFromVelocities(this Vector acceleration, Vector finalVelocity, Vector? initialVelocity = null)
         {
@@ -198,7 +198,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes displacement using average velocity: Δs = t * (v0 + v) / 2.
+        /// Computes displacement using average velocity: ?s = t * (v0 + v) / 2.
         /// </summary>
         public static double DisplacementFromAverageVelocity(
             this double time,
@@ -209,7 +209,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes displacement using average velocity vector: Δs = t * (v0 + v)/2 component-wise.
+        /// Computes displacement using average velocity vector: ?s = t * (v0 + v)/2 component-wise.
         /// </summary>
         public static Vector DisplacementFromAverageVelocity(this double time, Vector initialVelocity, Vector finalVelocity)
         {
@@ -221,7 +221,7 @@ namespace CSharpNumerics.Physics
         #region Circular Motion
 
         /// <summary>
-        /// Computes centripetal acceleration: a = v² / r.
+        /// Computes centripetal acceleration: a = v� / r.
         /// </summary>
         /// <param name="velocity">Tangential velocity.</param>
         /// <param name="radius">Radius of the circular path.</param>
@@ -231,7 +231,7 @@ namespace CSharpNumerics.Physics
             return Math.Pow(velocity, 2) / radius;
         }
         /// <summary>
-        /// Computes centripetal acceleration vector: a = v² / r, direction toward center.
+        /// Computes centripetal acceleration vector: a = v� / r, direction toward center.
         /// </summary>
         /// <param name="velocityVector">Tangential velocity vector</param>
         /// <param name="radiusVector">Vector from center to object</param>
@@ -244,7 +244,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes angular speed from tangential speed and radius: ω = v / r.
+        /// Computes angular speed from tangential speed and radius: ? = v / r.
         /// </summary>
         /// <param name="speed">Tangential speed in m/s.</param>
         /// <param name="radius">Radius of the circular path in meters.</param>
@@ -255,7 +255,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the angular velocity vector: ω = (r × v) / |r|².
+        /// Computes the angular velocity vector: ? = (r � v) / |r|�.
         /// The result points along the axis of rotation (right-hand rule).
         /// </summary>
         /// <param name="tangentialVelocity">Tangential velocity vector.</param>
@@ -268,7 +268,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the period of uniform circular motion: T = 2πr / v.
+        /// Computes the period of uniform circular motion: T = 2pr / v.
         /// </summary>
         /// <param name="speed">Tangential speed in m/s.</param>
         /// <param name="radius">Radius of the circular path in meters.</param>
@@ -280,7 +280,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the frequency of uniform circular motion: f = v / (2πr).
+        /// Computes the frequency of uniform circular motion: f = v / (2pr).
         /// </summary>
         /// <param name="speed">Tangential speed in m/s.</param>
         /// <param name="radius">Radius of the circular path in meters.</param>
@@ -292,7 +292,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the tangential velocity vector from angular velocity and radius: v = ω × r.
+        /// Computes the tangential velocity vector from angular velocity and radius: v = ? � r.
         /// </summary>
         /// <param name="angularVelocity">Angular velocity vector (along rotation axis).</param>
         /// <param name="radiusVector">Vector from center to object.</param>
@@ -307,7 +307,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Creates an initial velocity vector from launch speed and angle in the XZ plane.
-        /// v₀ = (v·cos(θ), 0, v·sin(θ)).
+        /// v0 = (v�cos(?), 0, v�sin(?)).
         /// </summary>
         /// <param name="speed">Launch speed in m/s.</param>
         /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
@@ -322,7 +322,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the position vector of a projectile at time t.
-        /// Assumes gravity acts along -Z: r(t) = v₀·t + ½g·t² with g = (0, 0, -g).
+        /// Assumes gravity acts along -Z: r(t) = v0�t + �g�t� with g = (0, 0, -g).
         /// </summary>
         /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
         /// <param name="time">Time elapsed since launch in seconds.</param>
@@ -339,7 +339,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the velocity vector of a projectile at time t.
-        /// v(t) = v₀ + g·t where g = (0, 0, -g).
+        /// v(t) = v0 + g�t where g = (0, 0, -g).
         /// </summary>
         /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
         /// <param name="time">Time elapsed since launch in seconds.</param>
@@ -355,7 +355,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the total time of flight for a projectile until it returns to ground (z = 0).
-        /// T = (v₀z + √(v₀z² + 2g·h₀)) / g.
+        /// T = (v0z + v(v0z� + 2g�h0)) / g.
         /// </summary>
         /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
         /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
@@ -367,7 +367,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the maximum height reached by a projectile: H = h₀ + v₀z² / (2g).
+        /// Computes the maximum height reached by a projectile: H = h0 + v0z� / (2g).
         /// </summary>
         /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
         /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
@@ -380,7 +380,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the horizontal range of a projectile (distance in XY plane when z returns to 0).
-        /// Range = √(v₀x² + v₀y²) · T.
+        /// Range = v(v0x� + v0y�) � T.
         /// </summary>
         /// <param name="initialVelocity">Initial velocity vector of the projectile.</param>
         /// <param name="initialHeight">Launch height above ground in meters (default 0).</param>
@@ -393,7 +393,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes time of flight for a projectile from speed and angle: T = 2v₀sin(θ)/g.
+        /// Computes time of flight for a projectile from speed and angle: T = 2v0sin(?)/g.
         /// Assumes launch and landing at the same height.
         /// </summary>
         /// <param name="speed">Launch speed in m/s.</param>
@@ -405,7 +405,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the maximum height of a projectile: H = v₀²sin²(θ) / (2g).
+        /// Computes the maximum height of a projectile: H = v0�sin�(?) / (2g).
         /// </summary>
         /// <param name="speed">Launch speed in m/s.</param>
         /// <param name="launchAngleRadians">Launch angle from horizontal in radians.</param>
@@ -417,7 +417,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the horizontal range of a projectile: R = v₀²sin(2θ) / g.
+        /// Computes the horizontal range of a projectile: R = v0�sin(2?) / g.
         /// Assumes launch and landing at the same height.
         /// </summary>
         /// <param name="speed">Launch speed in m/s.</param>
@@ -433,7 +433,7 @@ namespace CSharpNumerics.Physics
         #region Orbital Mechanics
 
         /// <summary>
-        /// Computes gravitational field strength at a distance from a mass: g = GM/r².
+        /// Computes gravitational field strength at a distance from a mass: g = GM/r�.
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="distance">Distance from the center of mass in meters.</param>
@@ -444,7 +444,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes gravitational force between two masses: F = G·m₁·m₂/r².
+        /// Computes gravitational force between two masses: F = G�m1�m2/r�.
         /// </summary>
         /// <param name="mass1">First mass in kg.</param>
         /// <param name="mass2">Second mass in kg.</param>
@@ -456,7 +456,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes circular orbital speed: v = √(GM/r).
+        /// Computes circular orbital speed: v = v(GM/r).
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="radius">Orbital radius in meters.</param>
@@ -467,7 +467,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes the orbital period for a circular orbit: T = 2π√(r³/(GM)).
+        /// Computes the orbital period for a circular orbit: T = 2pv(r�/(GM)).
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="radius">Orbital radius in meters.</param>
@@ -478,7 +478,7 @@ namespace CSharpNumerics.Physics
         }
 
         /// <summary>
-        /// Computes escape velocity from a body: v = √(2GM/r).
+        /// Computes escape velocity from a body: v = v(2GM/r).
         /// </summary>
         /// <param name="centralMass">Mass of the body in kg.</param>
         /// <param name="radius">Distance from center of mass in meters.</param>
@@ -490,7 +490,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes position on a circular orbit at time t in the XY plane.
-        /// r(t) = R·(cos(ωt), sin(ωt), 0) where ω = √(GM/R³).
+        /// r(t) = R�(cos(?t), sin(?t), 0) where ? = v(GM/R�).
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="radius">Orbital radius in meters.</param>
@@ -508,7 +508,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes velocity on a circular orbit at time t in the XY plane.
-        /// v(t) = Rω·(-sin(ωt), cos(ωt), 0) where ω = √(GM/R³).
+        /// v(t) = R?�(-sin(?t), cos(?t), 0) where ? = v(GM/R�).
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="radius">Orbital radius in meters.</param>
@@ -527,7 +527,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes centripetal acceleration on a circular orbit at time t.
-        /// a(t) = -ω²R·(cos(ωt), sin(ωt), 0) = -(GM/R²)·r̂, directed toward center.
+        /// a(t) = -?�R�(cos(?t), sin(?t), 0) = -(GM/R�)�r^, directed toward center.
         /// </summary>
         /// <param name="centralMass">Mass of the central body in kg.</param>
         /// <param name="radius">Orbital radius in meters.</param>
@@ -535,7 +535,7 @@ namespace CSharpNumerics.Physics
         public static Vector OrbitalAcceleration(this double centralMass, double radius, double time)
         {
             double omega = Math.Sqrt(PhysicsConstants.GravitationalConstant * centralMass / (radius * radius * radius));
-            double a = omega * omega * radius; // = GM/R²
+            double a = omega * omega * radius; // = GM/R�
             double angle = omega * time;
             return new Vector(
                 -a * Math.Cos(angle),
@@ -606,7 +606,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the position of an object in a reference frame moving at constant velocity.
-        /// r'(t) = (r_object + v_object·t) - (r_reference + v_reference·t).
+        /// r'(t) = (r_object + v_object�t) - (r_reference + v_reference�t).
         /// </summary>
         /// <param name="objectVelocity">Velocity of the object.</param>
         /// <param name="referenceVelocity">Velocity of the reference frame.</param>
@@ -627,7 +627,7 @@ namespace CSharpNumerics.Physics
 
         /// <summary>
         /// Computes the time of closest approach between two objects moving at constant velocity.
-        /// Minimizes |r_rel(t)|² = |Δr₀ + Δv·t|².
+        /// Minimizes |r_rel(t)|� = |?r0 + ?v�t|�.
         /// Returns the time at which distance is minimized (can be negative if closest approach was in the past).
         /// </summary>
         /// <param name="objectVelocity">Velocity of the object.</param>

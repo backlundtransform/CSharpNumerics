@@ -1,4 +1,4 @@
-using CSharpNumerics.Physics.Objects;
+using CSharpNumerics.Physics.Mechanics.Objects;
 using System.Collections.Generic;
 
 namespace CSharpNumerics.Engines.Game.BroadPhase

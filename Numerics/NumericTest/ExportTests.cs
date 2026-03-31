@@ -6,7 +6,7 @@ using CSharpNumerics.Engines.GIS.Simulation;
 using CSharpNumerics.ML.Clustering.Algorithms;
 using CSharpNumerics.ML.Clustering.Evaluators;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;

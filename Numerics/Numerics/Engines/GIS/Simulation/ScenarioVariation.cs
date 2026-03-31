@@ -1,4 +1,4 @@
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using System;
 using System.Collections.Generic;
 

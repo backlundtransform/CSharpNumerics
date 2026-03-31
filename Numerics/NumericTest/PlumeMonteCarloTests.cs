@@ -2,7 +2,7 @@ using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Simulation;
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Enums;
+using CSharpNumerics.Physics.Environmental.Enums;
 using CSharpNumerics.Statistics.MonteCarlo;
 using CSharpNumerics.Statistics.Random;
 using System;
