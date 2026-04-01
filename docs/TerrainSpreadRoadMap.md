@@ -22,7 +22,7 @@ Physics/
 ├── Environmental/
 │   └── Fire/                  ← NEW — fire spread physics (pure math, no grid)
 │       └── RothermelModel.cs       Core Rothermel equations (R, IR, φw, φs)
-├── EnvironmentalExtensions.cs ← existing (GaussianPlume, GaussianPuff)
+
 
 Engines/GIS/
 ├── Grid/                  ← existing (GeoGrid, GridSnapshot, GeoCell)
@@ -95,13 +95,13 @@ Pure math and data — no grid or simulation. Two namespaces following existing 
 
 ### Fuel models (Anderson 13) — `Physics/Materials/Fire/`
 
-- [ ] `FuelModel` immutable record: `FuelModelType Type`, `string Name`, `double SurfaceAreaToVolumeRatio` (1/m), `double FuelBedDepth` (m), `double OvendryFuelLoad` (kg/m²), `double MoistureOfExtinction` (fraction), `double LowHeatContent` (kJ/kg), `double ParticleDensity` (kg/m³ — default 513 for wood)
-- [ ] `FuelModelType` enum for Anderson 13: `ShortGrass (1)`, `TimberGrassUnderstory (2)`, `TallGrass (3)`, `Chaparral (4)`, `Brush (5)`, `DormantBrush (6)`, `SouthernRough (7)`, `ClosedTimberLitter (8)`, `HardwoodLitter (9)`, `TimberLitterUnderstory (10)`, `LightLoggingSlash (11)`, `MediumLoggingSlash (12)`, `HeavyLoggingSlash (13)`, `NoFuel (0)`
-- [ ] `FuelLibrary` static class: `Get(FuelModelType)`, `TryGet(type, out fuel)`, `All`, `Register(FuelModel)` — pre-loaded with all 13 Anderson models
+- [x] `FuelModel` immutable record: `FuelModelType Type`, `string Name`, `double SurfaceAreaToVolumeRatio` (1/m), `double FuelBedDepth` (m), `double OvendryFuelLoad` (kg/m²), `double MoistureOfExtinction` (fraction), `double LowHeatContent` (kJ/kg), `double ParticleDensity` (kg/m³ — default 513 for wood)
+- [x] `FuelModelType` enum for Anderson 13: `ShortGrass (1)`, `TimberGrassUnderstory (2)`, `TallGrass (3)`, `Chaparral (4)`, `Brush (5)`, `DormantBrush (6)`, `SouthernRough (7)`, `ClosedTimberLitter (8)`, `HardwoodLitter (9)`, `TimberLitterUnderstory (10)`, `LightLoggingSlash (11)`, `MediumLoggingSlash (12)`, `HeavyLoggingSlash (13)`, `NoFuel (0)`
+- [x] `FuelLibrary` static class: `Get(FuelModelType)`, `TryGet(type, out fuel)`, `All`, `Register(FuelModel)` — pre-loaded with all 13 Anderson models
 
 ### Rothermel core equations — `Physics/Environmental/Fire/RothermelModel.cs`
 
-- [ ] `RothermelModel` static class with:
+- [x] `RothermelModel` static class with:
   - `RateOfSpread(FuelModel fuel, double moistureContent, double windSpeed, double slopeRadians)` → `double` (m/min)
   - `ReactionIntensity(FuelModel fuel, double moistureContent)` → `double` IR (kJ/m²·min)
   - `WindFactor(FuelModel fuel, double midflameWindSpeed)` → `double` φw
@@ -115,15 +115,15 @@ Pure math and data — no grid or simulation. Two namespaces following existing 
 
 ### Tests — Phase 1
 
-- [ ] `FuelLibrary` returns all 13 Anderson models, verify Short Grass (σ=3500 1/ft ≈ 11483 1/m, δ=1 ft ≈ 0.305 m)
-- [ ] Short Grass (model 1), moisture 0.05, wind 5 mph, flat → R ≈ 23–25 m/min (BehavePlus reference)
-- [ ] Chaparral (model 4), moisture 0.10, wind 10 mph, flat → verify against BehavePlus
-- [ ] Slope factor: flat terrain → φs = 0
-- [ ] Slope factor: 30° slope → φs > 0, increasing with slope
-- [ ] Wind factor: zero wind → φw = 0
-- [ ] Moisture at extinction → R = 0 (no spread)
-- [ ] Moisture above extinction → R = 0 (clamp)
-- [ ] Flame length proportional to fireline intensity
+- [x] `FuelLibrary` returns all 13 Anderson models, verify Short Grass (σ=3500 1/ft ≈ 11483 1/m, δ=1 ft ≈ 0.305 m)
+- [x] Short Grass (model 1), moisture 0.05, wind 5 mph, flat → R ≈ 23–25 m/min (BehavePlus reference)
+- [x] Chaparral (model 4), moisture 0.10, wind 10 mph, flat → verify against BehavePlus
+- [x] Slope factor: flat terrain → φs = 0
+- [x] Slope factor: 30° slope → φs > 0, increasing with slope
+- [x] Wind factor: zero wind → φw = 0
+- [x] Moisture at extinction → R = 0 (no spread)
+- [x] Moisture above extinction → R = 0 (clamp)
+- [x] Flame length proportional to fireline intensity
 
 ---
 
@@ -133,29 +133,29 @@ Build the elevation surface and per-cell fuel assignment. These are grid-aware w
 
 ### Terrain grid — `Engines/GIS/Terrain/TerrainGrid.cs`
 
-- [ ] `TerrainGrid` class wrapping a `GeoGrid` (ground plane, Nz=1) with a `double[] Elevation` array (one height per (ix,iy) cell)
-- [ ] `FromFunction(grid, Func<double,double,double> elevationFn)` — procedural elevation from f(x,y)
-- [ ] `FromArray(grid, double[,] elevation)` — load from 2D array (row = iy, col = ix)
-- [ ] `Slope(ix, iy)` — terrain slope in radians using central-difference gradient: $\tan(\theta) = \sqrt{(\partial z/\partial x)^2 + (\partial z/\partial y)^2}$
-- [ ] `Aspect(ix, iy)` — downslope direction in radians (0=N, π/2=E, π=S, 3π/2=W)
-- [ ] `SlopeInDirection(ix, iy, Vector2 direction)` — slope component along a given heading (needed for directional Rothermel $\phi_s$)
+- [x] `TerrainGrid` class wrapping a `GeoGrid` (ground plane, Nz=1) with a `double[] Elevation` array (one height per (ix,iy) cell)
+- [x] `FromFunction(grid, Func<double,double,double> elevationFn)` — procedural elevation from f(x,y)
+- [x] `FromArray(grid, double[,] elevation)` — load from 2D array (row = iy, col = ix)
+- [x] `Slope(ix, iy)` — terrain slope in radians using central-difference gradient: $\tan(\theta) = \sqrt{(\partial z/\partial x)^2 + (\partial z/\partial y)^2}$
+- [x] `Aspect(ix, iy)` — downslope direction in radians (0=N, π/2=E, π=S, 3π/2=W)
+- [x] `SlopeInDirection(ix, iy, Vector direction)` — slope component along a given heading (needed for directional Rothermel $\phi_s$)
 
 ### Fuel map — `Engines/GIS/Terrain/FuelMap.cs`
 
-- [ ] `FuelMap` class: assigns a `Physics.Materials.Fire.FuelModel` per (ix,iy) cell on a `GeoGrid`
+- [x] `FuelMap` class: assigns a `Physics.Materials.Fire.FuelModel` per (ix,iy) cell on a `GeoGrid`
   - `SetFuel(ix, iy, FuelModelType)`
   - `SetUniformFuel(FuelModelType)` — fill entire grid
-  - `SetFuelByElevation(ranges)` — assign fuel models to elevation bands
+  - `SetFuelByElevation(terrain, ranges)` — assign fuel models to elevation bands
   - `GetFuel(ix, iy)` → `FuelModel`
   - `GetMoisture(ix, iy)` → `double` — per-cell dead fuel moisture content (fraction)
   - `SetMoisture(ix, iy, double)` / `SetUniformMoisture(double)`
 
 ### Tests — Phase 2
 
-- [ ] `TerrainGrid` slope/aspect on flat surface → slope ≈ 0
-- [ ] `TerrainGrid` slope/aspect on known tilted plane → verify against analytical result
-- [ ] `SlopeInDirection` matches full slope when direction = aspect, zero when perpendicular
-- [ ] `FuelMap` set/get round-trip, uniform fill, moisture defaults
+- [x] `TerrainGrid` slope/aspect on flat surface → slope ≈ 0
+- [x] `TerrainGrid` slope/aspect on known tilted plane → verify against analytical result
+- [x] `SlopeInDirection` matches full slope when direction = aspect, zero when perpendicular
+- [x] `FuelMap` set/get round-trip, uniform fill, moisture defaults
 
 ---
 
@@ -165,25 +165,25 @@ Wire `Physics.Environmental.Fire.RothermelModel` to the `GeoGrid` via a cellular
 
 ### Spread engine
 
-- [ ] `CellBurnState` enum: `Unburned`, `Burning`, `Burned`, `Firebreak`
-- [ ] `ISpreadSimulator` interface:
+- [x] `CellBurnState` enum: `Unburned`, `Burning`, `Burned`, `Firebreak`
+- [x] `ISpreadSimulator` interface:
   ```csharp
   IReadOnlyList<SpreadSnapshot> Run(GeoGrid grid, TerrainGrid terrain, FuelMap fuelMap,
-      WildfireParameters parameters, TimeFrame timeFrame);
+      TimeFrame timeFrame);
   ```
-- [ ] `SpreadSnapshot` class — extends or wraps `GridSnapshot` with:
+- [x] `SpreadSnapshot` class — extends or wraps `GridSnapshot` with:
   - Layer `"burnState"` (0=Unburned, 1=Burning, 2=Burned, 3=Firebreak)
   - Layer `"flameLength"` (metres)
   - Layer `"rateOfSpread"` (m/min)
   - Layer `"burnTime"` (seconds since ignition, 0 if unburned)
   - `BurningCellCount`, `BurnedCellCount`, `BurnedAreaHectares`
-- [ ] `WildfireParameters`:
+- [x] `WildfireParameters`:
   - `IgnitionPoints` — list of (ix,iy) or world positions
   - `MidflameWindSpeed` (m/s)
   - `WindDirection` (Vector — same convention as PlumeSimulator)
   - `BurnDuration` (seconds — how long a cell stays in Burning state before transitioning to Burned)
   - `SpotFireEnabled` (bool) — future, default false
-- [ ] `WildfireSimulator : ISpreadSimulator`
+- [x] `WildfireSimulator : ISpreadSimulator`
   - 8-neighbour spread (N/S/E/W + diagonals, diagonal distance = step√2)
   - For each Burning cell, compute ROS towards each unburned neighbour:
     1. Direction from burning cell to neighbour
@@ -197,13 +197,13 @@ Wire `Physics.Environmental.Fire.RothermelModel` to the `GeoGrid` via a cellular
 
 ### Tests — Phase 3
 
-- [ ] Single ignition on flat uniform Short Grass with no wind → near-circular spread pattern
-- [ ] Ignition with steady wind → elliptical spread (elongated downwind)
-- [ ] Uphill slope accelerates spread, downhill decelerates
-- [ ] `NoFuel` cells block fire (act as firebreaks)
-- [ ] `Firebreak` cell state blocks spread
-- [ ] `BurnedAreaHectares` increases monotonically
-- [ ] Zero ROS at high moisture (saturated fuel) → fire does not spread
+- [x] Single ignition on flat uniform Short Grass with no wind → near-circular spread pattern
+- [x] Ignition with steady wind → elliptical spread (elongated downwind)
+- [x] Uphill slope accelerates spread, downhill decelerates
+- [x] `NoFuel` cells block fire (act as firebreaks)
+- [x] `Firebreak` cell state blocks spread
+- [x] `BurnedAreaHectares` increases monotonically
+- [x] Zero ROS at high moisture (saturated fuel) → fire does not spread
 
 ---
 
@@ -213,8 +213,8 @@ Expose wildfire through the same fluent builder pattern as the plume scenario, i
 
 ### Builder
 
-- [ ] `RiskScenario.ForWildfire()` → returns `WildfireScenarioBuilder`
-- [ ] `WildfireScenarioBuilder` fluent chain:
+- [x] `RiskScenario.ForWildfire()` → returns `WildfireScenarioBuilder`
+- [x] `WildfireScenarioBuilder` fluent chain:
   ```csharp
   RiskScenario
       .ForWildfire()
@@ -227,7 +227,7 @@ Expose wildfire through the same fluent builder pattern as the plume scenario, i
       .OverTime(0, 7200, 60)            // 2 hours, 1-min steps
       .RunSingle();                      // → WildfireScenarioResult
   ```
-- [ ] `WildfireScenarioResult` — like `ScenarioResult` but fire-specific:
+- [x] `WildfireScenarioResult` — like `ScenarioResult` but fire-specific:
   - `Snapshots` — `List<SpreadSnapshot>`
   - `FinalBurnedArea` (hectares)
   - `MaxFlameLength` (metres)
@@ -236,24 +236,24 @@ Expose wildfire through the same fluent builder pattern as the plume scenario, i
 
 ### Monte Carlo
 
-- [ ] `WildfireVariation` — stochastic parameter ranges:
+- [x] `WildfireVariation` — stochastic parameter ranges:
   - Wind speed range
   - Wind direction jitter
   - Moisture content range
   - Ignition location offset radius
-- [ ] `.WithVariation(v => v.WindSpeed(3, 8).Moisture(0.04, 0.12))`
-- [ ] `.RunMonteCarlo(iterations)` → `WildfireMonteCarloResult`
+- [x] `.WithVariation(v => v.WindSpeed(3, 8).Moisture(0.04, 0.12))`
+- [x] `.RunMonteCarlo(iterations)` → `WildfireMonteCarloResult`
   - Per-cell burn probability across all iterations
   - Mean / max burned area statistics
-- [ ] `.AnalyzeWith(clustering)` — reuse existing `ScenarioClusterAnalyzer` on the burn-probability matrix
-- [ ] `.Build()` → `WildfireScenarioResult` with probability-weighted outputs
+- [ ] `.AnalyzeWith(clustering)` — reuse existing `ScenarioClusterAnalyzer` on the burn-probability matrix *(deferred — requires adapting plume cluster pipeline to wildfire result)*
+- [ ] `.Build()` → `WildfireScenarioResult` with probability-weighted outputs *(deferred — depends on AnalyzeWith)*
 
 ### Tests — Phase 4
 
-- [ ] Fluent API deterministic round-trip: build → run → inspect burned area
-- [ ] Monte Carlo 50 iterations: burn probability ∈ [0, 1] for all cells
-- [ ] Clustering identifies distinct fire spread regimes (high-wind vs. low-wind clusters)
-- [ ] `GenerateFirePerimeter()` returns valid polygon enclosing burned cells
+- [x] Fluent API deterministic round-trip: build → run → inspect burned area
+- [x] Monte Carlo 20 iterations: burn probability ∈ [0, 1] for all cells
+- [ ] Clustering identifies distinct fire spread regimes (high-wind vs. low-wind clusters) *(deferred — depends on AnalyzeWith integration)*
+- [x] `GenerateFirePerimeter()` returns valid polygon enclosing burned cells
 
 ---
 

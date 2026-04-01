@@ -1,3 +1,4 @@
+using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Engines.GIS.Scenario
@@ -28,5 +29,11 @@ namespace CSharpNumerics.Engines.GIS.Scenario
         /// <param name="emissionRate">Emission rate Q (kg/s).</param>
         public static RiskScenarioBuilder ForGaussianPlume(double emissionRate)
             => new RiskScenarioBuilder(emissionRate);
+
+        /// <summary>
+        /// Begin building a wildfire spread risk scenario.
+        /// </summary>
+        public static WildfireScenarioBuilder ForWildfire()
+            => new WildfireScenarioBuilder();
     }
 }
