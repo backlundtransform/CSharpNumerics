@@ -1,7 +1,9 @@
 using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
+using CSharpNumerics.Engines.GIS.Spread;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace CSharpNumerics.Engines.GIS.Export
@@ -146,6 +148,115 @@ namespace CSharpNumerics.Engines.GIS.Export
             }
 
             return new UnityBinaryData(header, concentration, probability);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Save — fire spread snapshots (burnState + flameLength)
+        // ═══════════════════════════════════════════════════════════════
+
+        private static readonly byte[] FireMagic = { (byte)'G', (byte)'F', (byte)'I', (byte)'R' };
+
+        /// <summary>
+        /// Saves a time series of <see cref="SpreadSnapshot"/> to a binary file.
+        /// Per time step: float[cells] burnState + float[cells] flameLength.
+        /// Uses magic "GFIR" to distinguish from plume "GPLM" files.
+        /// </summary>
+        public static void SaveFire(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            GeoGrid grid,
+            TimeFrame timeFrame,
+            string path)
+        {
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+            if (grid == null) throw new ArgumentNullException(nameof(grid));
+            if (timeFrame == null) throw new ArgumentNullException(nameof(timeFrame));
+
+            using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+            using var bw = new BinaryWriter(fs);
+
+            WriteFireHeader(bw, grid, timeFrame, snapshots.Count);
+
+            foreach (var snap in snapshots)
+            {
+                WriteFloatLayer(bw, snap.Snapshot.GetLayer("burnState"));
+                WriteFloatLayer(bw, snap.Snapshot.GetLayer("flameLength"));
+            }
+        }
+
+        /// <summary>
+        /// Reads a fire binary file (magic "GFIR").
+        /// Returns header + per-timestep burnState and flameLength layers.
+        /// </summary>
+        public static UnityBinaryData ReadFire(string path)
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            using var br = new BinaryReader(fs);
+
+            var magic = br.ReadBytes(4);
+            if (magic.Length < 4 ||
+                magic[0] != FireMagic[0] || magic[1] != FireMagic[1] ||
+                magic[2] != FireMagic[2] || magic[3] != FireMagic[3])
+                throw new InvalidDataException("Invalid magic bytes — not a GFIR fire file.");
+
+            int version = br.ReadInt32();
+            if (version != Version)
+                throw new InvalidDataException($"Unsupported version {version}.");
+
+            var header = ReadDimsAndTime(br);
+            int cellCount = header.Nx * header.Ny * header.Nz;
+
+            // BurnState stored in Concentration slot, FlameLength in Probability slot
+            var burnState = new float[header.TimeStepCount][];
+            var flameLength = new float[header.TimeStepCount][];
+
+            for (int t = 0; t < header.TimeStepCount; t++)
+            {
+                burnState[t] = ReadFloatLayer(br, cellCount);
+                flameLength[t] = ReadFloatLayer(br, cellCount);
+            }
+
+            return new UnityBinaryData(header, burnState, flameLength);
+        }
+
+        private static void WriteFireHeader(BinaryWriter bw, GeoGrid grid, TimeFrame timeFrame, int timeStepCount)
+        {
+            bw.Write(FireMagic);
+            bw.Write(Version);
+            bw.Write(grid.Nx);
+            bw.Write(grid.Ny);
+            bw.Write(grid.Nz);
+            bw.Write(timeStepCount);
+            bw.Write(grid.XMin);
+            bw.Write(grid.XMax);
+            bw.Write(grid.YMin);
+            bw.Write(grid.YMax);
+            bw.Write(grid.ZMin);
+            bw.Write(grid.ZMax);
+            bw.Write(timeFrame.Start);
+            bw.Write(timeFrame.End);
+            bw.Write(timeFrame.StepSeconds);
+        }
+
+        private static UnityBinaryHeader ReadDimsAndTime(BinaryReader br)
+        {
+            int nx = br.ReadInt32();
+            int ny = br.ReadInt32();
+            int nz = br.ReadInt32();
+            int timeStepCount = br.ReadInt32();
+            double xMin = br.ReadDouble();
+            double xMax = br.ReadDouble();
+            double yMin = br.ReadDouble();
+            double yMax = br.ReadDouble();
+            double zMin = br.ReadDouble();
+            double zMax = br.ReadDouble();
+            double tStart = br.ReadDouble();
+            double tEnd = br.ReadDouble();
+            double tStep = br.ReadDouble();
+
+            return new UnityBinaryHeader(
+                nx, ny, nz, timeStepCount,
+                xMin, xMax, yMin, yMax, zMin, zMax,
+                tStart, tEnd, tStep);
         }
 
         // ═══════════════════════════════════════════════════════════════

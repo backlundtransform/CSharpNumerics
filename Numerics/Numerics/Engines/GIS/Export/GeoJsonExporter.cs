@@ -1,6 +1,8 @@
 using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
+using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -259,6 +261,208 @@ namespace CSharpNumerics.Engines.GIS.Export
             AppendProp(sb, "areaSquareMetres", polygon.AreaSquareMetres, false);
             sb.Append("}}");
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  SpreadSnapshot — fire point features
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Exports a single <see cref="SpreadSnapshot"/> as point features with
+        /// fire-specific properties: burnState, flameLength, rateOfSpread.
+        /// </summary>
+        public static string ToGeoJson(SpreadSnapshot snapshot, ExportMetadata metadata = null)
+        {
+            if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            var proj = snapshot.Grid.Projection;
+            var grid = snapshot.Grid;
+
+            var bs = snapshot.Snapshot.GetLayer("burnState");
+            var fl = snapshot.Snapshot.GetLayer("flameLength");
+            var ros = snapshot.Snapshot.GetLayer("rateOfSpread");
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, snapshot.Time, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int i = 0; i < grid.CellCount; i++)
+            {
+                var pos = grid.CellCentre(i);
+                if (!first) sb.Append(',');
+                first = false;
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                AppendCoord(sb, pos, proj);
+                sb.Append("]},\"properties\":{");
+                AppendPropInt(sb, "burnState", (int)bs[i], true);
+                AppendProp(sb, "flameLength", fl[i], false);
+                AppendProp(sb, "rateOfSpread", ros[i], false);
+                AppendProp(sb, "timeStep", snapshot.Time, false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports a time series of <see cref="SpreadSnapshot"/> as a single
+        /// FeatureCollection. Each cell × time-step is a separate feature.
+        /// </summary>
+        public static string ToGeoJson(IReadOnlyList<SpreadSnapshot> snapshots, ExportMetadata metadata = null)
+        {
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+            if (snapshots.Count == 0) throw new ArgumentException("snapshots must not be empty.");
+            var proj = snapshots[0].Grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, null, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                var snap = snapshots[t];
+                var grid = snap.Grid;
+                var bs = snap.Snapshot.GetLayer("burnState");
+                var fl = snap.Snapshot.GetLayer("flameLength");
+                var ros = snap.Snapshot.GetLayer("rateOfSpread");
+
+                for (int i = 0; i < grid.CellCount; i++)
+                {
+                    var pos = grid.CellCentre(i);
+                    if (!first) sb.Append(',');
+                    first = false;
+
+                    sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                    AppendCoord(sb, pos, proj);
+                    sb.Append("]},\"properties\":{");
+                    AppendPropInt(sb, "burnState", (int)bs[i], true);
+                    AppendProp(sb, "flameLength", fl[i], false);
+                    AppendProp(sb, "rateOfSpread", ros[i], false);
+                    AppendProp(sb, "timeStep", snap.Time, false);
+                    AppendPropInt(sb, "timeIndex", t, false);
+                    sb.Append("}}");
+                }
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports fire perimeters (one polygon per time step) as a
+        /// GeoJSON FeatureCollection. Each polygon has a <c>timeIndex</c>
+        /// and <c>timeStep</c> property.
+        /// </summary>
+        public static string FirePerimetersToGeoJson(
+            IReadOnlyList<ExposurePolygon> perimeters,
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            Projection projection = null)
+        {
+            if (perimeters == null) throw new ArgumentNullException(nameof(perimeters));
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+
+            var sb = new StringBuilder();
+            sb.Append("{\"type\":\"FeatureCollection\",");
+            sb.Append("\"metadata\":{");
+            sb.Append(projection != null ? "\"crs\":\"WGS84\"" : "\"crs\":\"local\"");
+            sb.Append(",\"type\":\"firePerimeters\"");
+            sb.Append("},\"features\":[");
+
+            bool first = true;
+            for (int i = 0; i < perimeters.Count; i++)
+            {
+                var poly = perimeters[i];
+                if (poly == null || poly.Boundary == null || poly.Boundary.Count < 3)
+                    continue;
+
+                if (!first) sb.Append(',');
+                first = false;
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":");
+                sb.Append("{\"type\":\"Polygon\",\"coordinates\":[[");
+                for (int v = 0; v < poly.Boundary.Count; v++)
+                {
+                    if (v > 0) sb.Append(',');
+                    sb.Append('[');
+                    AppendCoord(sb, poly.Boundary[v], projection);
+                    sb.Append(']');
+                }
+                sb.Append("]]},\"properties\":{");
+                AppendPropInt(sb, "timeIndex", i, true);
+                AppendProp(sb, "timeStep", i < snapshots.Count ? snapshots[i].Time : 0, false);
+                AppendProp(sb, "areaSquareMetres", poly.AreaSquareMetres, false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports per-cell burn probability from a Monte Carlo wildfire result
+        /// as a GeoJSON FeatureCollection heatmap.
+        /// </summary>
+        public static string BurnProbabilityToGeoJson(
+            WildfireMonteCarloResult mcResult,
+            ExportMetadata metadata = null)
+        {
+            if (mcResult == null) throw new ArgumentNullException(nameof(mcResult));
+            var grid = mcResult.Grid;
+            var proj = grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, null, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int i = 0; i < grid.CellCount; i++)
+            {
+                var pos = grid.CellCentre(i);
+                if (!first) sb.Append(',');
+                first = false;
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                AppendCoord(sb, pos, proj);
+                sb.Append("]},\"properties\":{");
+                AppendProp(sb, "burnProbability", mcResult.BurnProbability[i], true);
+                AppendPropInt(sb, "iterations", mcResult.Iterations, false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>Save a wildfire spread snapshot to a GeoJSON file.</summary>
+        public static void Save(SpreadSnapshot snapshot, string path, ExportMetadata metadata = null)
+            => File.WriteAllText(path, ToGeoJson(snapshot, metadata), Encoding.UTF8);
+
+        /// <summary>Save a wildfire spread time series to a GeoJSON file.</summary>
+        public static void Save(IReadOnlyList<SpreadSnapshot> snapshots, string path, ExportMetadata metadata = null)
+            => File.WriteAllText(path, ToGeoJson(snapshots, metadata), Encoding.UTF8);
+
+        /// <summary>Save fire perimeters to a GeoJSON file.</summary>
+        public static void SaveFirePerimeters(
+            IReadOnlyList<ExposurePolygon> perimeters,
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            string path,
+            Projection projection = null)
+            => File.WriteAllText(path, FirePerimetersToGeoJson(perimeters, snapshots, projection), Encoding.UTF8);
+
+        /// <summary>Save burn probability heatmap to a GeoJSON file.</summary>
+        public static void SaveBurnProbability(
+            WildfireMonteCarloResult mcResult,
+            string path,
+            ExportMetadata metadata = null)
+            => File.WriteAllText(path, BurnProbabilityToGeoJson(mcResult, metadata), Encoding.UTF8);
 
         // ═══════════════════════════════════════════════════════════════
         //  File writers

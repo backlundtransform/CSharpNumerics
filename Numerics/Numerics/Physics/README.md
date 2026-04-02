@@ -1499,6 +1499,95 @@ double Pe = 2.0.PecletNumber(characteristicLength: 100, diffusionCoefficient: 0.
 // Pe = 2000 → advection-dominated
 ```
 
+### Rothermel Surface Fire Spread
+
+The `RothermelModel` static class implements the **Rothermel (1972) surface fire spread model** — the standard used by FARSITE, FlamMap, and BehavePlus. All parameters are in **SI units**.
+
+**Rate of spread:**
+
+$$R = \frac{I_R \cdot \xi \cdot (1 + \phi_w + \phi_s)}{\rho_b \cdot \varepsilon \cdot Q_{ig}}$$
+
+```csharp
+using CSharpNumerics.Physics.Environmental.Fire;
+using CSharpNumerics.Physics.Materials.Fire;
+using CSharpNumerics.Physics.Materials.Fire.Enums;
+
+// Get a standard Anderson 13 fuel model
+FuelModel grass = FuelLibrary.Get(FuelModelType.ShortGrass);
+
+// Rate of spread on flat terrain, moderate wind
+double ros = RothermelModel.RateOfSpread(
+    fuel: grass,
+    moistureContent: 0.05,     // 5% dead fuel moisture
+    windSpeed: 2.24,           // m/s (≈ 5 mph mid-flame)
+    slopeRadians: 0);          // flat
+// ros ≈ 23–25 m/min for Short Grass
+
+// Individual sub-equations
+double IR   = RothermelModel.ReactionIntensity(grass, moistureContent: 0.05);
+double phiW = RothermelModel.WindFactor(grass, midflameWindSpeed: 2.24);
+double phiS = RothermelModel.SlopeFactor(
+    RothermelModel.PackingRatio(grass), slopeRadians: Math.PI / 6);
+double xi   = RothermelModel.PropagatingFluxRatio(grass);
+double Qig  = RothermelModel.HeatOfPreignition(moistureContent: 0.05);
+double eps  = RothermelModel.EffectiveHeatingNumber(grass);
+
+// Flame length from Byram's fireline intensity correlation
+double fl = RothermelModel.FlameLength(IR, ros);  // metres
+```
+
+**Sub-equation reference:**
+
+| Method | Symbol | Unit |
+|--------|--------|------|
+| `ReactionIntensity` | $I_R$ | kJ/m²·min |
+| `WindFactor` | $\phi_w$ | — |
+| `SlopeFactor` | $\phi_s$ | — |
+| `PropagatingFluxRatio` | $\xi$ | — |
+| `HeatOfPreignition` | $Q_{ig}$ | kJ/kg |
+| `EffectiveHeatingNumber` | $\varepsilon$ | — |
+| `PackingRatio` | $\beta$ | — |
+| `OptimalPackingRatio` | $\beta_{op}$ | — |
+| `FlameLength` | $L$ | m |
+
+### Fuel Models (Anderson 13)
+
+The `FuelModel` readonly struct holds Rothermel fuel parameters. All 13 standard Anderson models are pre-loaded in `FuelLibrary`:
+
+```csharp
+// All models are in SI units
+FuelModel chaparral = FuelLibrary.Get(FuelModelType.Chaparral);
+// chaparral.SurfaceAreaToVolumeRatio = 4921 (1/m)
+// chaparral.FuelBedDepth             = 1.829 (m)
+// chaparral.OvendryFuelLoad          = 3.663 (kg/m²)
+// chaparral.MoistureOfExtinction     = 0.20
+
+// Iterate all models
+foreach (var fuel in FuelLibrary.All)
+    Console.WriteLine($"{fuel.Type}: δ={fuel.FuelBedDepth:F3} m");
+
+// Register a custom fuel model at runtime
+FuelLibrary.Register(new FuelModel(
+    (FuelModelType)99, "Custom Sage", sigma: 5000,
+    delta: 0.5, w0: 1.2, Mx: 0.25, h: 18000));
+```
+
+| Model | Type | σ (1/m) | δ (m) | w₀ (kg/m²) | Mₓ |
+|-------|------|---------|-------|-------------|-----|
+| 1 | Short Grass | 11,483 | 0.305 | 0.166 | 0.12 |
+| 2 | Timber/Grass Understory | 3,281 | 0.305 | 0.897 | 0.15 |
+| 3 | Tall Grass | 4,921 | 0.762 | 0.675 | 0.25 |
+| 4 | Chaparral | 6,562 | 1.829 | 3.663 | 0.20 |
+| 5 | Brush | 6,562 | 0.610 | 0.784 | 0.20 |
+| 6 | Dormant Brush | 5,741 | 0.762 | 0.672 | 0.25 |
+| 7 | Southern Rough | 5,741 | 0.762 | 0.529 | 0.40 |
+| 8 | Closed Timber Litter | 6,562 | 0.061 | 1.121 | 0.30 |
+| 9 | Hardwood Litter | 8,202 | 0.061 | 0.327 | 0.25 |
+| 10 | Timber/Litter Understory | 6,562 | 0.305 | 1.121 | 0.25 |
+| 11 | Light Logging Slash | 4,921 | 0.305 | 1.345 | 0.15 |
+| 12 | Medium Logging Slash | 4,921 | 0.701 | 3.363 | 0.20 |
+| 13 | Heavy Logging Slash | 4,921 | 0.914 | 5.604 | 0.25 |
+
 ---
 
 ## 🔥 Heat Extensions

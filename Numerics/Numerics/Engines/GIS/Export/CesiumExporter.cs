@@ -1,8 +1,12 @@
 using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
+using CSharpNumerics.Engines.GIS.Scenario;
+using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
 using CSharpNumerics.Numerics.Objects;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -163,6 +167,83 @@ namespace CSharpNumerics.Engines.GIS.Export
             => File.WriteAllText(path, ToGeoJsonCesium(map, metadata), Encoding.UTF8);
 
         // ═══════════════════════════════════════════════════════════════
+        //  CZML from fire spread snapshots
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Generates a CZML document from a time series of <see cref="SpreadSnapshot"/>.
+        /// Each cell is a Point entity with time-varying colour:
+        /// red = Burning, grey = Burned, transparent = Unburned.
+        /// </summary>
+        /// <param name="snapshots">Time-ordered fire spread snapshots.</param>
+        /// <param name="timeFrame">The simulation time frame.</param>
+        /// <param name="name">Document name shown in Cesium viewer.</param>
+        public static string ToFireCzml(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            string name = "Wildfire Spread")
+        {
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+            if (timeFrame == null) throw new ArgumentNullException(nameof(timeFrame));
+            if (snapshots.Count == 0) throw new ArgumentException("snapshots must not be empty.");
+
+            var grid = snapshots[0].Grid;
+            var proj = grid.Projection;
+            int cellCount = grid.CellCount;
+
+            var sb = new StringBuilder();
+            sb.Append('[');
+
+            // Document packet
+            sb.Append("{\"id\":\"document\",\"name\":\"");
+            sb.Append(EscapeJson(name));
+            sb.Append("\",\"version\":\"1.0\",\"clock\":{\"interval\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append('/');
+            AppendIso(sb, timeFrame.End);
+            sb.Append("\",\"currentTime\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append("\",\"multiplier\":1}}");
+
+            // Entity packets — one per cell that ever burns
+            for (int i = 0; i < cellCount; i++)
+            {
+                if (!CellEverBurns(snapshots, i))
+                    continue;
+
+                var pos = grid.CellCentre(i);
+                sb.Append(',');
+                AppendFireCellPacket(sb, snapshots, timeFrame, i, pos, proj);
+            }
+
+            sb.Append(']');
+            return sb.ToString();
+        }
+
+        /// <summary>Write fire CZML to a file.</summary>
+        public static void SaveFireCzml(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            string path,
+            string name = "Wildfire Spread")
+            => File.WriteAllText(path, ToFireCzml(snapshots, timeFrame, name), Encoding.UTF8);
+
+        /// <summary>
+        /// Maps <see cref="CellBurnState"/> to RGBA (0-255).
+        /// Burning → red, Burned → grey, Unburned/Firebreak → transparent.
+        /// </summary>
+        public static (int r, int g, int b, int a) BurnStateToColor(int burnState)
+        {
+            switch (burnState)
+            {
+                case (int)CellBurnState.Burning: return (255, 50, 0, 220);   // red-orange
+                case (int)CellBurnState.Burned: return (128, 128, 128, 160); // grey
+                case (int)CellBurnState.Firebreak: return (60, 60, 60, 100); // dark grey
+                default: return (0, 0, 0, 0);                                // transparent
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //  Internal helpers
         // ═══════════════════════════════════════════════════════════════
 
@@ -237,5 +318,64 @@ namespace CSharpNumerics.Engines.GIS.Export
 
         private static string EscapeJson(string s) =>
             s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Internal — fire helpers
+        // ═══════════════════════════════════════════════════════════════
+
+        private static bool CellEverBurns(IReadOnlyList<SpreadSnapshot> snapshots, int cellIndex)
+        {
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                int state = (int)snapshots[t].Snapshot.GetLayer("burnState")[cellIndex];
+                if (state == (int)CellBurnState.Burning || state == (int)CellBurnState.Burned)
+                    return true;
+            }
+            return false;
+        }
+
+        private static void AppendFireCellPacket(
+            StringBuilder sb,
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            int cellIndex,
+            Vector pos,
+            Projection proj)
+        {
+            sb.Append("{\"id\":\"fire_");
+            sb.Append(cellIndex);
+            sb.Append("\",\"position\":{\"cartographicDegrees\":[");
+            if (proj != null)
+            {
+                var geo = proj.ToGeo(pos);
+                sb.Append(Fmt(geo.Longitude)); sb.Append(',');
+                sb.Append(Fmt(geo.Latitude)); sb.Append(',');
+                sb.Append(Fmt(geo.Altitude));
+            }
+            else
+            {
+                sb.Append(Fmt(pos.x)); sb.Append(',');
+                sb.Append(Fmt(pos.y)); sb.Append(',');
+                sb.Append(Fmt(pos.z));
+            }
+            sb.Append("]},\"point\":{\"pixelSize\":8,\"color\":{\"epoch\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append("\",\"rgba\":[");
+
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                if (t > 0) sb.Append(',');
+                double seconds = snapshots[t].Time - timeFrame.Start;
+                int state = (int)snapshots[t].Snapshot.GetLayer("burnState")[cellIndex];
+                var (r, g, b, a) = BurnStateToColor(state);
+                sb.Append(Fmt(seconds)); sb.Append(',');
+                sb.Append(r); sb.Append(',');
+                sb.Append(g); sb.Append(',');
+                sb.Append(b); sb.Append(',');
+                sb.Append(a);
+            }
+
+            sb.Append("]}}}");
+        }
     }
 }

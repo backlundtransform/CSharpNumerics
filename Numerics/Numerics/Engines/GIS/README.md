@@ -438,6 +438,196 @@ Output GeoJSON polygon:
 
 ---
 
+### Terrain & Fuel Maps
+
+The terrain subsystem provides elevation surfaces and per-cell fuel assignment for terrain-aware spread simulations.
+
+**TerrainGrid** — elevation surface with slope and aspect:
+
+```csharp
+using CSharpNumerics.Engines.GIS.Terrain;
+
+var grid = new GeoGrid(0, 1000, 0, 1000, 0, 0, 25);
+
+// Procedural terrain from a function
+var terrain = TerrainGrid.FromFunction(grid, (x, y) => 100 + 0.1 * x);
+
+// Or from a 2D array
+var terrain2 = TerrainGrid.FromArray(grid, elevationArray);
+
+// Slope and aspect at a cell
+double slope  = terrain.Slope(10, 10);         // radians
+double aspect = terrain.Aspect(10, 10);        // radians (0=N, π/2=E)
+double sDir   = terrain.SlopeInDirection(10, 10, windDir);  // slope along heading
+```
+
+**FuelMap** — per-cell fuel model and moisture:
+
+```csharp
+using CSharpNumerics.Physics.Materials.Fire.Enums;
+
+var fuelMap = new FuelMap(grid);
+fuelMap.SetUniformFuel(FuelModelType.ShortGrass);
+fuelMap.SetUniformMoisture(0.08);  // 8% dead fuel moisture
+
+// Mixed fuels by elevation band
+fuelMap.SetFuelByElevation(terrain, new[]
+{
+    (0.0,   300.0, FuelModelType.ShortGrass),
+    (300.0, 600.0, FuelModelType.Brush),
+    (600.0, 999.0, FuelModelType.TimberLitterUnderstory)
+});
+
+// Per-cell moisture variation
+fuelMap.SetMoisture(5, 5, 0.15);   // wet spot
+```
+
+---
+
+### Wildfire Simulator
+
+A cellular automaton that propagates fire across terrain using the Rothermel (1972) rate-of-spread model. Each time step, burning cells attempt to ignite their 8 neighbours based on directional slope, wind, and fuel parameters.
+
+```csharp
+using CSharpNumerics.Engines.GIS.Spread.Wildfire;
+using CSharpNumerics.Engines.GIS.Scenario;
+
+var parameters = new WildfireParameters(
+    ignitionPoints: new List<(int, int)> { (20, 20) }.AsReadOnly(),
+    midflameWindSpeed: 3.0,              // m/s
+    windDirection: new Vector(1, 0, 0),  // east
+    burnDuration: 600);                  // seconds
+
+var simulator = new WildfireSimulator(parameters);
+var snapshots = simulator.Run(grid, terrain, fuelMap,
+    new TimeFrame(0, 3600, 60));  // 1 hour, 1-min steps
+
+// Inspect results
+var last = snapshots[snapshots.Count - 1];
+Console.WriteLine($"Burned: {last.BurnedAreaHectares:F1} ha");
+Console.WriteLine($"Burning cells: {last.BurningCellCount}");
+Console.WriteLine($"Flame length: {last.Snapshot.GetLayer("flameLength").Max()} m");
+```
+
+**SpreadSnapshot layers:**
+
+| Layer | Description |
+|-------|-------------|
+| `burnState` | 0 = Unburned, 1 = Burning, 2 = Burned, 3 = Firebreak |
+| `flameLength` | Flame length in metres |
+| `rateOfSpread` | Rate of spread in m/min |
+| `burnTime` | Seconds since cell ignition |
+
+---
+
+### Wildfire Fluent API
+
+Wildfire scenarios use the same fluent pattern as the plume pipeline, accessed via `RiskScenario.ForWildfire()`:
+
+**Deterministic run:**
+
+```csharp
+var result = RiskScenario
+    .ForWildfire()
+    .WithTerrain(terrain)
+    .WithFuel(fuelMap)
+    .WithIgnition(20, 20)
+    .WithWind(5.0, new Vector(1, 0, 0))
+    .WithMoisture(0.08)
+    .OverGrid(grid)
+    .OverTime(0, 7200, 60)        // 2 hours, 1-min steps
+    .RunSingle();
+
+double area = result.FinalBurnedArea;       // hectares
+double flame = result.MaxFlameLength;       // metres
+var perimeter = result.GenerateFirePerimeter(result.Snapshots.Count - 1);
+```
+
+**Monte Carlo ensemble with weather uncertainty:**
+
+```csharp
+var mcResult = RiskScenario
+    .ForWildfire()
+    .WithTerrain(terrain)
+    .WithFuel(fuelMap)
+    .WithIgnition(20, 20)
+    .WithWind(5.0, new Vector(1, 0, 0))
+    .WithVariation(v => v
+        .WindSpeed(2, 8)              // uniform [2, 8] m/s
+        .WindDirectionJitter(30)      // ±30° Gaussian jitter
+        .Moisture(0.04, 0.12))        // uniform [4%, 12%]
+    .OverGrid(grid)
+    .OverTime(0, 3600, 60)
+    .RunMonteCarlo(100, seed: 42);
+
+// Per-cell burn probability across all iterations
+double[] burnProb = mcResult.BurnProbability;
+double meanArea   = mcResult.MeanBurnedArea;   // hectares
+double maxArea    = mcResult.MaxBurnedArea;
+```
+
+**Clustering + probability map:**
+
+```csharp
+using CSharpNumerics.ML.Clustering.Algorithms;
+using CSharpNumerics.ML.Clustering.Evaluators;
+
+var probMap = mcResult
+    .AnalyzeWith(
+        new KMeans { Seed = 42 },
+        new SilhouetteEvaluator(),
+        minK: 2, maxK: 5)
+    .Build();   // → WildfireScenarioResult from dominant cluster
+
+// probMap.Snapshots contain probability-weighted burn state (0–1)
+// Use for risk assessment visualizations
+```
+
+---
+
+### Wildfire Export
+
+All three export formats support fire-specific data:
+
+**GeoJSON — fire snapshots with burn properties:**
+
+```csharp
+string json = GeoJsonExporter.ToGeoJson(snapshots[snapshots.Count - 1]);
+// Features with: burnState, flameLength, rateOfSpread, timeStep
+```
+
+**GeoJSON — fire perimeters as polygons:**
+
+```csharp
+var perimeters = result.FirePerimeters;
+string json = GeoJsonExporter.FirePerimetersToGeoJson(perimeters, result.Snapshots);
+// Polygon features with timeIndex, timeStep, areaSquareMetres
+```
+
+**GeoJSON — burn probability heatmap:**
+
+```csharp
+string json = GeoJsonExporter.BurnProbabilityToGeoJson(mcResult);
+// Point features with burnProbability, iterations
+```
+
+**CZML — animated fire spread:**
+
+```csharp
+CesiumExporter.SaveFireCzml(result.Snapshots, timeFrame, "fire.czml");
+// Per-cell time-sampled colour: red (burning) → grey (burned)
+```
+
+**Unity binary — fire layers:**
+
+```csharp
+UnityBinaryExporter.SaveFire(result.Snapshots, grid, timeFrame, "fire.bin");
+var data = UnityBinaryExporter.ReadFire("fire.bin");
+// data.Concentration = burnState[][], data.Probability = flameLength[][]
+```
+
+---
+
 ### Architecture
 
 ```
@@ -449,9 +639,25 @@ Engines/GIS/
 │   ├── GeoGrid.cs              — 3-D spatial grid + FromLatLon() factory
 │   ├── GeoCell.cs              — position + value + time struct
 │   └── GridSnapshot.cs         — cell values at one time step + named layers
+├── Terrain/
+│   ├── TerrainGrid.cs          — elevation surface, slope/aspect
+│   └── FuelMap.cs              — per-cell fuel model + moisture
+├── Spread/
+│   ├── ISpreadSimulator.cs     — generic spread interface
+│   ├── SpreadSnapshot.cs       — per-step fire state (burnState, flameLength, ROS)
+│   └── Wildfire/
+│       ├── WildfireSimulator.cs          — 8-neighbour Rothermel CA
+│       ├── WildfireParameters.cs         — ignition, wind, burn duration
+│       ├── WildfireScenarioBuilder.cs    — fluent builder
+│       ├── WildfireScenarioResult.cs     — deterministic result
+│       ├── WildfireMonteCarloResult.cs   — MC result + AnalyzeWith()
+│       ├── WildfireAnalysisResult.cs     — clustering + Build()
+│       ├── WildfireVariation.cs          — stochastic parameter ranges
+│       └── Enums/
+│           └── CellBurnState.cs          — Unburned, Burning, Burned, Firebreak
 ├── Scenario/
 │   ├── TimeFrame.cs            — time range value-object
-│   ├── RiskScenario.cs         — fluent entry point
+│   ├── RiskScenario.cs         — fluent entry point (+ ForWildfire())
 │   ├── RiskScenarioBuilder.cs  — pipeline builder + stage results
 │   └── ScenarioResult.cs       — terminal result with export methods
 ├── Simulation/
@@ -465,21 +671,18 @@ Engines/GIS/
 │   ├── ExposurePolygon.cs            — polygon result type
 │   └── ExposurePolygonGenerator.cs   — marching squares contour extraction
 └── Export/
-    ├── GeoJsonExporter.cs      — GeoJSON (local + WGS84 + activity/dose)
-    ├── UnityBinaryExporter.cs  — compact binary for Unity3D
-    └── CesiumExporter.cs       — CZML + Cesium GeoJSON
+    ├── GeoJsonExporter.cs      — GeoJSON (+ fire snapshots, perimeters, burn probability)
+    ├── UnityBinaryExporter.cs  — compact binary for Unity3D (+ GFIR fire format)
+    └── CesiumExporter.cs       — CZML (+ fire time-dynamic animation)
 
-Physics/Materials/
-└── Nuclear/
-    ├── Isotopes/
-    │   ├── Isotope.cs           — isotope value-type + static instances
-    │   └── IsotopeLibrary.cs    — registry / lookup
-    ├── Decay/
-    │   └── Decay.cs             — activity, remaining mass, λ
-    ├── DecayChains/
-    │   └── DecayChain.cs        — Bateman equations, chain evolution
-    └── RadiationDose/
-        └── RadiationDose.cs     — external / inhalation / ground-shine dose
+Physics/Materials/Fire/
+├── FuelModel.cs                — Rothermel fuel parameters (Anderson 13)
+├── FuelLibrary.cs              — static registry of standard fuel models
+└── Enums/
+    └── FuelModelType.cs        — ShortGrass, Chaparral, …
+
+Physics/Environmental/Fire/
+└── RothermelModel.cs           — Rothermel (1972) equations (R, I_R, φw, φs)
 ```
 
 ### Status
@@ -494,8 +697,13 @@ Physics/Materials/
 | 5 | Export (GeoJSON / Unity binary / Cesium CZML) | 24 | ✅ Done |
 | 6 | GIS coordinates (WGS84, UTM, `GeoCoordinate`, `Projection`, `FromLatLon`) | 28 | ✅ Done |
 | 7 | Radioactive fallout & nuclear materials (`Isotope`, `DecayChain`, `RadiationDose`, `.WithMaterial()`) | 58 | ✅ Done |
-| 7.5 | Exposure polygons (`ExposurePolygonGenerator`, `GeneratePeakExposurePolygon`, `GenerateIntegratedExposurePolygon`) | 17 | ✅ Done |
+| 7.5 | Exposure polygons (`ExposurePolygonGenerator`, peak & time-integrated contours) | 17 | ✅ Done |
+| **W1** | **Fire physics & fuel library** (`RothermelModel`, `FuelModel`, `FuelLibrary`) | **33** | ✅ Done |
+| **W2** | **Terrain model & fuel map** (`TerrainGrid`, `FuelMap`) | **18** | ✅ Done |
+| **W3** | **Cell-automaton fire spread** (`WildfireSimulator`, `SpreadSnapshot`) | **9** | ✅ Done |
+| **W4** | **Fluent API & Monte Carlo** (`WildfireScenarioBuilder`, `AnalyzeWith`, clustering) | **13** | ✅ Done |
+| **W5** | **Fire export** (GeoJSON fire features/perimeters/heatmap, CZML animation, Unity binary) | **14** | ✅ Done |
 
-**Total: 209 GIS + nuclear tests**
+**Total: 296 GIS + nuclear + wildfire tests**
 
 See [ROADMAP.md](ROADMAP.md) for the full design and phase details.

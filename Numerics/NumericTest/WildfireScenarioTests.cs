@@ -3,6 +3,8 @@ using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
 using CSharpNumerics.Engines.GIS.Terrain;
+using CSharpNumerics.ML.Clustering.Algorithms;
+using CSharpNumerics.ML.Clustering.Evaluators;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics.Materials.Fire.Enums;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -264,6 +266,149 @@ namespace NumericTest
                 .OverGrid(grid)
                 .OverTime(0, 60, 60)
                 .RunSingle();
+        }
+
+        #endregion
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Clustering integration — AnalyzeWith / Build
+        // ═══════════════════════════════════════════════════════════════
+
+        #region Clustering
+
+        [TestMethod]
+        public void AnalyzeWith_Clustering_IdentifiesRegimes()
+        {
+            // Create scenarios with wind variation — high wind (8-10)
+            // vs low wind (1-2) should produce distinguishable clusters.
+            var grid = MakeGrid(300, 25);
+            var terrain = FlatTerrain(grid);
+            var fuelMap = UniformGrass(grid);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(5.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(1, 10).Moisture(0.04, 0.12))
+                .OverGrid(grid)
+                .OverTime(0, 300, 60)
+                .RunMonteCarlo(30, seed: 42);
+
+            var analysis = mcResult.AnalyzeWith(
+                new KMeans { Seed = 42 },
+                new SilhouetteEvaluator(),
+                minK: 2,
+                maxK: 4);
+
+            Assert.IsNotNull(analysis.ClusterAnalysis);
+            Assert.IsTrue(analysis.ClusterAnalysis.BestClusterCount >= 2,
+                "Should find at least 2 clusters.");
+            Assert.IsTrue(analysis.ClusterAnalysis.Labels.Length == 30,
+                "One label per iteration.");
+        }
+
+        [TestMethod]
+        public void AnalyzeWith_DominantClusterBurnProbability()
+        {
+            var grid = MakeGrid(300, 25);
+            var terrain = FlatTerrain(grid);
+            var fuelMap = UniformGrass(grid);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(5.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(1, 10))
+                .OverGrid(grid)
+                .OverTime(0, 300, 60)
+                .RunMonteCarlo(20, seed: 99);
+
+            var analysis = mcResult.AnalyzeWith(
+                new KMeans { Seed = 99 },
+                new SilhouetteEvaluator(),
+                minK: 2, maxK: 3);
+
+            var prob = analysis.GetClusterBurnProbability(analysis.ClusterAnalysis.DominantCluster);
+            Assert.AreEqual(grid.Nx * grid.Ny, prob.Length);
+
+            for (int i = 0; i < prob.Length; i++)
+                Assert.IsTrue(prob[i] >= 0 && prob[i] <= 1,
+                    $"Cluster burn prob at {i} = {prob[i]} out of [0,1].");
+        }
+
+        [TestMethod]
+        public void AnalyzeWith_Build_ProducesProbabilityMap()
+        {
+            var grid = MakeGrid(300, 25);
+            var terrain = FlatTerrain(grid);
+            var fuelMap = UniformGrass(grid);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(5.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(2, 8).Moisture(0.04, 0.10))
+                .OverGrid(grid)
+                .OverTime(0, 300, 60)
+                .RunMonteCarlo(20, seed: 77);
+
+            var result = mcResult
+                .AnalyzeWith(
+                    new KMeans { Seed = 77 },
+                    new SilhouetteEvaluator(),
+                    minK: 2, maxK: 3)
+                .Build();
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Snapshots.Count > 0, "Should have snapshots.");
+
+            // burnState layer should now contain probability values (0-1)
+            var lastSnap = result.Snapshots[result.Snapshots.Count - 1];
+            var burnProb = lastSnap.Snapshot.GetLayer("burnState");
+
+            bool hasIntermediate = false;
+            for (int i = 0; i < burnProb.Length; i++)
+            {
+                Assert.IsTrue(burnProb[i] >= 0 && burnProb[i] <= 1,
+                    $"Burn probability at {i} = {burnProb[i]} out of [0,1].");
+                if (burnProb[i] > 0 && burnProb[i] < 1)
+                    hasIntermediate = true;
+            }
+
+            Assert.IsTrue(hasIntermediate,
+                "Probability map should have intermediate values (not just 0/1) " +
+                "when averaging across multiple iterations.");
+        }
+
+        [TestMethod]
+        public void ToMonteCarloScenarioResult_ValidMatrix()
+        {
+            var grid = MakeGrid(200, 25);
+            var terrain = FlatTerrain(grid);
+            var fuelMap = UniformGrass(grid);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(1, 5))
+                .OverGrid(grid)
+                .OverTime(0, 120, 60)
+                .RunMonteCarlo(5, seed: 123);
+
+            var scenarioResult = mcResult.ToMonteCarloScenarioResult();
+
+            Assert.AreEqual(5, scenarioResult.Iterations);
+            Assert.AreEqual(grid.CellCount * mcResult.AllSnapshots[0].Count,
+                scenarioResult.FeatureCount);
         }
 
         #endregion

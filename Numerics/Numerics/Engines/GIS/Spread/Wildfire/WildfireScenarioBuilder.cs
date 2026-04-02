@@ -249,7 +249,7 @@ public class WildfireScenarioBuilder
         for (int c = 0; c < cellCount; c++)
             burnProb[c] = (double)burnCount[c] / iterations;
 
-        return new WildfireMonteCarloResult(iterations, _grid, burnProb, burnedAreas, allSnapshots);
+        return new WildfireMonteCarloResult(iterations, _grid, burnProb, burnedAreas, allSnapshots, _timeFrame);
     }
 
     // ═══════════════════════════════════════════════════════════════
