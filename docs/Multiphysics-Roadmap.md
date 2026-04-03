@@ -25,12 +25,12 @@ Lattice Boltzmann Methods were evaluated and **rejected**. FD (Grid2D, GridOpera
 
 - [x] Add iterative Poisson solver (Gauss-Seidel) to `GridOperators` for ∇²φ = f on Grid2D with Dirichlet BC — `GridOperators.SolvePoisson2D()`
 - [x] Add `SolidExtensions` to `Physics/` — Hooke's law, second moment of area, Euler-Bernoulli beam equation, analytical deflections
-- [ ] Add minimal 1D FEM primitives in `Numerics/Numerics/Numerics/FiniteElement/` (*deferred — analytical solvers used for now*)
-  - [ ] `IElement1D` interface — shape functions, local stiffness, local load
-  - [ ] `BarElement` (2-node, linear) — axial stress/strain
-  - [ ] `BeamElement` (2-node, Hermite cubic) — Euler-Bernoulli bending
-  - [ ] `Assembler1D` — local→global stiffness matrix assembly into `Matrix`
-  - [ ] `Mesh1D` — 1D mesh from interval subdivision (nodes + elements)
+- [x] Add minimal 1D FEM primitives in `Numerics/Numerics/Numerics/FiniteElement/`
+  - [x] `IElement1D` interface — shape functions, local stiffness, local load
+  - [x] `BarElement` (2-node, linear) — axial stress/strain
+  - [x] `BeamElement` (2-node, Hermite cubic) — Euler-Bernoulli bending
+  - [x] `Assembler1D` — local→global stiffness matrix assembly with Gaussian elimination solver
+  - [x] `Mesh1D` — 1D mesh from interval subdivision (nodes + elements)
 - [x] Add `EngineeringMaterial` to `Physics/Materials/Engineering/`
   - [x] `EngineeringMaterial` immutable struct: ThermalConductivity, SpecificHeat, Density, DynamicViscosity, ElectricPermittivity, YoungsModulus, PoissonsRatio
   - [x] `EngineeringLibrary` with common materials: steel, aluminum, copper, water, air, concrete, glass
@@ -98,7 +98,7 @@ Lattice Boltzmann Methods were evaluated and **rejected**. FD (Grid2D, GridOpera
   - [x] Pipe flow: velocity profile vs analytical Poiseuille
   - [x] Electric field: capacitor/line charge vs analytical E-field
   - [x] Beam stress: cantilever deflection vs PL³/3EI
-  - [ ] FEM primitives: stiffness matrix assembly, known beam cases (*deferred — no FEM implemented*)
+  - [x] FEM primitives: stiffness matrix assembly, known beam cases (bar axial, cantilever, simply supported)
   - [x] MC integration: scenario matrix dimensions, clustering produces valid results
   - [x] Export: binary format header parsing, dimension checks
 - [x] Update `Engines/Multiphysics/README.md` — add Multiphysics engine section
