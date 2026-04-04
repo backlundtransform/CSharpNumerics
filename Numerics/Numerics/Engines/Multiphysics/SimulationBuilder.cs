@@ -1,6 +1,11 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
 using CSharpNumerics.Engines.Multiphysics.Solvers;
+using CSharpNumerics.Physics.Electromagnetism;
+using CSharpNumerics.Physics.FluidDynamics;
 using CSharpNumerics.Physics.Materials.Engineering;
+using CSharpNumerics.Physics.SolidMechanics;
+using CSharpNumerics.Physics.SolidMechanics.Enums;
+using CSharpNumerics.Physics.Thermodynamics;
 using System;
 using System.Collections.Generic;
 
@@ -265,10 +270,10 @@ public class SimulationBuilder
 
         IMultiphysicsSolver solver = Type switch
         {
-            MultiphysicsType.HeatPlate => new HeatPlateSolver(),
-            MultiphysicsType.PipeFlow => new PipeFlowSolver(),
-            MultiphysicsType.ElectricField => new ElectricFieldSolver(),
-            MultiphysicsType.BeamStress => new BeamStressSolver(),
+            MultiphysicsType.HeatPlate => new HeatPlateSolver(new HeatTransferModel()),
+            MultiphysicsType.PipeFlow => new PipeFlowSolver(new ViscousFlowModel()),
+            MultiphysicsType.ElectricField => new ElectricFieldSolver(new ElectrostaticModel()),
+            MultiphysicsType.BeamStress => new BeamStressSolver(new BeamModel()),
             _ => throw new NotSupportedException($"Unknown simulation type: {Type}")
         };
 
@@ -291,9 +296,9 @@ public class SimulationBuilder
     internal double ComputeSecondMoment()
     {
         if (SecondMomentOverride > 0) return SecondMomentOverride;
-        if (SectionRadius > 0) return Math.PI * Math.Pow(SectionRadius, 4) / 4.0;
+        if (SectionRadius > 0) return SectionRadius.CircularSecondMoment();
         if (SectionWidth > 0 && SectionHeight > 0)
-            return SectionWidth * SectionHeight * SectionHeight * SectionHeight / 12.0;
+            return SectionWidth.RectangularSecondMoment(SectionHeight);
         return 0;
     }
 

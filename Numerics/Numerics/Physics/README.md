@@ -1356,6 +1356,26 @@ Vector E = p.DipoleElectricField(dipolePos, fieldPoint: new Vector(1, 0, 0));
 // E = (1/4πε₀) · [3(p·r̂)r̂ − p] / r³
 ```
 
+### Electrostatic Model (`IElectrostaticModel`)
+
+The `IElectrostaticModel` interface provides an abstraction for electrostatic physics used by simulation engines. The default implementation `ElectrostaticModel` uses `PhysicsConstants.VacuumPermittivity`.
+
+| Method | Description |
+|--------|-------------|
+| `VacuumPermittivity` | Returns $\varepsilon_0$ in F/m |
+| `EffectivePermittivity(εᵣ)` | Computes $\varepsilon = \varepsilon_0 \cdot \varepsilon_r$ |
+| `PoissonRhs(ρ, ε)` | Computes $-\rho / \varepsilon$ for the Poisson equation |
+
+```csharp
+using CSharpNumerics.Physics.Electromagnetism;
+using CSharpNumerics.Physics.Electromagnetism.Interfaces;
+
+IElectrostaticModel em = new ElectrostaticModel();
+
+double eps  = em.EffectivePermittivity(relativePermittivity: 4.0);
+double rhs  = em.PoissonRhs(chargeDensity: 1e-6, permittivity: eps);
+```
+
 ---
 
 ## 🌿 Environmental Extensions
@@ -1728,6 +1748,28 @@ double Qfin = 400.0.InsulatedTipFinHeatRate(ambientTemperature: 300,
 
 // Fin efficiency: η = tanh(mL) / (mL)
 double eta = m.InsulatedTipFinEfficiency(finLength: 0.05);
+```
+
+### Heat Transfer Model (`IHeatTransferModel`)
+
+The `IHeatTransferModel` interface provides an abstraction for thermal physics used by simulation engines. The default implementation `HeatTransferModel` delegates to `HeatExtensions`.
+
+| Method | Description |
+|--------|-------------|
+| `ThermalDiffusivity(k, ρ, cₚ)` | Computes $\alpha = k / (\rho c_p)$ |
+| `HeatSourceRate(Q, ρ, cₚ)` | Converts volumetric power to temperature rate $Q / (\rho c_p)$ |
+
+```csharp
+using CSharpNumerics.Physics.Thermodynamics;
+using CSharpNumerics.Physics.Thermodynamics.Interfaces;
+
+IHeatTransferModel heat = new HeatTransferModel();
+
+double alpha = heat.ThermalDiffusivity(conductivity: 50, density: 7800, specificHeat: 500);
+// α ≈ 1.28e-5 m²/s (steel)
+
+double rate = heat.HeatSourceRate(power: 1e6, density: 7800, specificHeat: 500);
+// temperature rate from 1 MW/m³ source
 ```
 
 ---
@@ -2106,6 +2148,28 @@ var integratedZone = result.GenerateIntegratedExposurePolygon(
     threshold: 1000, layerName: "toxicDose");  // 1000 ppm·s
 ```
 
+### Viscous Flow Model (`IViscousFlowModel`)
+
+The `IViscousFlowModel` interface provides an abstraction for pipe flow physics used by simulation engines. The default implementation `ViscousFlowModel` encapsulates Hagen–Poiseuille physics.
+
+| Method | Description |
+|--------|-------------|
+| `DrivingForce(dP/dx, ρ)` | Body force per unit mass $f = -(dP/dx) / \rho$ |
+| `CylindricalDiffusion(ν, d²v/dr², dv/dr, r)` | $\nu [d^2v/dr^2 + (1/r)(dv/dr)]$ |
+| `SymmetryAxisDiffusion(ν, d²v/dr²)` | $2\nu \, d^2v/dr^2$ (L'Hôpital at $r=0$) |
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics;
+using CSharpNumerics.Physics.FluidDynamics.Interfaces;
+
+IViscousFlowModel flow = new ViscousFlowModel();
+
+double driving = flow.DrivingForce(pressureGradient: -100, density: 1000);
+// 0.1 m/s² driving force
+
+double diff = flow.CylindricalDiffusion(nu: 1e-6, d2vdr2: 50, dvdr: 10, r: 0.01);
+```
+
 ---
 
 ## 🔩 Solid Mechanics Extensions
@@ -2182,6 +2246,50 @@ double max = (1000.0).CantileverPointLoadMaxDeflection(1.0, EI);  // PL³/(3EI)
 // Deflection curve
 for (double x = 0; x <= 1.0; x += 0.1)
     Console.WriteLine($"x={x:F1}  u={1000.0.CantileverPointLoadDeflection(1.0, EI, x):E3} m");
+```
+
+### Beam Support Enum
+
+The `BeamSupport` enum lives in `CSharpNumerics.Physics.SolidMechanics.Enums` and defines the three standard support conditions:
+
+| Value | Description |
+|-------|-------------|
+| `Cantilever` | Fixed at one end, free at the other |
+| `SimplySupported` | Supported at both ends with free rotation |
+| `FixedFixed` | Fixed at both ends (no rotation or displacement) |
+
+### Beam Model (`IBeamModel`)
+
+The `IBeamModel` interface provides a structured abstraction over the analytical beam formulas, returning deflection, bending moment, and shear force as a tuple for any support condition and load type. The default implementation `BeamModel` delegates to `BeamExtensions`.
+
+| Method | Description |
+|--------|-------------|
+| `CantileverPointLoad(P, a, L, EI, x)` | Point load at distance $a$ from fixed end |
+| `CantileverUniformLoad(q, L, EI, x)` | Uniform distributed load |
+| `SimplySupportedPointLoad(P, a, L, EI, x)` | Point load at distance $a$ from left support |
+| `SimplySupportedUniformLoad(q, L, EI, x)` | Uniform distributed load |
+| `FixedFixedPointLoad(P, a, L, EI, x)` | Point load on fixed-fixed beam |
+| `FixedFixedUniformLoad(q, L, EI, x)` | Uniform load on fixed-fixed beam |
+| `BendingStress(M, y, I)` | $\sigma = |M| \cdot y_{\max} / I$ |
+
+All methods return `(double deflection, double moment, double shear)` — a complete set of beam responses at position $x$.
+
+```csharp
+using CSharpNumerics.Physics.SolidMechanics;
+using CSharpNumerics.Physics.SolidMechanics.Interfaces;
+
+IBeamModel beam = new BeamModel();
+
+double EI = 200e9 * (0.10).RectangularSecondMoment(0.10);
+
+// Cantilever with 1 kN tip load — query at midspan
+var (d, m, s) = beam.CantileverPointLoad(P: 1000, a: 1.0, L: 1.0, EI: EI, x: 0.5);
+
+// Simply supported with uniform 5 kN/m
+var (d2, m2, s2) = beam.SimplySupportedUniformLoad(q: 5000, L: 2.0, EI: EI, x: 1.0);
+
+// Bending stress at max fibre distance
+double sigma = beam.BendingStress(moment: m2, halfHeight: 0.05, secondMoment: 8.33e-6);
 ```
 
 ---

@@ -1,4 +1,4 @@
-using CSharpNumerics.Engines.Multiphysics.Enums;
+using CSharpNumerics.Physics.SolidMechanics.Enums;
 using System;
 
 namespace CSharpNumerics.Engines.Multiphysics.Snapshots;

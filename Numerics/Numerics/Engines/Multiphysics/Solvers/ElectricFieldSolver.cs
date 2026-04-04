@@ -1,6 +1,7 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
 using CSharpNumerics.Numerics.FiniteDifference;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Physics.Electromagnetism.Interfaces;
 using System;
 
 namespace CSharpNumerics.Engines.Multiphysics.Solvers;
@@ -9,16 +10,21 @@ namespace CSharpNumerics.Engines.Multiphysics.Solvers;
 /// Solves 2D electrostatics via the Poisson equation ∇²φ = −ρ/ε₀ε_r.
 /// Uses the iterative Gauss-Seidel Poisson solver from <see cref="GridOperators"/>.
 /// After solving for potential φ, computes E = −∇φ via <see cref="GridOperators.Gradient2D"/>.
+/// Physics calculations are delegated to an <see cref="IElectrostaticModel"/>.
 /// </summary>
 internal class ElectricFieldSolver : IMultiphysicsSolver
 {
-    private const double Epsilon0 = 8.854187817e-12; // F/m
+    private readonly IElectrostaticModel _em;
+
+    internal ElectricFieldSolver(IElectrostaticModel em)
+    {
+        _em = em;
+    }
 
     public SimulationResult Solve(SimulationBuilder cfg)
     {
         var mat = cfg.Material.Value;
-        double epsR = mat.ElectricPermittivity > 0 ? mat.ElectricPermittivity : 1.0;
-        double eps = Epsilon0 * epsR;
+        double eps = _em.EffectivePermittivity(mat.ElectricPermittivity);
 
         double dx = cfg.GeomWidth / cfg.Nx;
         double dy = cfg.GeomHeight / cfg.Ny;
@@ -29,7 +35,7 @@ internal class ElectricFieldSolver : IMultiphysicsSolver
         foreach (var (ix, iy, chargeDensity) in cfg.Sources2D)
         {
             if (ix >= 0 && ix < cfg.Nx && iy >= 0 && iy < cfg.Ny)
-                rhs[grid.Index(ix, iy)] = -chargeDensity / eps;
+                rhs[grid.Index(ix, iy)] = _em.PoissonRhs(chargeDensity, eps);
         }
 
         // Boundary mask & values: edges are Dirichlet

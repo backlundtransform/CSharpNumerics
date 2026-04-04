@@ -1,6 +1,5 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
-using CSharpNumerics.Numerics.FiniteDifference;
-using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Physics.FluidDynamics.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +11,17 @@ namespace CSharpNumerics.Engines.Multiphysics.Solvers;
 /// Radial momentum equation: ∂v/∂t = ν·(1/r)·∂/∂r(r·∂v/∂r) − (1/ρ)·dP/dx.
 /// Simplified to 1D radial diffusion on r ∈ [0, R] with v(R) = 0 (no-slip)
 /// and ∂v/∂r(0) = 0 (symmetry).
+/// Physics calculations are delegated to an <see cref="IViscousFlowModel"/>.
 /// </summary>
 internal class PipeFlowSolver : IMultiphysicsSolver
 {
+    private readonly IViscousFlowModel _flow;
+
+    internal PipeFlowSolver(IViscousFlowModel flow)
+    {
+        _flow = flow;
+    }
+
     public SimulationResult Solve(SimulationBuilder cfg)
     {
         var mat = cfg.Material.Value;
@@ -23,7 +30,7 @@ internal class PipeFlowSolver : IMultiphysicsSolver
         double R = cfg.GeomRadius;
         int n = cfg.Nodes;
         double dr = R / (n - 1);
-        double dPdx = cfg.PressureGradient;
+        double drivingTerm = _flow.DrivingForce(cfg.PressureGradient, rho);
 
         // Radial node positions: r = [0, dr, 2dr, ..., R]
         var positions = new double[n];
@@ -32,10 +39,6 @@ internal class PipeFlowSolver : IMultiphysicsSolver
 
         // Initial velocity (zero)
         var v = new double[n];
-
-        // Analytical steady-state for reference: v(r) = -(dP/dx)(R² − r²)/(4μ)
-        double mu = mat.DynamicViscosity;
-        double drivingTerm = -dPdx / rho; // body force per unit mass
 
         // Forward Euler time stepping with cylindrical Laplacian
         var timeline = new List<double[]> { (double[])v.Clone() };
@@ -51,15 +54,16 @@ internal class PipeFlowSolver : IMultiphysicsSolver
                 double r = positions[i];
                 double d2vdr2 = (v[i + 1] - 2.0 * v[i] + v[i - 1]) / (dr * dr);
                 double dvdr = (v[i + 1] - v[i - 1]) / (2.0 * dr);
-                double cylLaplacian = d2vdr2 + dvdr / r;
-                vNew[i] = v[i] + cfg.Dt * (nu * cylLaplacian + drivingTerm);
+                double cylDiffusion = _flow.CylindricalDiffusion(nu, d2vdr2, dvdr, r);
+                vNew[i] = v[i] + cfg.Dt * (cylDiffusion + drivingTerm);
             }
 
             // r = 0 (symmetry): use L'Hôpital — (1/r)(dv/dr)|_{r→0} = d²v/dr²
             // so Laplacian = 2·d²v/dr²
             {
                 double d2vdr2 = 2.0 * (v[1] - v[0]) / (dr * dr);
-                vNew[0] = v[0] + cfg.Dt * (nu * d2vdr2 + drivingTerm);
+                double axisDiffusion = _flow.SymmetryAxisDiffusion(nu, d2vdr2);
+                vNew[0] = v[0] + cfg.Dt * (axisDiffusion + drivingTerm);
             }
 
             // r = R (no-slip wall)

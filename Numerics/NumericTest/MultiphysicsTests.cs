@@ -11,6 +11,7 @@ using CSharpNumerics.Statistics.Random;
 using CSharpNumerics.Numerics.FiniteDifference;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics.Materials.Engineering;
+using CSharpNumerics.Physics.SolidMechanics.Enums;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;

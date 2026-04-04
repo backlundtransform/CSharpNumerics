@@ -1,6 +1,7 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
 using CSharpNumerics.Numerics.FiniteDifference;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Physics.Thermodynamics.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,13 +12,21 @@ namespace CSharpNumerics.Engines.Multiphysics.Solvers;
 /// Solves the 2D heat equation ∂T/∂t = α∇²T + Q/(ρ·c_p)
 /// on a uniform Grid2D using forward Euler time stepping
 /// with Dirichlet boundary conditions.
+/// Physics calculations are delegated to an <see cref="IHeatTransferModel"/>.
 /// </summary>
 internal class HeatPlateSolver : IMultiphysicsSolver
 {
+    private readonly IHeatTransferModel _heat;
+
+    internal HeatPlateSolver(IHeatTransferModel heat)
+    {
+        _heat = heat;
+    }
+
     public SimulationResult Solve(SimulationBuilder cfg)
     {
         var mat = cfg.Material.Value;
-        double alpha = mat.ThermalDiffusivity;
+        double alpha = _heat.ThermalDiffusivity(mat.ThermalConductivity, mat.Density, mat.SpecificHeat);
         double dx = cfg.GeomWidth / cfg.Nx;
         double dy = cfg.GeomHeight / cfg.Ny;
         var grid = new Grid2D(cfg.Nx, cfg.Ny, dx, dy);
@@ -29,11 +38,10 @@ internal class HeatPlateSolver : IMultiphysicsSolver
 
         // Source term Q/(ρ·c_p) — constant in time
         var source = grid.Zeros();
-        double rhoCp = mat.Density * mat.SpecificHeat;
         foreach (var (ix, iy, value) in cfg.Sources2D)
         {
             if (ix >= 0 && ix < cfg.Nx && iy >= 0 && iy < cfg.Ny)
-                source[grid.Index(ix, iy)] = rhoCp > 0 ? value / rhoCp : 0;
+                source[grid.Index(ix, iy)] = _heat.HeatSourceRate(value, mat.Density, mat.SpecificHeat);
         }
 
         // Apply Dirichlet BCs to state vector
