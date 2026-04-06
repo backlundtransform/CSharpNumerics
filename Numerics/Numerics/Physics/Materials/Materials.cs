@@ -1,6 +1,8 @@
 using CSharpNumerics.Physics.Materials.Chemical;
 using CSharpNumerics.Physics.Materials.Nuclear.DecayChains;
 using CSharpNumerics.Physics.Materials.Nuclear.Isotopes;
+using CSharpNumerics.Physics.Materials.Optical;
+using CSharpNumerics.Physics.Optics;
 using System;
 
 namespace CSharpNumerics.Physics.Materials
@@ -118,6 +120,20 @@ namespace CSharpNumerics.Physics.Materials
         public static MaterialDescriptor Chemical(ChemicalSubstance substance)
         {
             return new MaterialDescriptor(substance);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Optical materials
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Returns an <see cref="OpticalMedium"/> by name from the optical library.
+        /// </summary>
+        /// <param name="name">Material name (e.g. "CrownGlass", "Diamond"). Case-insensitive.</param>
+        public static OpticalMedium Optical(string name)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            return OpticalLibrary.Get(name);
         }
 
         private static DecayChain TryGetKnownChain(Isotope isotope)
