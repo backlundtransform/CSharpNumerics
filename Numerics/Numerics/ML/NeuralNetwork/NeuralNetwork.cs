@@ -76,9 +76,9 @@ public class NeuralNetwork
 
             VectorN a;
             if (i == _weights.Count - 1)
-                a = Output == OutputMode.Softmax ? Softmax(z) : z;
+                a = Output == OutputMode.Softmax ? Activations.Softmax(z) : z;
             else
-                a = Activate(z);
+                a = Activations.Apply(z, Activation);
 
             activations.Add(a);
         }
@@ -99,7 +99,7 @@ public class NeuralNetwork
         for (int i = _weights.Count - 2; i >= 0; i--)
         {
             var w = _weights[i + 1];
-            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
+            var delta = (w * deltas[^1]).Hadamard(Activations.Derivative(activations[i + 1], Activation));
             deltas.Add(delta);
         }
         deltas.Reverse();
@@ -129,7 +129,7 @@ public class NeuralNetwork
         for (int i = _weights.Count - 2; i >= 0; i--)
         {
             var w = _weights[i + 1];
-            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
+            var delta = (w * deltas[^1]).Hadamard(Activations.Derivative(activations[i + 1], Activation));
             deltas.Add(delta);
         }
         deltas.Reverse();
@@ -207,7 +207,7 @@ public class NeuralNetwork
         for (int i = _weights.Count - 2; i >= 0; i--)
         {
             var w = _weights[i + 1];
-            var delta = (w * deltas[^1]).Hadamard(ActivationDerivative(activations[i + 1]));
+            var delta = (w * deltas[^1]).Hadamard(Activations.Derivative(activations[i + 1], Activation));
             deltas.Add(delta);
         }
         deltas.Reverse();
@@ -310,55 +310,6 @@ public class NeuralNetwork
         clone._weights = _weights.Select(m => new Matrix(m.values)).ToList();
         clone._biases = _biases.Select(v => new VectorN(v.Values)).ToList();
         return clone;
-    }
-
-    // ── Activation functions ────────────────────────────────────
-
-    private VectorN Activate(VectorN v)
-    {
-        return Activation switch
-        {
-            ActivationType.ReLU => ApplyElementwise(v, x => Math.Max(0, x)),
-            ActivationType.Sigmoid => ApplyElementwise(v, x => 1.0 / (1.0 + Math.Exp(-x))),
-            ActivationType.Tanh => ApplyElementwise(v, Math.Tanh),
-            ActivationType.Linear => v,
-            _ => throw new ArgumentOutOfRangeException()
-        };
-    }
-
-    private VectorN ActivationDerivative(VectorN v)
-    {
-        return Activation switch
-        {
-            ActivationType.ReLU => ApplyElementwise(v, x => x > 0 ? 1.0 : 0.0),
-            ActivationType.Sigmoid => ApplyElementwise(v, x => x * (1.0 - x)),
-            ActivationType.Tanh => ApplyElementwise(v, x => 1.0 - x * x),
-            ActivationType.Linear => ApplyElementwise(v, _ => 1.0),
-            _ => throw new ArgumentOutOfRangeException()
-        };
-    }
-
-    private static VectorN Softmax(VectorN z)
-    {
-        var values = z.Values;
-        double max = values.Max();
-        double[] exp = new double[values.Length];
-        double sum = 0;
-        for (int i = 0; i < values.Length; i++)
-        {
-            exp[i] = Math.Exp(values[i] - max);
-            sum += exp[i];
-        }
-        for (int i = 0; i < values.Length; i++) exp[i] /= sum;
-        return new VectorN(exp);
-    }
-
-    private static VectorN ApplyElementwise(VectorN v, Func<double, double> f)
-    {
-        var result = new double[v.Length];
-        for (int i = 0; i < v.Length; i++)
-            result[i] = f(v.Values[i]);
-        return new VectorN(result);
     }
 
     private static Matrix XavierMatrix(int rows, int cols, Random rnd)

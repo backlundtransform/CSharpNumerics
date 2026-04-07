@@ -630,6 +630,12 @@ Hyperparameters:
 * `Epochs`
 * `Activation` (ReLU, Tanh, Sigmoid)
 
+**1D Convolutional Neural Network (Classifier)**
+
+Class: `CNN1DClassifier` (`CSharpNumerics.ML.Sequence.Models.Classification`)
+
+See **Sequence Models** below for sequence-specific hyperparameters and layer composition.
+
 ---
 
 ## 📈 Regression Models
@@ -711,6 +717,148 @@ Hyperparameters:
 * `BatchSize`
 * `L2`
 * `Activation`
+
+**1D Convolutional Neural Network (Regressor)**
+
+Class: `CNN1DRegressor` (`CSharpNumerics.ML.Sequence.Models.Regression`)
+
+See **Sequence Models** below for sequence-specific hyperparameters and layer composition.
+
+---
+
+## Sequence Models
+
+Sequence-specific deep-learning models live under `CSharpNumerics.ML.Sequence`.
+They keep the existing `IModel` contract by interpreting each `Matrix` row as a flattened `(timesteps x features)` sample.
+
+Currently available models:
+
+* `CNN1DClassifier` in `CSharpNumerics.ML.Sequence.Models.Classification`
+* `CNN1DRegressor` in `CSharpNumerics.ML.Sequence.Models.Regression`
+
+Current sequence infrastructure:
+
+* `ISequenceModel` in `CSharpNumerics.ML.Sequence.Interfaces`
+* `ConvolutionPaddingMode` in `CSharpNumerics.ML.Sequence.Enums`
+* `Conv1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
+* `MaxPool1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
+* `GlobalAvgPool1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
+* `FlattenLayer` in `CSharpNumerics.ML.Sequence.Layers`
+
+Default CNN1D architecture:
+
+```text
+Conv1D -> GlobalAvgPool -> Dense(hidden) -> Dense(output)
+```
+
+Optional variants:
+
+* `UseMaxPooling = true` inserts `MaxPool1DLayer` after the convolution.
+* `UseGlobalAveragePooling = false` switches to `FlattenLayer` before the dense projection.
+
+Shared sequence hyperparameters:
+
+* `TimeSteps`
+* `Features`
+* `Filters`
+* `KernelSize`
+* `ConvStride`
+* `Padding` (`Same`, `Valid`)
+* `UseMaxPooling`
+* `PoolSize`
+* `PoolStride`
+* `UseGlobalAveragePooling`
+* `HiddenUnits`
+* `LearningRate`
+* `Epochs`
+* `BatchSize`
+* `Activation`
+
+Additional regression hyperparameters:
+
+* `L2`
+
+Example with `SupervisedExperiment`:
+
+```csharp
+using CSharpNumerics.ML;
+using CSharpNumerics.ML.Enums;
+using CSharpNumerics.ML.Experiment;
+using CSharpNumerics.ML.Sequence.Models.Classification;
+
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(new PipelineGrid()
+        .AddModel<CNN1DClassifier>(g => g
+            .Add("TimeSteps", 128)
+            .Add("Features", 1)
+            .Add("Filters", 8)
+            .Add("KernelSize", 5)
+            .Add("HiddenUnits", 16)
+            .Add("LearningRate", 0.01)
+            .Add("Epochs", 200)
+            .Add("BatchSize", 16)
+            .Add("Padding", CSharpNumerics.ML.Sequence.Enums.ConvolutionPaddingMode.Same)
+            .Add("Activation", ActivationType.ReLU)))
+    .WithCrossValidator(CrossValidatorConfig.KFold(folds: 5))
+    .Run();
+```
+
+---
+
+## Neural Network Building Blocks
+
+The neural-network stack now exposes reusable components for sequence-oriented architectures without changing the existing `IModel` contract.
+Reusable dense/activation orchestration remains in `CSharpNumerics.ML.NeuralNetwork`, while sequence-specific layers and models live under `CSharpNumerics.ML.Sequence`.
+
+Available infrastructure:
+
+* `Activations` for reusable ReLU, Sigmoid, Tanh, Linear, and Softmax transforms
+* `ILayer` for modular forward/backward layer composition
+* `DenseLayer` for trainable fully connected sequence steps
+* `SequentialModel` for stacking layers with shared forward/backward orchestration
+
+These types are the reusable foundation for both generic feedforward models and the sequence-specific components in `CSharpNumerics.ML.Sequence`.
+
+Example:
+
+```csharp
+using CSharpNumerics.ML.Enums;
+using CSharpNumerics.ML.NeuralNetwork;
+using CSharpNumerics.ML.NeuralNetwork.Layers;
+using CSharpNumerics.ML.Sequence.Models.Classification;
+using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.Optimization.SingleObjective;
+
+var model = new SequentialModel(
+    new DenseLayer(4, 8, ActivationType.ReLU),
+    new DenseLayer(8, 1, ActivationType.Linear));
+
+var inputSequence = new[]
+{
+    new VectorN(new[] { 0.2, 0.4, 0.6, 0.8 })
+};
+
+VectorN prediction = model.ForwardSingle(inputSequence);
+VectorN lossGradient = prediction - new VectorN(new[] { 1.0 });
+
+model.BackwardSingle(lossGradient);
+model.ApplyGradients(
+    new GradientDescent(learningRate: 0.01),
+    new GradientDescent(learningRate: 0.01),
+    batchSize: 1);
+
+var classifier = new CNN1DClassifier
+{
+    TimeSteps = 128,
+    Features = 1,
+    Filters = 8,
+    KernelSize = 5,
+    HiddenUnits = 16,
+    LearningRate = 0.01,
+    Epochs = 200
+};
+```
 
 ---
 

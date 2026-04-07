@@ -134,6 +134,19 @@ namespace CSharpNumerics.Numerics.Objects
             return new VectorN(slice);
         }
 
+        public VectorN Concat(VectorN other)
+        {
+            var result = new double[Length + other.Length];
+
+            for (int i = 0; i < Length; i++)
+                result[i] = Values[i];
+
+            for (int i = 0; i < other.Length; i++)
+                result[Length + i] = other.Values[i];
+
+            return new VectorN(result);
+        }
+
         public Matrix BuildConfusionMatrix( VectorN yPred)
         {
             double maxTrue =Values[0];

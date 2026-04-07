@@ -269,23 +269,23 @@ tid (JD)    |  flux (normaliserat)  |  flux_err
 ## Implementationsplan — Faser
 
 ### Phase 1 — Infrastruktur (gemensam)
-- [ ] Designa och implementera `ILayer` interface i `ML/NeuralNetwork/Layers/`
-- [ ] Implementera `DenseLayer` (wrapper runt befintlig Dense-logik)
-- [ ] Implementera fristående `Activations`-klass (refaktorera från NeuralNetwork)
-- [ ] Implementera `SequentialModel` med Forward/Backward/ApplyGradients
-- [ ] Implementera `VectorN.Concat()` i `Numerics/Objects/VectorN.cs`
-- [ ] Designa `ISequenceModel` sub-interface
-- [ ] Enhetstester för alla nya infrastrukturkomponenter
+- [x] Designa och implementera `ILayer` interface i `ML/NeuralNetwork/Layers/`
+- [x] Implementera `DenseLayer` (wrapper runt befintlig Dense-logik)
+- [x] Implementera fristående `Activations`-klass (refaktorera från NeuralNetwork)
+- [x] Implementera `SequentialModel` med Forward/Backward/ApplyGradients
+- [x] Implementera `VectorN.Concat()` i `Numerics/Objects/VectorN.cs`
+- [x] Designa `ISequenceModel` sub-interface
+- [x] Enhetstester för alla nya infrastrukturkomponenter
 
 ### Phase 2 — 1D-CNN
-- [ ] Implementera `Conv1DLayer` (forward + backward)
-- [ ] Implementera `MaxPool1DLayer` (forward + backward)
-- [ ] Implementera `GlobalAvgPool1DLayer`
-- [ ] Implementera `FlattenLayer`
-- [ ] Implementera `CNN1DClassifier` (IClassificationModel + IHasHyperparameters)
-- [ ] Implementera `CNN1DRegressor` (IRegressionModel + IHasHyperparameters)
-- [ ] Enhetstester: faltning, pooling, end-to-end-träning
-- [ ] Verifiera kompatibilitet med `SupervisedExperiment` grid-search
+- [x] Implementera `Conv1DLayer` (forward + backward)
+- [x] Implementera `MaxPool1DLayer` (forward + backward)
+- [x] Implementera `GlobalAvgPool1DLayer`
+- [x] Implementera `FlattenLayer`
+- [x] Implementera `CNN1DClassifier` (IClassificationModel + IHasHyperparameters)
+- [x] Implementera `CNN1DRegressor` (IRegressionModel + IHasHyperparameters)
+- [x] Enhetstester: faltning, pooling, end-to-end-träning
+- [x] Verifiera kompatibilitet med `SupervisedExperiment` grid-search
 
 ### Phase 3 — LSTM
 - [ ] Implementera `LSTMCell` (forward + backward med gate-derivator)
@@ -304,7 +304,7 @@ tid (JD)    |  flux (normaliserat)  |  flux_err
 - [ ] Benchmark mot ren CNN och ren Bi-LSTM
 
 ### Phase 6 — Integration & Dokumentation
-- [ ] Uppdatera `ML/README.md` med nya modelltyper
+- [x] Uppdatera `ML/README.md` med nya modelltyper
 - [ ] Integrera med befintlig `TimeSeries`-klass (utility: ljuskurva → flattened Matrix)
 - [ ] Exempelkod: exoplanet-transit klassificering
 
