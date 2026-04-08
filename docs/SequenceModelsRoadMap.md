@@ -288,16 +288,16 @@ tid (JD)    |  flux (normaliserat)  |  flux_err
 - [x] Verifiera kompatibilitet med `SupervisedExperiment` grid-search
 
 ### Phase 3 — LSTM
-- [ ] Implementera `LSTMCell` (forward + backward med gate-derivator)
-- [ ] Implementera `LSTMLayer` (sekventiell forward + BPTT)
-- [ ] Implementera gradient clipping
-- [ ] Enhetstester: cell-level, gradient-flöde, enkel sekvensuppgift
+- [x] Implementera `LSTMCell` (forward + backward med gate-derivator)
+- [x] Implementera `LSTMLayer` (sekventiell forward + BPTT)
+- [x] Implementera gradient clipping
+- [x] Enhetstester: cell-level, gradient-flöde, enkel sekvensuppgift
 
 ### Phase 4 — Bi-LSTM
-- [ ] Implementera `BiLSTMLayer` (framåt + bakåt LSTM, konkatenering)
-- [ ] Implementera `BiLSTMClassifier` / `BiLSTMRegressor`
-- [ ] Enhetstester: bidirektionell korrekthet, end-to-end-träning
-- [ ] Verifiera kompatibilitet med `SupervisedExperiment`
+- [x] Implementera `BiLSTMLayer` (framåt + bakåt LSTM, konkatenering)
+- [x] Implementera `BiLSTMClassifier` / `BiLSTMRegressor`
+- [x] Enhetstester: bidirektionell korrekthet, end-to-end-träning
+- [x] Verifiera kompatibilitet med `SupervisedExperiment`
 
 ### Phase 5 — Hybrid CNN-LSTM (valfri framtida fas)
 - [ ] Implementera `CNN_BiLSTMClassifier` (Conv1D → BiLSTM → Dense)
@@ -305,8 +305,8 @@ tid (JD)    |  flux (normaliserat)  |  flux_err
 
 ### Phase 6 — Integration & Dokumentation
 - [x] Uppdatera `ML/README.md` med nya modelltyper
-- [ ] Integrera med befintlig `TimeSeries`-klass (utility: ljuskurva → flattened Matrix)
-- [ ] Exempelkod: exoplanet-transit klassificering
+- [x] Integrera med befintlig `TimeSeries`-klass (utility: ljuskurva → flattened Matrix)
+- [x] Exempelkod: exoplanet-transit klassificering
 
 ---
 
