@@ -82,16 +82,16 @@ Integrationer sker utanför CSharpNumerics, men interna typer ska mappas **1:1**
 
 Definiera de centrala datatyperna i `Engines/Exoplanet/` som matchar externt format. Inga externa beroenden — bara POCOs och konverteringslogik mot befintligt `TimeSeries`.
 
-- [ ] Skapa `Engines/Exoplanet/` mappstruktur med `Data/`, `Pipeline/`, `Features/`, `Interfaces/`, `Enums/`
-- [ ] `LightCurve` — klass med `double[] Time`, `double[] Flux`, `double[] FluxError`, `int[] QualityFlags`, `LightCurveMetadata Metadata`; factory-metod `FromTimeSeries(TimeSeries ts, string timeCol, string fluxCol, string errCol)`
-- [ ] `LightCurveMetadata` — `string TargetId`, `string Mission` (Kepler/TESS/K2), `double TimeOffset` (BJD-offset), `CadenceType Cadence` (Short/Long)
-- [ ] `TransitParameters` — record/klass: `double Period`, `double Epoch`, `double Depth`, `double Duration`, `double RadiusRatio`, `double ImpactParameter`, `double IngressDuration`
-- [ ] `TransitCandidate` — `TransitParameters Parameters`, `double Score`, `TransitDisposition Disposition`, `LightCurve PhaseFoldedCurve`, `TransitFeatureSet Features`
-- [ ] `StellarProperties` — `double EffectiveTemp`, `double Radius`, `double Mass`, `double SurfaceGravity`, `double Metallicity`, `SpectralType Type`
-- [ ] `TransitDisposition` (enum) — `Unknown`, `Candidate`, `Confirmed`, `FalsePositive`, `AstrophysicalFalsePositive`
-- [ ] `CadenceType` (enum) — `Short`, `Long`, `Fast` (TESS 20s)
-- [ ] `LightCurveSanitizer` — statisk klass: `RemoveBadQuality(LightCurve, qualityMask)`, `RemoveOutliers(LightCurve, sigmaThreshold)`, `FillGaps(LightCurve, maxGapSize)`, `NormalizeFlux(LightCurve)` → returnerar ny `LightCurve`
-- [ ] Enhetstester för samtliga datatyper och `LightCurveSanitizer`
+- [x] Skapa `Engines/Exoplanet/` mappstruktur med `Data/`, `Pipeline/`, `Features/`, `Interfaces/`, `Enums/`
+- [x] `LightCurve` — klass med `double[] Time`, `double[] Flux`, `double[] FluxError`, `int[] QualityFlags`, `LightCurveMetadata Metadata`; factory-metod `FromTimeSeries(TimeSeries ts, string timeCol, string fluxCol, string errCol)`
+- [x] `LightCurveMetadata` — `string TargetId`, `string Mission` (Kepler/TESS/K2), `double TimeOffset` (BJD-offset), `CadenceType Cadence` (Short/Long)
+- [x] `TransitParameters` — record/klass: `double Period`, `double Epoch`, `double Depth`, `double Duration`, `double RadiusRatio`, `double ImpactParameter`, `double IngressDuration`
+- [x] `TransitCandidate` — `TransitParameters Parameters`, `double Score`, `TransitDisposition Disposition`, `LightCurve PhaseFoldedCurve`, `TransitFeatureSet Features`
+- [x] `StellarProperties` — `double EffectiveTemp`, `double Radius`, `double Mass`, `double SurfaceGravity`, `double Metallicity`, `SpectralType Type`
+- [x] `TransitDisposition` (enum) — `Unknown`, `Candidate`, `Confirmed`, `FalsePositive`, `AstrophysicalFalsePositive`
+- [x] `CadenceType` (enum) — `Short`, `Long`, `Fast` (TESS 20s)
+- [x] `LightCurveSanitizer` — statisk klass: `RemoveBadQuality(LightCurve, qualityMask)`, `RemoveOutliers(LightCurve, sigmaThreshold)`, `FillGaps(LightCurve, maxGapSize)`, `NormalizeFlux(LightCurve)` → returnerar ny `LightCurve`
+- [x] Enhetstester för samtliga datatyper och `LightCurveSanitizer`
 
 ---
 
@@ -99,12 +99,12 @@ Definiera de centrala datatyperna i `Engines/Exoplanet/` som matchar externt for
 
 Utöka `CSharpNumerics.Physics.Astro` med fysikaliska modeller för transit-geometri och limbmörkning. Dessa är domänoberoende fysik och tillhör Physics-sektionen.
 
-- [ ] `TransitGeometry` — statisk klass i `Physics/Astro/`: `ImpactParameter(a, inclination, Rstar)`, `TransitProbability(a, Rstar, Rplanet)`, `TransitDuration(period, a, Rstar, Rplanet, inclination)`, `IngressDuration(...)`, `ContactTimes(...)` (T1–T4)
-- [ ] `LimbDarkening` — statisk klass i `Physics/Astro/`: `Linear(mu, u1)`, `Quadratic(mu, u1, u2)`, `NonlinearFourParam(mu, c1..c4)`, `IntensityProfile(model, u_params, muArray)` — returnerar intensitetsprofil
-- [ ] `TransitModel` — klass i `Physics/Astro/`: implementerar Mandel & Agol (2002) analytisk transitljuskurva. `Evaluate(double[] times, TransitParameters p, LimbDarkeningModel ld, StellarProperties star)` → `double[] modelFlux`. Stödjer cirkulär bana.
-- [ ] `LimbDarkeningModel` (enum) i `Physics/Astro/` — `Uniform`, `Linear`, `Quadratic`, `NonlinearFourParam`
-- [ ] `KeplerOrbit` — statisk klass i `Physics/Astro/`: `TrueAnomaly(meanAnomaly, eccentricity)` (Kepler-ekvationen, Newton-iteration), `SemiMajorAxis(period, stellarMass)` (Keplers tredje lag), `OrbitalVelocity(a, period)`
-- [ ] Enhetstester: verifiera transitmodell mot kända Kepler-transitkurvor (analytiska testfall), limbmörkningsprofiler, Kepler-ekvationen
+- [x] `TransitGeometry` — statisk klass i `Physics/Astro/`: `ImpactParameter(a, inclination, Rstar)`, `TransitProbability(a, Rstar, Rplanet)`, `TransitDuration(period, a, Rstar, Rplanet, inclination)`, `IngressDuration(...)`, `ContactTimes(...)` (T1–T4)
+- [x] `LimbDarkening` — statisk klass i `Physics/Astro/`: `Linear(mu, u1)`, `Quadratic(mu, u1, u2)`, `NonlinearFourParam(mu, c1..c4)`, `IntensityProfile(model, u_params, muArray)` — returnerar intensitetsprofil
+- [x] `TransitModel` — klass i `Physics/Astro/`: implementerar Mandel & Agol (2002) analytisk transitljuskurva. `Evaluate(double[] times, TransitParameters p, LimbDarkeningModel ld, StellarProperties star)` → `double[] modelFlux`. Stödjer cirkulär bana.
+- [x] `LimbDarkeningModel` (enum) i `Physics/Astro/` — `Uniform`, `Linear`, `Quadratic`, `NonlinearFourParam`
+- [x] `KeplerOrbit` — statisk klass i `Physics/Astro/`: `TrueAnomaly(meanAnomaly, eccentricity)` (Kepler-ekvationen, Newton-iteration), `SemiMajorAxis(period, stellarMass)` (Keplers tredje lag), `OrbitalVelocity(a, period)`
+- [x] Enhetstester: verifiera transitmodell mot kända Kepler-transitkurvor (analytiska testfall), limbmörkningsprofiler, Kepler-ekvationen
 
 ---
 
@@ -112,13 +112,13 @@ Utöka `CSharpNumerics.Physics.Astro` med fysikaliska modeller för transit-geom
 
 Kombinera befintliga `TimeSeriesAnalysis`-moduler till en sammanhållen detektionspipeline i `Engines/Exoplanet/Pipeline/`.
 
-- [ ] `LightCurvePreprocessor` — orkestrerar: `Detrend(LightCurve, method)` → `RemoveOutliers()` → `Normalize()`. Delegerar till `TimeSeriesDetrending` och `LightCurveSanitizer`
-- [ ] `PeriodSearcher` — wrapper kring BLS och Lomb-Scargle: `Search(LightCurve, minPeriod, maxPeriod, method)` → `PeriodSearchResult` (bästa period, FAP, spektrum). Stödjer `PeriodSearchMethod`-enum (`BLS`, `LombScargle`, `Both`)
-- [ ] `TransitFitter` — anpassar `TransitModel` (Phase 2) till fasveckt ljuskurva via `NonlinearLeastSquaresFitter`. `Fit(LightCurve, trialPeriod, trialEpoch)` → `TransitFitResult` med `TransitParameters`, osäkerheter, χ²/BIC
-- [ ] `TransitValidator` — utvärderar kandidater: kontrollerar SNR (transit-djup/brus), udda/jämn transit-djup-test, sekundär eklipsanalys, centrumfotoanalys. `Validate(TransitCandidate, LightCurve)` → `ValidationResult` med `IsValid`, `Warnings[]`, `Score`
-- [ ] `TransitDetectionPipeline` — main orchestrator: `Detect(LightCurve, config)` → `TransitCandidate[]`. Steg: preprocessor → period search → phase fold → fit → validate → upprepa (multi-planet med iterativ subtraktion)
-- [ ] `TransitDetectionConfig` — konfigurationsobjekt: `MinPeriodDays`, `MaxPeriodDays`, `MinTransitDepthPpm`, `SnrThreshold`, `MaxPlanets`, `DetrendingMethod`, `PeriodSearchMethod`
-- [ ] Enhetstester: syntetisk ljuskurva med 1–3 injicerade transiter → pipeline ska återfinna samtliga med korrekt period (±1%)
+- [x] `LightCurvePreprocessor` — orkestrerar: `Detrend(LightCurve, method)` → `RemoveOutliers()` → `Normalize()`. Delegerar till `TimeSeriesDetrending` och `LightCurveSanitizer`
+- [x] `PeriodSearcher` — wrapper kring BLS och Lomb-Scargle: `Search(LightCurve, minPeriod, maxPeriod, method)` → `PeriodSearchResult` (bästa period, FAP, spektrum). Stödjer `PeriodSearchMethod`-enum (`BLS`, `LombScargle`, `Both`)
+- [x] `TransitFitter` — anpassar `TransitModel` (Phase 2) till fasveckt ljuskurva via `NonlinearLeastSquaresFitter`. `Fit(LightCurve, trialPeriod, trialEpoch)` → `TransitFitResult` med `TransitParameters`, osäkerheter, χ²/BIC
+- [x] `TransitValidator` — utvärderar kandidater: kontrollerar SNR (transit-djup/brus), udda/jämn transit-djup-test, sekundär eklipsanalys, centrumfotoanalys. `Validate(TransitCandidate, LightCurve)` → `ValidationResult` med `IsValid`, `Warnings[]`, `Score`
+- [x] `TransitDetectionPipeline` — main orchestrator: `Detect(LightCurve, config)` → `TransitCandidate[]`. Steg: preprocessor → period search → phase fold → fit → validate → upprepa (multi-planet med iterativ subtraktion)
+- [x] `TransitDetectionConfig` — konfigurationsobjekt: `MinPeriodDays`, `MaxPeriodDays`, `MinTransitDepthPpm`, `SnrThreshold`, `MaxPlanets`, `DetrendingMethod`, `PeriodSearchMethod`
+- [x] Enhetstester: syntetisk ljuskurva med 1–3 injicerade transiter → pipeline ska återfinna samtliga med korrekt period (±1%)
 
 ---
 
