@@ -38,5 +38,12 @@ public class TransitFeatureSet
         public const string LimbDarkeningU1 = "LimbDarkeningU1";
         public const string LimbDarkeningU2 = "LimbDarkeningU2";
         public const string IngressEgressRatio = "IngressEgressRatio";
+
+        public static readonly string[] All = new[]
+        {
+            Depth, Duration, Period, SnrBls, OddEvenRatio, VShapeMetric,
+            SecondaryDepth, ScatterInTransit, ScatterOutTransit,
+            LimbDarkeningU1, LimbDarkeningU2, IngressEgressRatio
+        };
     }
 }

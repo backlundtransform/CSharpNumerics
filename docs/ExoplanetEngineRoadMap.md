@@ -126,10 +126,10 @@ Kombinera befintliga `TimeSeriesAnalysis`-moduler till en sammanhållen detektio
 
 Extrahera transitspecifika features för ML-klassificering. Placeras i `Engines/Exoplanet/Features/`.
 
-- [ ] `TransitFeatureExtractor` — extraherar features från en `TransitCandidate` + rå `LightCurve`: transit-djup, duration, ingress/egress-ratio, periodik-styrka (BLS SNR), udda/jämn djupskillnad, sekundäreklips-djup, ljuskurve-scatter, fasvecknings-χ², limbmörkningskoefficienter (anpassade), transitform-metric (V-shape vs U-shape)
-- [ ] `TransitFeatureSet` — resultatobjekt: `Dictionary<string, double> Features`, med standardnamn: `Depth`, `Duration`, `Period`, `SnrBls`, `OddEvenRatio`, `VShapeMetric`, `SecondaryDepth`, `ScatterInTransit`, `ScatterOutTransit`, `LimbDarkeningU1`, `LimbDarkeningU2`, `IngressEgressRatio`
-- [ ] `WindowedFeatureExtractor` — skapar `(Matrix X, VectorN y)` för ML-träning: kombinerar raw fasveckt ljuskurva (tidsfönster) med extraherade features som extra kolumner. Kompatibel med `SequenceDataHelper.CreateWindows`
-- [ ] Enhetstester: verifiera extraherade features mot kända transiter
+- [x] `TransitFeatureExtractor` — extraherar features från en `TransitCandidate` + rå `LightCurve`: transit-djup, duration, ingress/egress-ratio, periodik-styrka (BLS SNR), udda/jämn djupskillnad, sekundäreklips-djup, ljuskurve-scatter, fasvecknings-χ², limbmörkningskoefficienter (anpassade), transitform-metric (V-shape vs U-shape)
+- [x] `TransitFeatureSet` — resultatobjekt: `Dictionary<string, double> Features`, med standardnamn: `Depth`, `Duration`, `Period`, `SnrBls`, `OddEvenRatio`, `VShapeMetric`, `SecondaryDepth`, `ScatterInTransit`, `ScatterOutTransit`, `LimbDarkeningU1`, `LimbDarkeningU2`, `IngressEgressRatio`
+- [x] `WindowedFeatureExtractor` — skapar `(Matrix X, VectorN y)` för ML-träning: kombinerar raw fasveckt ljuskurva (tidsfönster) med extraherade features som extra kolumner. Kompatibel med `SequenceDataHelper.CreateWindows`
+- [x] Enhetstester: verifiera extraherade features mot kända transiter
 
 ---
 
@@ -137,13 +137,13 @@ Extrahera transitspecifika features för ML-klassificering. Placeras i `Engines/
 
 Bygg tränings- och inference-workflow i `Engines/Exoplanet/Pipeline/`. Målet: träna en modell på labeled data → serialisera → ladda för prediktion.
 
-- [ ] `TransitClassifierTrainer` — façade som sammanfogar feature-extraktion + `SupervisedExperiment`. `Train(LightCurve[] curves, TransitDisposition[] labels, TrainerConfig config)` → `TrainedTransitModel`. Grid-search över CNN1D, LSTM, BiLSTM med konfigurerbar hyperparameterrymd
-- [ ] `TrainerConfig` — konfiguration: `int WindowSize`, `int Stride`, `ModelType[] CandidateModels`, `CrossValidatorConfig Cv`, `int Epochs`, `double ValidationSplit`
-- [ ] `TrainedTransitModel` — wrapper: innehåller den tränade `IClassificationModel`, `TransitDetectionConfig`, feature-scaler-parametrar, träningsmetrik (accuracy, precision, recall, F1, confusion matrix). Stödjer `Predict(LightCurve)` → `TransitPrediction[]`
-- [ ] `TransitPrediction` — `TransitCandidate Candidate`, `double Probability`, `TransitDisposition PredictedDisposition`
-- [ ] `ModelSerializer` — serialisering/deserialisering av `TrainedTransitModel` till/från byte-array eller fil. Använder `FieldSerializer` från `Engines.Common` som bas. Format: JSON-metadata + binär viktdata
-- [ ] `TransitInferencePipeline` — stateless inference: `LoadModel(byte[] serialized)` → `Predict(LightCurve)` → `TransitPrediction[]`. Designad för att anropas från webbtjänst. Trådsäker (inga mutable state)
-- [ ] Enhetstester: full roundtrip — träna på syntetisk data → serialisera → deserialisera → prediktera → verifiera accuracy, precision, recall
+- [x] `TransitClassifierTrainer` — façade som sammanfogar feature-extraktion + `SupervisedExperiment`. `Train(LightCurve[] curves, TransitDisposition[] labels, TrainerConfig config)` → `TrainedTransitModel`. Grid-search över CNN1D, LSTM, BiLSTM med konfigurerbar hyperparameterrymd
+- [x] `TrainerConfig` — konfiguration: `int WindowSize`, `int Stride`, `ModelType[] CandidateModels`, `CrossValidatorConfig Cv`, `int Epochs`, `double ValidationSplit`
+- [x] `TrainedTransitModel` — wrapper: innehåller den tränade `IClassificationModel`, `TransitDetectionConfig`, feature-scaler-parametrar, träningsmetrik (accuracy, precision, recall, F1, confusion matrix). Stödjer `Predict(LightCurve)` → `TransitPrediction[]`
+- [x] `TransitPrediction` — `TransitCandidate Candidate`, `double Probability`, `TransitDisposition PredictedDisposition`
+- [x] `ModelSerializer` — serialisering/deserialisering av `TrainedTransitModel` till/från byte-array eller fil. Använder `FieldSerializer` från `Engines.Common` som bas. Format: JSON-metadata + binär viktdata
+- [x] `TransitInferencePipeline` — stateless inference: `LoadModel(byte[] serialized)` → `Predict(LightCurve)` → `TransitPrediction[]`. Designad för att anropas från webbtjänst. Trådsäker (inga mutable state)
+- [x] Enhetstester: full roundtrip — träna på syntetisk data → serialisera → deserialisera → prediktera → verifiera accuracy, precision, recall
 
 ---
 
