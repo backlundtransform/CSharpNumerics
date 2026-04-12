@@ -509,6 +509,77 @@ List<PeakResult> fitted = PeakFitting.FindAndFitPeaks(
 | `RSquared` | Goodness-of-fit for the peak region |
 | `PeakIndex` | Index in the original series |
 
+### False Alarm Probability
+
+Estimate the statistical significance of periodogram peaks using analytical (Baluev 2008) or bootstrap methods.
+
+```csharp
+using CSharpNumerics.Statistics.TimeSeriesAnalysis;
+
+// Analytical FAP (fast) — Baluev 2008 approximation
+double fap = FalseAlarmProbability.AnalyticalFAP(
+    peakPower: 12.5, numFrequencies: 1000, numDataPoints: 500);
+// fap ≈ 0.0001 → highly significant detection
+
+// Bootstrap FAP (accurate, slower) — shuffles values and re-evaluates periodogram
+double fapBoot = FalseAlarmProbability.BootstrapFAP(
+    times, values, peakPower: 12.5,
+    nBootstrap: 1000, minPeriod: 1.0, maxPeriod: 50.0,
+    numFrequencies: 500, seed: 42);
+```
+
+### Sliding Window Statistics
+
+Running (sliding window) descriptive statistics with centered windows. Edge windows are computed with fewer points. Even window sizes are incremented to the next odd value for symmetric centering.
+
+```csharp
+using CSharpNumerics.Statistics.TimeSeriesAnalysis;
+
+var data = new[] { 1.0, 3.0, 5.0, 7.0, 2.0, 4.0, 6.0 };
+
+double[] mean   = SlidingWindowStatistics.RunningMean(data, windowSize: 3);
+double[] std    = SlidingWindowStatistics.RunningStd(data, windowSize: 3);
+double[] mad    = SlidingWindowStatistics.RunningMAD(data, windowSize: 5);
+double[] median = SlidingWindowStatistics.RunningMedian(data, windowSize: 3);
+
+// All outputs have the same length as the input array
+// MAD × 1.4826 ≈ standard deviation for normally distributed data
+```
+
+---
+
+## 🛡️ Robust Statistics
+
+The `CSharpNumerics.Statistics.Robust` namespace provides outlier-resistant statistical methods.
+
+### Sigma Clipping
+
+Iterative sigma-clipping: removes data points outside [mean − σ_low × σ, mean + σ_high × σ] and recomputes until convergence.
+
+```csharp
+using CSharpNumerics.Statistics.Robust;
+
+var data = new[] { 1.0, 2.0, 2.5, 2.3, 100.0, 2.1, 1.9, -50.0, 2.4 };
+
+// Full result with mask, mean, std, iteration count
+ClipResult result = SigmaClipping.Clip(data, sigmaLow: 3.0, sigmaHigh: 3.0, maxIter: 10);
+result.Mean           // mean of retained points
+result.Std            // std of retained points
+result.RetainedCount  // number of non-clipped points
+result.ClippedCount   // number of removed outliers
+result.Iterations     // convergence iterations
+result.Mask           // bool[] — true = retained
+
+// Symmetric shorthand
+ClipResult sym = SigmaClipping.Clip(data, sigma: 2.5, maxIter: 5);
+
+// Just get the cleaned array
+double[] clean = SigmaClipping.Apply(data, sigmaLow: 3.0, sigmaHigh: 3.0);
+// clean ≈ { 1.0, 2.0, 2.5, 2.3, 2.1, 1.9, 2.4 }
+```
+
+---
+
 
 ## 🎲 Random
 
