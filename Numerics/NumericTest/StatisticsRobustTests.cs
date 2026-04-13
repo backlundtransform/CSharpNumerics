@@ -380,4 +380,315 @@ public class StatisticsRobustTests
     }
 
     #endregion
+
+    #region MedianAbsoluteDeviation Tests
+
+    [TestMethod]
+    public void MAD_SymmetricData_ShouldReturnCorrectValues()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5 };
+        var result = MedianAbsoluteDeviation.Compute(data);
+        Assert.AreEqual(3.0, result.Median, 1e-10);
+        Assert.AreEqual(1.0, result.Mad, 1e-10);
+        Assert.AreEqual(1.4826, result.ScaledMad, 1e-4);
+    }
+
+    [TestMethod]
+    public void MAD_SingleElement_ShouldReturnZeroMad()
+    {
+        var data = new double[] { 42.0 };
+        var result = MedianAbsoluteDeviation.Compute(data);
+        Assert.AreEqual(42.0, result.Median, 1e-10);
+        Assert.AreEqual(0.0, result.Mad, 1e-10);
+    }
+
+    [TestMethod]
+    public void MAD_WithOutliers_ShouldBeRobust()
+    {
+        // 98 values near 0, 2 extreme outliers
+        var data = new double[100];
+        for (int i = 0; i < 98; i++) data[i] = i * 0.01;
+        data[98] = 1000.0;
+        data[99] = -1000.0;
+
+        var result = MedianAbsoluteDeviation.Compute(data);
+        // MAD should not be strongly influenced by the 2 outliers
+        Assert.IsTrue(result.Mad < 1.0, $"MAD should be small, got {result.Mad}");
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void MAD_EmptyArray_ShouldThrow()
+    {
+        MedianAbsoluteDeviation.Compute(Array.Empty<double>());
+    }
+
+    #endregion
+
+    #region TrimmedMean Tests
+
+    [TestMethod]
+    public void TrimmedMean_NoTrim_ShouldReturnArithmeticMean()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5 };
+        double result = TrimmedMean.Compute(data, trimRatio: 0.0);
+        Assert.AreEqual(3.0, result, 1e-10);
+    }
+
+    [TestMethod]
+    public void TrimmedMean_WithOutliers_ShouldResist()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 100 };
+        double ordinaryMean = 14.5;
+        double trimmed = TrimmedMean.Compute(data, trimRatio: 0.1);
+        // Trimmed mean should be much closer to 5 than ordinary mean
+        Assert.IsTrue(Math.Abs(trimmed - 5.0) < Math.Abs(ordinaryMean - 5.0),
+            $"Trimmed mean {trimmed} should be closer to 5 than ordinary mean {ordinaryMean}");
+    }
+
+    [TestMethod]
+    public void TrimmedMean_HighTrim_ApproachesMedian()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+        double trimmed = TrimmedMean.Compute(data, trimRatio: 0.45);
+        double median = 10.5;
+        Assert.AreEqual(median, trimmed, 0.5);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void TrimmedMean_InvalidRatio_ShouldThrow()
+    {
+        TrimmedMean.Compute(new double[] { 1, 2, 3 }, trimRatio: 0.5);
+    }
+
+    #endregion
+
+    #region WinsorizedMean Tests
+
+    [TestMethod]
+    public void WinsorizedMean_NoWinsorize_ShouldReturnArithmeticMean()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5 };
+        double result = WinsorizedMean.Compute(data, trimRatio: 0.0);
+        Assert.AreEqual(3.0, result, 1e-10);
+    }
+
+    [TestMethod]
+    public void WinsorizedMean_WithOutliers_ShouldResist()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 100 };
+        double ordinaryMean = 14.5;
+        double winsorized = WinsorizedMean.Compute(data, trimRatio: 0.1);
+        Assert.IsTrue(Math.Abs(winsorized - 5.0) < Math.Abs(ordinaryMean - 5.0),
+            $"Winsorized mean {winsorized} should be closer to 5 than ordinary mean {ordinaryMean}");
+    }
+
+    [TestMethod]
+    public void WinsorizedMean_PreservesSampleSize()
+    {
+        // Winsorizing replaces extremes rather than removing them,
+        // so the effective sample size is unchanged.
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        double winsorized = WinsorizedMean.Compute(data, trimRatio: 0.2);
+        // With 20% winsorization the two lowest become 3, two highest become 8
+        // Expected: (3+3+3+4+5+6+7+8+8+8)/10 = 5.5
+        Assert.AreEqual(5.5, winsorized, 1e-10);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    public void WinsorizedMean_InvalidRatio_ShouldThrow()
+    {
+        WinsorizedMean.Compute(new double[] { 1, 2, 3 }, trimRatio: -0.1);
+    }
+
+    #endregion
+
+    #region HuberLoss Tests
+
+    [TestMethod]
+    public void HuberLoss_SmallResidual_ShouldBeQuadratic()
+    {
+        double delta = 1.35;
+        double r = 0.5;
+        double expected = 0.5 * r * r;
+        Assert.AreEqual(expected, HuberLoss.Loss(r, delta), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_LargeResidual_ShouldBeLinear()
+    {
+        double delta = 1.35;
+        double r = 5.0;
+        double expected = delta * (Math.Abs(r) - 0.5 * delta);
+        Assert.AreEqual(expected, HuberLoss.Loss(r, delta), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_AtThreshold_ShouldBeContinuous()
+    {
+        double delta = 2.0;
+        double quadratic = 0.5 * delta * delta;
+        double linear = delta * (delta - 0.5 * delta);
+        Assert.AreEqual(quadratic, linear, 1e-10, "Huber loss should be continuous at threshold");
+        Assert.AreEqual(quadratic, HuberLoss.Loss(delta, delta), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_Gradient_SmallResidual_ShouldEqualResidual()
+    {
+        Assert.AreEqual(0.5, HuberLoss.Gradient(0.5, 1.35), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_Gradient_LargeResidual_ShouldBeClipped()
+    {
+        Assert.AreEqual(1.35, HuberLoss.Gradient(10.0, 1.35), 1e-10);
+        Assert.AreEqual(-1.35, HuberLoss.Gradient(-10.0, 1.35), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_MeanLoss_ShouldBeAverage()
+    {
+        double[] residuals = { 0.5, -0.5, 3.0, -3.0 };
+        double delta = 1.35;
+        double expected = (HuberLoss.Loss(0.5, delta) + HuberLoss.Loss(-0.5, delta)
+                         + HuberLoss.Loss(3.0, delta) + HuberLoss.Loss(-3.0, delta)) / 4.0;
+        Assert.AreEqual(expected, HuberLoss.MeanLoss(residuals, delta), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_Weight_SmallResidual_ShouldBeOne()
+    {
+        Assert.AreEqual(1.0, HuberLoss.Weight(0.5, 1.35), 1e-10);
+    }
+
+    [TestMethod]
+    public void HuberLoss_Weight_LargeResidual_ShouldBeLessThanOne()
+    {
+        double w = HuberLoss.Weight(5.0, 1.35);
+        Assert.IsTrue(w > 0 && w < 1.0, $"Weight should be in (0,1), got {w}");
+        Assert.AreEqual(1.35 / 5.0, w, 1e-10);
+    }
+
+    #endregion
+
+    #region Ransac Tests
+
+    [TestMethod]
+    public void Ransac_PerfectLine_ShouldFitExactly()
+    {
+        var x = new double[] { 1, 2, 3, 4, 5 };
+        var y = new double[] { 3, 5, 7, 9, 11 }; // y = 1 + 2x
+
+        var result = Ransac.FitLine(x, y, residualThreshold: 0.1);
+        Assert.AreEqual(1.0, result.BestModel[0], 1e-6, "Intercept should be 1");
+        Assert.AreEqual(2.0, result.BestModel[1], 1e-6, "Slope should be 2");
+        Assert.AreEqual(5, result.InlierCount);
+    }
+
+    [TestMethod]
+    public void Ransac_WithOutliers_ShouldResist()
+    {
+        // True line: y = 2x
+        var x = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        var y = new double[] { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 };
+
+        // Add 3 outliers
+        y[7] = 100;
+        y[8] = -50;
+        y[9] = 200;
+
+        var result = Ransac.FitLine(x, y, residualThreshold: 1.0, maxIterations: 2000, seed: 42);
+
+        // Slope should be close to 2
+        Assert.AreEqual(2.0, result.BestModel[1], 0.5, $"Slope should be near 2, got {result.BestModel[1]}");
+        Assert.IsTrue(result.InlierCount >= 7, $"Should have at least 7 inliers, got {result.InlierCount}");
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void Ransac_TooFewPoints_ShouldThrow()
+    {
+        Ransac.FitLine(new double[] { 1 }, new double[] { 1 });
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void Ransac_MismatchedLengths_ShouldThrow()
+    {
+        Ransac.FitLine(new double[] { 1, 2, 3 }, new double[] { 1, 2 });
+    }
+
+    #endregion
+
+    #region OutlierDetection Tests
+
+    [TestMethod]
+    public void OutlierDetection_IQR_ShouldDetectExtremes()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100 };
+        var result = OutlierDetection.Iqr(data, k: 1.5);
+        Assert.IsTrue(result.OutlierMask[10], "100 should be detected as outlier");
+        Assert.IsTrue(result.OutlierCount >= 1);
+    }
+
+    [TestMethod]
+    public void OutlierDetection_IQR_NoOutliers_ShouldReturnNone()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        var result = OutlierDetection.Iqr(data, k: 1.5);
+        Assert.AreEqual(0, result.OutlierCount);
+    }
+
+    [TestMethod]
+    public void OutlierDetection_ZScore_ShouldDetectExtremes()
+    {
+        var rng = new Random(42);
+        var data = new double[100];
+        for (int i = 0; i < 98; i++) data[i] = rng.NextDouble() * 2 - 1;
+        data[98] = 50.0;
+        data[99] = -50.0;
+
+        var result = OutlierDetection.ZScore(data, threshold: 3.0);
+        Assert.IsTrue(result.OutlierMask[98], "50 should be an outlier");
+        Assert.IsTrue(result.OutlierMask[99], "-50 should be an outlier");
+    }
+
+    [TestMethod]
+    public void OutlierDetection_ModifiedZScore_ShouldDetectExtremes()
+    {
+        var data = new double[50];
+        for (int i = 0; i < 48; i++) data[i] = i * 0.1;
+        data[48] = 500.0;
+        data[49] = -500.0;
+
+        var result = OutlierDetection.ModifiedZScore(data, threshold: 3.5);
+        Assert.IsTrue(result.OutlierMask[48], "500 should be an outlier");
+        Assert.IsTrue(result.OutlierMask[49], "-500 should be an outlier");
+    }
+
+    [TestMethod]
+    public void OutlierDetection_IndicesMatchMask()
+    {
+        var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 100 };
+        var result = OutlierDetection.Iqr(data, k: 1.5);
+
+        int maskCount = 0;
+        for (int i = 0; i < result.OutlierMask.Length; i++)
+            if (result.OutlierMask[i]) maskCount++;
+
+        Assert.AreEqual(result.OutlierCount, maskCount);
+        Assert.AreEqual(result.OutlierCount, result.OutlierIndices.Length);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void OutlierDetection_IQR_TooFewPoints_ShouldThrow()
+    {
+        OutlierDetection.Iqr(new double[] { 1, 2, 3 });
+    }
+
+    #endregion
 }
