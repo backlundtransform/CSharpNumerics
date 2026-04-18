@@ -1,3 +1,4 @@
+using CSharpNumerics.Physics.Astro.Enums;
 using CSharpNumerics.Physics.Constants;
 using System;
 
@@ -335,6 +336,119 @@ namespace CSharpNumerics.Physics.Astro
             if (value < min) return min;
             if (value > max) return max;
             return value;
+        }
+
+        #endregion
+
+        #region Exoplanet Classification
+
+        /// <summary>
+        /// Returns the Harvard spectral type for a given stellar effective temperature (Kelvin).
+        /// Boundaries follow the standard Morgan–Keenan classification.
+        /// </summary>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin.</param>
+        public static SpectralType GetSpectralFromTemp(double effectiveTemperatureK)
+        {
+            if (effectiveTemperatureK <= 0) return SpectralType.Unknown;
+
+            if (effectiveTemperatureK >= 30000) return SpectralType.O;
+            if (effectiveTemperatureK >= 10000) return SpectralType.B;
+            if (effectiveTemperatureK >= 7500)  return SpectralType.A;
+            if (effectiveTemperatureK >= 6000)  return SpectralType.F;
+            if (effectiveTemperatureK >= 5200)  return SpectralType.G;
+            if (effectiveTemperatureK >= 3700)  return SpectralType.K;
+            if (effectiveTemperatureK >= 2400)  return SpectralType.M;
+            if (effectiveTemperatureK >= 1300)  return SpectralType.L;
+            if (effectiveTemperatureK >= 550)   return SpectralType.T;
+
+            return SpectralType.Y;
+        }
+
+        /// <summary>
+        /// Calculates the conservative habitable zone (Goldilocks zone) boundaries in AU
+        /// using the Kopparapu et al. (2013) parameterisation.
+        /// Returns (innerEdgeAU, outerEdgeAU).
+        /// </summary>
+        /// <param name="stellarLuminositySolar">Stellar luminosity in solar luminosities.</param>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin.</param>
+        public static (double InnerEdgeAU, double OuterEdgeAU) CalculateGoldilocksZone(
+            double stellarLuminositySolar,
+            double effectiveTemperatureK)
+        {
+            double tStar = effectiveTemperatureK - 5780.0;
+            double tStar2 = tStar * tStar;
+            double tStar3 = tStar2 * tStar;
+            double tStar4 = tStar3 * tStar;
+
+            // Runaway greenhouse (inner edge, conservative)
+            double sInner = 1.0146
+                          + 8.1884e-5 * tStar
+                          + 1.9394e-9 * tStar2
+                          - 4.3618e-12 * tStar3
+                          - 6.8260e-16 * tStar4;
+
+            // Maximum greenhouse (outer edge, conservative)
+            double sOuter = 0.3507
+                          + 5.9578e-5 * tStar
+                          + 1.6707e-9 * tStar2
+                          - 3.0058e-12 * tStar3
+                          - 5.1925e-16 * tStar4;
+
+            double inner = Math.Sqrt(stellarLuminositySolar / sInner);
+            double outer = Math.Sqrt(stellarLuminositySolar / sOuter);
+
+            return (inner, outer);
+        }
+
+        /// <summary>
+        /// Calculates the conservative habitable zone boundaries in AU from stellar radius and temperature.
+        /// Luminosity is derived via the Stefan–Boltzmann law: L = (R/R☉)² × (T/T☉)⁴.
+        /// Returns (innerEdgeAU, outerEdgeAU).
+        /// </summary>
+        /// <param name="stellarRadiusSolar">Stellar radius in solar radii.</param>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin.</param>
+        public static (double InnerEdgeAU, double OuterEdgeAU) CalculateGoldilocksZoneFromRadius(
+            double stellarRadiusSolar,
+            double effectiveTemperatureK)
+        {
+            const double solarTeff = 5778.0;
+            double luminosity = stellarRadiusSolar * stellarRadiusSolar
+                              * Math.Pow(effectiveTemperatureK / solarTeff, 4);
+            return CalculateGoldilocksZone(luminosity, effectiveTemperatureK);
+        }
+
+        /// <summary>
+        /// Computes the Earth Similarity Index (ESI), a value between 0 and 1
+        /// that measures how physically similar a planet is to Earth.
+        /// Uses the standard four-parameter formulation (Schulze-Makuch et al. 2011).
+        /// </summary>
+        /// <param name="radiusEarth">Planet radius in Earth radii (Earth = 1.0).</param>
+        /// <param name="densityEarth">Planet bulk density in Earth densities (Earth = 1.0).</param>
+        /// <param name="escapeVelocityEarth">Planet escape velocity in Earth escape velocities (Earth = 1.0).</param>
+        /// <param name="surfaceTemperatureK">Planet surface temperature in Kelvin (Earth ≈ 288 K).</param>
+        public static double CalculateEsi(
+            double radiusEarth,
+            double densityEarth,
+            double escapeVelocityEarth,
+            double surfaceTemperatureK)
+        {
+            const int n = 4;
+            const double refTemp = 288.0;
+            const double wRadius = 0.57;
+            const double wDensity = 1.07;
+            const double wEscapeVelocity = 0.70;
+            const double wTemperature = 5.58;
+
+            double EsiTerm(double value, double reference, double weight)
+            {
+                double ratio = Math.Abs(value - reference) / (value + reference);
+                return Math.Pow(1.0 - ratio, weight / n);
+            }
+
+            return EsiTerm(radiusEarth, 1.0, wRadius)
+                 * EsiTerm(densityEarth, 1.0, wDensity)
+                 * EsiTerm(escapeVelocityEarth, 1.0, wEscapeVelocity)
+                 * EsiTerm(surfaceTemperatureK, refTemp, wTemperature);
         }
 
         #endregion

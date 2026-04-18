@@ -612,6 +612,84 @@ double aAU = KeplerOrbit.SemiMajorAxisAU(periodDays: 365.25, stellarMassSolar: 1
 double v = KeplerOrbit.OrbitalVelocity(a: 1.496e11, period: 3.156e7); // ≈ 29.8 km/s
 ```
 
+### Exoplanet Classification
+
+Classify stars by temperature, compute habitable zones, and measure how Earth-like a planet is — all in `AstronomyExtensions`.
+
+**Spectral Classification**
+
+Map a stellar effective temperature to its Harvard spectral type (O B A F G K M L T Y):
+
+```csharp
+using CSharpNumerics.Physics.Astro;
+using CSharpNumerics.Physics.Astro.Enums;
+
+SpectralType sun   = AstronomyExtensions.GetSpectralFromTemp(5778);  // G
+SpectralType hot   = AstronomyExtensions.GetSpectralFromTemp(30000); // O
+SpectralType cool  = AstronomyExtensions.GetSpectralFromTemp(3000);  // M
+SpectralType brown = AstronomyExtensions.GetSpectralFromTemp(1800);  // L
+```
+
+| Temperature (K) | Spectral Type |
+|------------------|---------------|
+| ≥ 30 000 | O |
+| 10 000 – 29 999 | B |
+| 7 500 – 9 999 | A |
+| 6 000 – 7 499 | F |
+| 5 200 – 5 999 | G |
+| 3 700 – 5 199 | K |
+| 2 400 – 3 699 | M |
+| 1 300 – 2 399 | L |
+| 550 – 1 299 | T |
+| < 550 | Y |
+
+**Habitable Zone (Goldilocks Zone)**
+
+Compute the conservative habitable zone boundaries using the Kopparapu et al. (2013) parameterisation:
+
+```csharp
+// From luminosity (solar units) + effective temperature
+var (inner, outer) = AstronomyExtensions.CalculateGoldilocksZone(
+    stellarLuminositySolar: 1.0,
+    effectiveTemperatureK: 5778);
+// inner ≈ 0.99 AU, outer ≈ 1.69 AU — Earth sits comfortably inside
+
+// From radius (solar radii) + temperature (luminosity derived via Stefan–Boltzmann)
+var (inner2, outer2) = AstronomyExtensions.CalculateGoldilocksZoneFromRadius(
+    stellarRadiusSolar: 1.0,
+    effectiveTemperatureK: 5778);
+
+// Red dwarf (Proxima Centauri-like)
+var (innerM, outerM) = AstronomyExtensions.CalculateGoldilocksZone(0.04, 3200);
+// innerM ≈ 0.19 AU, outerM ≈ 0.35 AU
+```
+
+**Earth Similarity Index (ESI)**
+
+Quantify how Earth-like a planet is on a 0–1 scale (Schulze-Makuch et al. 2011). Uses four parameters normalised to Earth values:
+
+```csharp
+// Earth (reference) → ESI = 1.0
+double esiEarth = AstronomyExtensions.CalculateEsi(
+    radiusEarth: 1.0,
+    densityEarth: 1.0,
+    escapeVelocityEarth: 1.0,
+    surfaceTemperatureK: 288);   // 1.0
+
+// Mars: R≈0.53, ρ≈0.71, vesc≈0.45, T≈210 K
+double esiMars = AstronomyExtensions.CalculateEsi(0.53, 0.71, 0.45, 210);  // ≈ 0.73
+
+// Venus: R≈0.95, ρ≈0.95, vesc≈0.93, T≈737 K
+double esiVenus = AstronomyExtensions.CalculateEsi(0.95, 0.95, 0.93, 737); // ≈ 0.44
+```
+
+| Parameter | Earth value | Weight |
+|-----------|-------------|--------|
+| Radius | 1.0 R⊕ | 0.57 |
+| Bulk density | 1.0 ρ⊕ | 1.07 |
+| Escape velocity | 1.0 v⊕ | 0.70 |
+| Surface temperature | 288 K | 5.58 |
+
 ---
 
 ## 🔄 Oscillations
