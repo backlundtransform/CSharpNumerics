@@ -3,6 +3,8 @@ using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
+using CSharpNumerics.Engines.GIS.Spread.WaterContamination.Enums;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -228,6 +230,113 @@ namespace CSharpNumerics.Engines.GIS.Export
             string name = "Wildfire Spread")
             => File.WriteAllText(path, ToFireCzml(snapshots, timeFrame, name), Encoding.UTF8);
 
+        // ═══════════════════════════════════════════════════════════════
+        //  CZML from water contamination snapshots
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Generates a CZML document from a time series of contamination
+        /// <see cref="SpreadSnapshot"/>. Each cell is a Point entity with
+        /// time-varying colour:
+        /// blue (clean) → yellow (low conc.) → red (above toxicity) → black (source).
+        /// </summary>
+        /// <param name="snapshots">Time-ordered contamination spread snapshots.</param>
+        /// <param name="timeFrame">The simulation time frame.</param>
+        /// <param name="name">Document name shown in Cesium viewer.</param>
+        public static string ToContaminationCzml(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            string name = "Water Contamination")
+        {
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+            if (timeFrame == null) throw new ArgumentNullException(nameof(timeFrame));
+            if (snapshots.Count == 0) throw new ArgumentException("snapshots must not be empty.");
+
+            var grid = snapshots[0].Grid;
+            var proj = grid.Projection;
+            int cellCount = grid.CellCount;
+
+            // Find max concentration for normalisation
+            double maxConc = 0;
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                var conc = snapshots[t].Snapshot.GetLayer("concentration");
+                for (int i = 0; i < conc.Length; i++)
+                    if (conc[i] > maxConc) maxConc = conc[i];
+            }
+            if (maxConc <= 0) maxConc = 1; // avoid div-by-zero
+
+            var sb = new StringBuilder();
+            sb.Append('[');
+
+            // Document packet
+            sb.Append("{\"id\":\"document\",\"name\":\"");
+            sb.Append(EscapeJson(name));
+            sb.Append("\",\"version\":\"1.0\",\"clock\":{\"interval\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append('/');
+            AppendIso(sb, timeFrame.End);
+            sb.Append("\",\"currentTime\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append("\",\"multiplier\":1}}");
+
+            // Entity packets — one per cell that is ever contaminated
+            for (int i = 0; i < cellCount; i++)
+            {
+                if (!CellEverContaminated(snapshots, i))
+                    continue;
+
+                var pos = grid.CellCentre(i);
+                sb.Append(',');
+                AppendContaminationCellPacket(sb, snapshots, timeFrame, i, pos, proj, maxConc);
+            }
+
+            sb.Append(']');
+            return sb.ToString();
+        }
+
+        /// <summary>Write contamination CZML to a file.</summary>
+        public static void SaveContaminationCzml(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            string path,
+            string name = "Water Contamination")
+            => File.WriteAllText(path, ToContaminationCzml(snapshots, timeFrame, name), Encoding.UTF8);
+
+        /// <summary>
+        /// Maps normalised contamination level [0..1] and state to RGBA.
+        /// blue (clean) → yellow (low) → red (high) → purple-black (source).
+        /// </summary>
+        public static (int r, int g, int b, int a) ContaminationToColor(double normConc, int state)
+        {
+            if (state == (int)CellContaminationState.Source)
+                return (40, 0, 40, 255);     // dark purple-black for source
+            if (state == (int)CellContaminationState.Clean)
+                return (0, 0, 0, 0);         // transparent
+            if (state == (int)CellContaminationState.Decayed)
+                return (100, 100, 180, 80);  // faded blue-grey
+
+            // Contaminated: blue → yellow → red
+            normConc = Math.Max(0, Math.Min(1.0, normConc));
+            int r, g, b;
+            if (normConc < 0.5)
+            {
+                double t = normConc * 2.0;
+                r = (int)(255 * t);
+                g = (int)(255 * t);
+                b = (int)(255 * (1.0 - t));
+            }
+            else
+            {
+                double t = (normConc - 0.5) * 2.0;
+                r = 255;
+                g = (int)(255 * (1.0 - t));
+                b = 0;
+            }
+            int a = (int)(80 + 175 * normConc); // 80..255
+            return (r, g, b, a);
+        }
+
         /// <summary>
         /// Maps <see cref="CellBurnState"/> to RGBA (0-255).
         /// Burning → red, Burned → grey, Unburned/Firebreak → transparent.
@@ -368,6 +477,68 @@ namespace CSharpNumerics.Engines.GIS.Export
                 double seconds = snapshots[t].Time - timeFrame.Start;
                 int state = (int)snapshots[t].Snapshot.GetLayer("burnState")[cellIndex];
                 var (r, g, b, a) = BurnStateToColor(state);
+                sb.Append(Fmt(seconds)); sb.Append(',');
+                sb.Append(r); sb.Append(',');
+                sb.Append(g); sb.Append(',');
+                sb.Append(b); sb.Append(',');
+                sb.Append(a);
+            }
+
+            sb.Append("]}}}");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Internal — contamination helpers
+        // ═══════════════════════════════════════════════════════════════
+
+        private static bool CellEverContaminated(IReadOnlyList<SpreadSnapshot> snapshots, int cellIndex)
+        {
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                if (snapshots[t].Snapshot.HasLayer("concentration")
+                    && snapshots[t].Snapshot.GetLayer("concentration")[cellIndex] > 0)
+                    return true;
+            }
+            return false;
+        }
+
+        private static void AppendContaminationCellPacket(
+            StringBuilder sb,
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            TimeFrame timeFrame,
+            int cellIndex,
+            Vector pos,
+            Projection proj,
+            double maxConc)
+        {
+            sb.Append("{\"id\":\"contam_");
+            sb.Append(cellIndex);
+            sb.Append("\",\"position\":{\"cartographicDegrees\":[");
+            if (proj != null)
+            {
+                var geo = proj.ToGeo(pos);
+                sb.Append(Fmt(geo.Longitude)); sb.Append(',');
+                sb.Append(Fmt(geo.Latitude)); sb.Append(',');
+                sb.Append(Fmt(geo.Altitude));
+            }
+            else
+            {
+                sb.Append(Fmt(pos.x)); sb.Append(',');
+                sb.Append(Fmt(pos.y)); sb.Append(',');
+                sb.Append(Fmt(pos.z));
+            }
+            sb.Append("]},\"point\":{\"pixelSize\":8,\"color\":{\"epoch\":\"");
+            AppendIso(sb, timeFrame.Start);
+            sb.Append("\",\"rgba\":[");
+
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                if (t > 0) sb.Append(',');
+                double seconds = snapshots[t].Time - timeFrame.Start;
+                double conc = snapshots[t].Snapshot.GetLayer("concentration")[cellIndex];
+                int state = (int)snapshots[t].Snapshot.GetLayer("contaminationState")[cellIndex];
+                double norm = maxConc > 0 ? conc / maxConc : 0;
+                var (r, g, b, a) = ContaminationToColor(norm, state);
                 sb.Append(Fmt(seconds)); sb.Append(',');
                 sb.Append(r); sb.Append(',');
                 sb.Append(g); sb.Append(',');

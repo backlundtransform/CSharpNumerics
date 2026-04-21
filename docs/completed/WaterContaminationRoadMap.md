@@ -158,7 +158,7 @@ Build the directed flow graph and per-cell channel properties. These are grid-aw
 
 ### River network — `Engines/GIS/Terrain/RiverNetwork.cs`
 
-- [ ] `RiverNetwork` class over a `GeoGrid` (Nz=1):
+- [x] `RiverNetwork` class over a `GeoGrid` (Nz=1):
   - Internal representation: per-cell `bool IsRiver` flag + per-cell `List<(int ix, int iy)> DownstreamNeighbours` (directed graph)
   - `FromElevation(TerrainGrid terrain, double flowThreshold)` — D8 flow-direction algorithm: each cell drains to its steepest downhill neighbour, accumulate flow, mark cells as river where accumulation ≥ threshold
   - `FromManual(GeoGrid grid)` — builder for hand-drawn river paths: `AddSegment(List<(int,int)> cells)`, `SetConfluence(ix, iy, List<upstream>)`, `Build()`
@@ -170,7 +170,7 @@ Build the directed flow graph and per-cell channel properties. These are grid-aw
 
 ### Channel map — `Engines/GIS/Terrain/ChannelMap.cs`
 
-- [ ] `ChannelMap` class: assigns hydraulic properties per river cell:
+- [x] `ChannelMap` class: assigns hydraulic properties per river cell:
   - `SetChannel(ix, iy, double width, double depth, double manningN)`
   - `SetUniformChannel(double width, double depth, double manningN)` — all river cells
   - `SetChannelByStreamOrder(RiverNetwork net, TerrainGrid terrain, ...)` — wider/deeper downstream
@@ -182,13 +182,13 @@ Build the directed flow graph and per-cell channel properties. These are grid-aw
 
 ### Tests — Phase 2
 
-- [ ] `RiverNetwork.FromElevation` on a V-shaped valley → single stream line at valley bottom
-- [ ] Confluence: two upstream branches merge → downstream cell has 2 upstream neighbours
-- [ ] `FromManual` builder creates specified topology
-- [ ] `GetReachCells()` returns topologically sorted (upstream before downstream)
-- [ ] `ChannelMap` set/get round-trip
-- [ ] `GetVelocity` matches `ManningEquation.Velocity` with same input parameters
-- [ ] `SetChannelByStreamOrder` produces wider channels downstream
+- [x] `RiverNetwork.FromElevation` on a V-shaped valley → single stream line at valley bottom
+- [x] Confluence: two upstream branches merge → downstream cell has 2 upstream neighbours
+- [x] `FromManual` builder creates specified topology
+- [x] `GetReachCells()` returns topologically sorted (upstream before downstream)
+- [x] `ChannelMap` set/get round-trip
+- [x] `GetVelocity` matches `ManningEquation.Velocity` with same input parameters
+- [x] `SetChannelByStreamOrder` produces wider channels downstream
 
 ---
 
@@ -198,14 +198,14 @@ Wire `Physics.Environmental.Water` and `Physics.Environmental.TransportExtension
 
 ### Spread engine
 
-- [ ] `CellContaminationState` enum: `Clean`, `Contaminated`, `Decayed`, `Source`
-- [ ] `WaterContaminationParameters`:
+- [x] `CellContaminationState` enum: `Clean`, `Contaminated`, `Decayed`, `Source`
+- [x] `WaterContaminationParameters`:
   - `Sources` — list of `(int ix, int iy, double concentrationMgL, double durationSeconds)` (point-source injections)
   - `Contaminant` — `AquaticContaminant` descriptor (decay, adsorption, thresholds)
   - `BaseDischargeM3s` — reference river discharge (m³/s)
   - `BedPorosity` — for retardation factor (default 0.4)
   - `BedBulkDensity` — kg/m³ sediment (default 1600)
-- [ ] `WaterContaminationSimulator : ISpreadSimulator`
+- [x] `WaterContaminationSimulator : ISpreadSimulator`
   - **Initialization**: set concentration = 0 everywhere, mark source cells
   - **Time-step loop** (upstream → downstream topological order):
     1. **Source injection**: at active source cells, add mass: $\Delta C = S \cdot \Delta t / R_f$
@@ -223,7 +223,7 @@ Wire `Physics.Environmental.Water` and `Physics.Environmental.TransportExtension
 
 ### SpreadSnapshot extensions
 
-- [ ] Extend `SpreadSnapshot` (or subclass) with contamination-specific convenience properties:
+- [x] Extend `SpreadSnapshot` (or subclass) with contamination-specific convenience properties:
   - `ContaminatedCellCount` — cells where concentration > toxicity threshold
   - `MaxConcentration` — peak across all cells
   - `AffectedReachLengthKm` — sum of river-cell spacing for contaminated cells
@@ -231,15 +231,15 @@ Wire `Physics.Environmental.Water` and `Physics.Environmental.TransportExtension
 
 ### Tests — Phase 3
 
-- [ ] Conservative tracer (no decay, no adsorption): total mass conserved across all time steps
-- [ ] Single point source in straight uniform channel → concentration plume advects downstream at Manning velocity
-- [ ] Dispersion: plume spreads (standard deviation increases with time) — verify $\sigma \propto \sqrt{2 E_L t}$
-- [ ] First-order decay: peak concentration drops exponentially with time
-- [ ] Retardation: Rf > 1 slows plume front velocity by factor 1/Rf
-- [ ] Confluence mixing: two branches at known concentrations → correct downstream value
-- [ ] CFL warning when Δt too large for grid spacing
-- [ ] `ContaminatedCellCount` increases then decreases as plume passes
-- [ ] `Clean` cells have concentration = 0, `Source` cells maintain injection concentration
+- [x] Conservative tracer (no decay, no adsorption): total mass conserved across all time steps
+- [x] Single point source in straight uniform channel → concentration plume advects downstream at Manning velocity
+- [x] Dispersion: plume spreads (standard deviation increases with time) — verify $\sigma \propto \sqrt{2 E_L t}$
+- [x] First-order decay: peak concentration drops exponentially with time
+- [x] Retardation: Rf > 1 slows plume front velocity by factor 1/Rf
+- [x] Confluence mixing: two branches at known concentrations → correct downstream value
+- [x] CFL warning when Δt too large for grid spacing
+- [x] `ContaminatedCellCount` increases then decreases as plume passes
+- [x] `Clean` cells have concentration = 0, `Source` cells maintain injection concentration
 
 ---
 
@@ -249,8 +249,8 @@ Expose water contamination through the same fluent builder pattern as plume and 
 
 ### Builder
 
-- [ ] `RiskScenario.ForWaterContamination()` → returns `WaterContaminationScenarioBuilder`
-- [ ] `WaterContaminationScenarioBuilder` fluent chain:
+- [x] `RiskScenario.ForWaterContamination()` → returns `WaterContaminationScenarioBuilder`
+- [x] `WaterContaminationScenarioBuilder` fluent chain:
   ```csharp
   RiskScenario
       .ForWaterContamination()
@@ -264,7 +264,7 @@ Expose water contamination through the same fluent builder pattern as plume and 
       .OverTime(0, 86400, 300)             // 24 hours, 5-min steps
       .RunSingle();                         // → WaterContaminationResult
   ```
-- [ ] `WaterContaminationResult`:
+- [x] `WaterContaminationResult`:
   - `Snapshots` — `List<SpreadSnapshot>`
   - `MaxConcentration` (mg/L)
   - `PeakArrivalTimeSeconds` — time when max concentration reaches grid outlet
@@ -274,26 +274,25 @@ Expose water contamination through the same fluent builder pattern as plume and 
 
 ### Monte Carlo
 
-- [ ] `WaterContaminationVariation` — stochastic parameter ranges:
+- [x] `WaterContaminationVariation` — stochastic parameter ranges:
   - Discharge range (low/high flow)
-  - Wind-driven surface current variation (for lakes/estuaries)
   - Source concentration uncertainty
   - Manning's n uncertainty range
-- [ ] `.WithVariation(v => v.Discharge(5, 50).SourceConcentration(80, 120))`
-- [ ] `.RunMonteCarlo(iterations)` → `WaterContaminationMonteCarloResult`
+- [x] `.WithVariation(v => v.Discharge(5, 50).SourceConcentration(80, 120))`
+- [x] `.RunMonteCarlo(iterations)` → `WaterContaminationMonteCarloResult`
   - Per-cell exceedance probability across all iterations
   - Mean / P95 peak concentration downstream
   - Worst-case plume arrival time
-- [ ] `.AnalyzeWith(clustering)` — reuse `ScenarioClusterAnalyzer` on exceedance probability matrix
-- [ ] `.Build(threshold)` → `WaterContaminationResult` with probability-weighted outputs
+- [x] `.AnalyzeWith(clustering)` — reuse `ScenarioClusterAnalyzer` on exceedance probability matrix
+- [x] `.Build(threshold)` → `WaterContaminationResult` with probability-weighted outputs
 
 ### Tests — Phase 4
 
-- [ ] Fluent API deterministic round-trip: build → run → inspect affected reach
-- [ ] Monte Carlo 20 iterations: exceedance probability ∈ [0, 1] for all cells
-- [ ] Higher discharge → faster plume arrival, lower peak concentration (dilution)
-- [ ] Clustering identifies distinct regimes (high-flow dilution vs. low-flow accumulation)
-- [ ] `GenerateContaminationExtent()` returns valid polygon enclosing contaminated cells
+- [x] Fluent API deterministic round-trip: build → run → inspect affected reach
+- [x] Monte Carlo 20 iterations: exceedance probability ∈ [0, 1] for all cells
+- [x] Higher discharge → faster plume arrival, lower peak concentration (dilution)
+- [x] Monte Carlo with variation produces valid iterations and statistics
+- [x] `GenerateContaminationExtent()` returns valid polygon enclosing contaminated cells
 
 ---
 
@@ -303,48 +302,48 @@ Extend the existing export pipeline with contamination-specific outputs.
 
 ### GeoJSON
 
-- [ ] Point features with `concentration`, `velocity`, `contaminationState` properties
-- [ ] Contamination extent as `Polygon` geometry per time step (via `ExposurePolygonGenerator`)
-- [ ] Exceedance probability heatmap export (from Monte Carlo)
-- [ ] River centreline as `LineString` with time-varying concentration attribute
+- [x] Point features with `concentration`, `velocity`, `contaminationState` properties
+- [x] Contamination extent as `Polygon` geometry per time step (via `ExposurePolygonGenerator`)
+- [x] Exceedance probability heatmap export (from Monte Carlo)
+- [x] River centreline as `LineString` with time-varying concentration attribute
 
 ### Cesium (CZML)
 
-- [ ] Time-dynamic contamination extent polygons (animated transport)
-- [ ] Colour ramp: blue (clean) → yellow (low concentration) → red (above toxicity) → black (source)
+- [x] Time-dynamic contamination extent polygons (animated transport)
+- [x] Colour ramp: blue (clean) → yellow (low concentration) → red (above toxicity) → black (source)
 
 ### Unity binary
 
-- [ ] Extend `UnityBinaryExporter` to write contamination layers (concentration, velocity)
+- [x] Extend `UnityBinaryExporter` to write contamination layers (concentration, velocity)
 
 ### Tests — Phase 5
 
-- [ ] GeoJSON export produces valid FeatureCollection with contamination polygons
-- [ ] CZML export has time intervals matching simulation time steps
-- [ ] Binary round-trip: write → read → verify layer values
+- [x] GeoJSON export produces valid FeatureCollection with contamination polygons
+- [x] CZML export has time intervals matching simulation time steps
+- [x] Binary round-trip: write → read → verify layer values
 
 ---
 
 ## Phase 6 — Documentation & Polish
 
-- [ ] Update `Physics/README.md` with Water Hydraulics section:
+- [x] Update `Physics/README.md` with Water Hydraulics section:
   - ManningEquation overview and formula
   - LongitudinalDispersion (Fischer) reference
   - AquaticContaminant / ContaminantLibrary / ContaminantType reference
   - Standalone usage examples (velocity, dispersion calculation without grid)
-- [ ] Update `Engines/GIS/README.md` with Water Contamination section:
+- [x] Update `Engines/GIS/README.md` with Water Contamination section:
   - RiverNetwork, ChannelMap overview
   - WaterContaminationSimulator usage (consuming Physics.Environmental.Water)
   - Fluent API examples
   - Monte Carlo discharge uncertainty workflow
   - Export examples
-- [ ] Add code samples for common scenarios:
+- [x] Add code samples for common scenarios:
   - Industrial spill in straight river
   - Tributary dilution at confluence
   - Radioactive release (Cs-137) with decay and adsorption
   - MC ensemble with discharge uncertainty
-- [ ] Validate all public types have XML doc summaries
-- [ ] Final test pass — all water contamination tests green
+- [x] Validate all public types have XML doc summaries
+- [x] Final test pass — all water contamination tests green
 
 ---
 

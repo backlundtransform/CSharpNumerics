@@ -2,7 +2,9 @@ using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
+using CSharpNumerics.Engines.GIS.Terrain;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -463,6 +465,245 @@ namespace CSharpNumerics.Engines.GIS.Export
             string path,
             ExportMetadata metadata = null)
             => File.WriteAllText(path, BurnProbabilityToGeoJson(mcResult, metadata), Encoding.UTF8);
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Water contamination — point features
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Exports a <see cref="WaterContaminationResult"/> as point features
+        /// per time step with concentration, velocity, and contaminationState.
+        /// </summary>
+        public static string ContaminationToGeoJson(
+            WaterContaminationResult result,
+            ExportMetadata metadata = null)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return ContaminationSnapshotsToGeoJson(result.Snapshots, metadata);
+        }
+
+        /// <summary>
+        /// Exports contamination snapshots as point features.
+        /// Each cell × time-step is a separate feature with concentration,
+        /// velocity, contaminationState, and exposureTime properties.
+        /// </summary>
+        public static string ContaminationSnapshotsToGeoJson(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            ExportMetadata metadata = null)
+        {
+            if (snapshots == null || snapshots.Count == 0)
+                throw new ArgumentException("snapshots must not be empty.");
+            var grid = snapshots[0].Grid;
+            var proj = grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, null, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int t = 0; t < snapshots.Count; t++)
+            {
+                var snap = snapshots[t];
+                var conc = snap.Snapshot.GetLayer("concentration");
+                var vel = snap.Snapshot.GetLayer("velocity");
+                var state = snap.Snapshot.GetLayer("contaminationState");
+                var exp = snap.Snapshot.GetLayer("exposureTime");
+
+                for (int i = 0; i < grid.CellCount; i++)
+                {
+                    var pos = grid.CellCentre(i);
+                    if (!first) sb.Append(',');
+                    first = false;
+
+                    sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                    AppendCoord(sb, pos, proj);
+                    sb.Append("]},\"properties\":{");
+                    AppendProp(sb, "concentration", conc[i], true);
+                    AppendProp(sb, "velocity", vel[i], false);
+                    AppendPropInt(sb, "contaminationState", (int)state[i], false);
+                    AppendProp(sb, "exposureTime", exp[i], false);
+                    AppendProp(sb, "timeStep", snap.Time, false);
+                    AppendPropInt(sb, "timeIndex", t, false);
+                    sb.Append("}}");
+                }
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports contamination extent polygons (one per time step) as a
+        /// GeoJSON FeatureCollection.
+        /// </summary>
+        public static string ContaminationExtentToGeoJson(
+            WaterContaminationResult result,
+            double threshold,
+            Projection projection = null)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+
+            var sb = new StringBuilder();
+            sb.Append("{\"type\":\"FeatureCollection\",");
+            sb.Append("\"metadata\":{");
+            sb.Append(projection != null ? "\"crs\":\"WGS84\"" : "\"crs\":\"local\"");
+            sb.Append(",\"type\":\"contaminationExtent\"");
+            sb.Append("},\"features\":[");
+
+            bool first = true;
+            for (int t = 0; t < result.Snapshots.Count; t++)
+            {
+                ExposurePolygon poly;
+                try
+                {
+                    poly = result.GenerateContaminationExtent(t, threshold);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (poly == null || poly.Boundary == null || poly.Boundary.Count < 3)
+                    continue;
+
+                if (!first) sb.Append(',');
+                first = false;
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":");
+                sb.Append("{\"type\":\"Polygon\",\"coordinates\":[[");
+                for (int v = 0; v < poly.Boundary.Count; v++)
+                {
+                    if (v > 0) sb.Append(',');
+                    sb.Append('[');
+                    AppendCoord(sb, poly.Boundary[v], projection);
+                    sb.Append(']');
+                }
+                sb.Append("]]},\"properties\":{");
+                AppendPropInt(sb, "timeIndex", t, true);
+                AppendProp(sb, "timeStep", result.Snapshots[t].Time, false);
+                AppendProp(sb, "threshold", threshold, false);
+                AppendProp(sb, "areaSquareMetres", poly.AreaSquareMetres, false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports per-cell exceedance probability from a Monte Carlo contamination
+        /// result as a GeoJSON FeatureCollection heatmap.
+        /// </summary>
+        public static string ExceedanceProbabilityToGeoJson(
+            WaterContaminationMonteCarloResult mcResult,
+            ExportMetadata metadata = null)
+        {
+            if (mcResult == null) throw new ArgumentNullException(nameof(mcResult));
+            var grid = mcResult.Grid;
+            var proj = grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, null, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int i = 0; i < grid.CellCount; i++)
+            {
+                var pos = grid.CellCentre(i);
+                if (!first) sb.Append(',');
+                first = false;
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                AppendCoord(sb, pos, proj);
+                sb.Append("]},\"properties\":{");
+                AppendProp(sb, "exceedanceProbability", mcResult.ExceedanceProbability[i], true);
+                AppendPropInt(sb, "iterations", mcResult.Iterations, false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports the river centreline as a GeoJSON LineString with
+        /// per-vertex concentration at the specified time step.
+        /// </summary>
+        public static string RiverCentrelineToGeoJson(
+            RiverNetwork network,
+            GeoGrid grid,
+            SpreadSnapshot snapshot,
+            Projection projection = null)
+        {
+            if (network == null) throw new ArgumentNullException(nameof(network));
+            if (grid == null) throw new ArgumentNullException(nameof(grid));
+            if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+
+            var reachCells = network.GetReachCells();
+            var conc = snapshot.Snapshot.GetLayer("concentration");
+            int nx = grid.Nx;
+            var proj = projection ?? grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append("{\"type\":\"FeatureCollection\",");
+            sb.Append("\"metadata\":{");
+            sb.Append(proj != null ? "\"crs\":\"WGS84\"" : "\"crs\":\"local\"");
+            sb.Append(",\"type\":\"riverCentreline\"");
+            sb.Append("},\"features\":[{\"type\":\"Feature\",\"geometry\":");
+            sb.Append("{\"type\":\"LineString\",\"coordinates\":[");
+
+            for (int i = 0; i < reachCells.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                var (ix, iy) = reachCells[i];
+                var pos = grid.CellCentre(iy * nx + ix);
+                sb.Append('[');
+                AppendCoord(sb, pos, proj);
+                sb.Append(']');
+            }
+
+            sb.Append("]},\"properties\":{");
+            AppendProp(sb, "timeStep", snapshot.Time, true);
+
+            // Per-vertex concentration as array
+            sb.Append(",\"concentrations\":[");
+            for (int i = 0; i < reachCells.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                var (ix, iy) = reachCells[i];
+                sb.Append(Fmt(conc[iy * nx + ix]));
+            }
+            sb.Append(']');
+
+            sb.Append("}}]}");
+            return sb.ToString();
+        }
+
+        /// <summary>Save contamination point features to a GeoJSON file.</summary>
+        public static void SaveContamination(
+            WaterContaminationResult result,
+            string path,
+            ExportMetadata metadata = null)
+            => File.WriteAllText(path, ContaminationToGeoJson(result, metadata), Encoding.UTF8);
+
+        /// <summary>Save contamination extent polygons to a GeoJSON file.</summary>
+        public static void SaveContaminationExtent(
+            WaterContaminationResult result,
+            double threshold,
+            string path,
+            Projection projection = null)
+            => File.WriteAllText(path, ContaminationExtentToGeoJson(result, threshold, projection), Encoding.UTF8);
+
+        /// <summary>Save exceedance probability heatmap to a GeoJSON file.</summary>
+        public static void SaveExceedanceProbability(
+            WaterContaminationMonteCarloResult mcResult,
+            string path,
+            ExportMetadata metadata = null)
+            => File.WriteAllText(path, ExceedanceProbabilityToGeoJson(mcResult, metadata), Encoding.UTF8);
 
         // ═══════════════════════════════════════════════════════════════
         //  File writers

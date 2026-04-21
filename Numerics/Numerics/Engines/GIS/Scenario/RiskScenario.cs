@@ -1,3 +1,4 @@
+using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Numerics.Objects;
 
@@ -35,5 +36,11 @@ namespace CSharpNumerics.Engines.GIS.Scenario
         /// </summary>
         public static WildfireScenarioBuilder ForWildfire()
             => new WildfireScenarioBuilder();
+
+        /// <summary>
+        /// Begin building a water contamination spread risk scenario.
+        /// </summary>
+        public static WaterContaminationScenarioBuilder ForWaterContamination()
+            => new WaterContaminationScenarioBuilder();
     }
 }

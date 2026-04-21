@@ -47,6 +47,15 @@ public class SpreadSnapshot
         Snapshot.SetLayer("burnTime", burnTime);
     }
 
+    /// <summary>
+    /// Creates a spread snapshot from an existing <see cref="GridSnapshot"/>.
+    /// Layers must be added separately via <see cref="GridSnapshot.SetLayer"/>.
+    /// </summary>
+    public SpreadSnapshot(GridSnapshot snapshot)
+    {
+        Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+    }
+
     /// <summary>Number of cells currently in <see cref="CellBurnState.Burning"/> state.</summary>
     public int BurningCellCount
     {
@@ -98,5 +107,54 @@ public class SpreadSnapshot
     {
         var bs = Snapshot.GetLayer("burnState");
         return (CellBurnState)(int)bs[iy * Grid.Nx + ix];
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Water contamination convenience properties
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Number of cells where concentration exceeds the given threshold.
+    /// Requires a <c>"concentration"</c> layer. Returns 0 if the layer is absent.
+    /// </summary>
+    public int ContaminatedCellCount(double thresholdMgL)
+    {
+        if (!Snapshot.HasLayer("concentration")) return 0;
+        var conc = Snapshot.GetLayer("concentration");
+        int count = 0;
+        for (int i = 0; i < conc.Length; i++)
+            if (conc[i] > thresholdMgL) count++;
+        return count;
+    }
+
+    /// <summary>
+    /// Peak concentration (mg/L) across all cells.
+    /// Requires a <c>"concentration"</c> layer. Returns 0 if absent.
+    /// </summary>
+    public double MaxConcentration
+    {
+        get
+        {
+            if (!Snapshot.HasLayer("concentration")) return 0;
+            var conc = Snapshot.GetLayer("concentration");
+            double max = 0;
+            for (int i = 0; i < conc.Length; i++)
+                if (conc[i] > max) max = conc[i];
+            return max;
+        }
+    }
+
+    /// <summary>
+    /// Total reach length (km) of cells with concentration above threshold.
+    /// Requires a <c>"concentration"</c> layer. Returns 0 if absent.
+    /// </summary>
+    public double AffectedReachLengthKm(double thresholdMgL)
+    {
+        if (!Snapshot.HasLayer("concentration")) return 0;
+        var conc = Snapshot.GetLayer("concentration");
+        int count = 0;
+        for (int i = 0; i < conc.Length; i++)
+            if (conc[i] > thresholdMgL) count++;
+        return count * Grid.Step / 1000.0;
     }
 }

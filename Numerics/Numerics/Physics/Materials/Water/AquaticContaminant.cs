@@ -196,6 +196,7 @@ public readonly struct AquaticContaminant : IEquatable<AquaticContaminant>
     //  Equality & display
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>Determines equality by case-insensitive name comparison.</summary>
     public bool Equals(AquaticContaminant other) =>
         string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
 

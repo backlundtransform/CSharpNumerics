@@ -1793,6 +1793,88 @@ FuelLibrary.Register(new FuelModel(
 | 12 | Medium Logging Slash | 4,921 | 0.701 | 3.363 | 0.20 |
 | 13 | Heavy Logging Slash | 4,921 | 0.914 | 5.604 | 0.25 |
 
+### Water Hydraulics & Contaminant Data
+
+The `Physics.Environmental.Water` namespace provides open-channel hydraulics (Manning's equation) and longitudinal dispersion for river transport modelling. The `Physics.Materials.Water` namespace defines aquatic contaminant descriptors with decay, adsorption, and toxicity properties.
+
+#### Manning's Equation — Open-Channel Velocity
+
+$$u = \frac{1}{n} R_h^{2/3} S_0^{1/2}$$
+
+```csharp
+using CSharpNumerics.Physics.Environmental.Water;
+
+// Rectangular channel: W=10 m, H=2 m, Manning's n=0.035, slope=0.001
+double Rh = ManningEquation.RectangularHydraulicRadius(10, 2);
+double u  = ManningEquation.Velocity(0.035, Rh, 0.001);     // ≈ 1.14 m/s
+double Q  = ManningEquation.Discharge(0.035, Rh, 0.001, 20); // 20 m² area
+
+// Trapezoidal channel
+double RhTrap = ManningEquation.TrapezoidalHydraulicRadius(8, 2, 1.5);
+double uTrap  = ManningEquation.Velocity(0.03, RhTrap, 0.0005);
+```
+
+#### Fischer Longitudinal Dispersion
+
+$$E_L = 0.011 \frac{u^2 W^2}{H \cdot u_*}$$
+
+```csharp
+double uStar = LongitudinalDispersion.ShearVelocity(Rh, 0.001);
+double EL = LongitudinalDispersion.FischerCoefficient(u, 10, 2, uStar);
+
+// Decay & retardation helpers
+double lambda = LongitudinalDispersion.DecayConstant(halfLifeSeconds: 9.5e8); // Cs-137
+double Rf = LongitudinalDispersion.RetardationFactor(
+    bulkDensity: 1600, Kd: 50, porosity: 0.4); // Rf > 1 → retarded transport
+```
+
+#### Tributary Mixing
+
+```csharp
+// Two rivers merge: main at 80 mg/L (Q=20 m³/s) + tributary at 0 mg/L (Q=10 m³/s)
+double downstreamConc = MixingZoneModel.TributaryMixing(80, 20, 0, 10);
+// → 53.3 mg/L (mass-balance dilution)
+
+double mixLength = MixingZoneModel.MixingLength(1.0, 10, 0.6); // ≈ 116.7 m
+```
+
+#### Aquatic Contaminants
+
+Pre-loaded contaminant library with decay, adsorption, and toxicity data:
+
+```csharp
+using CSharpNumerics.Physics.Materials.Water;
+
+// Built-in contaminants: Cs137, Sr90, I131, Benzene, Toluene, Cyanide,
+// Mercury, Lead, Arsenic, EColi, Enterococcus, GenericHeat
+var cs137 = ContaminantLibrary.Get("Cs-137");
+// cs137.HalfLifeSeconds ≈ 9.5×10⁸, cs137.PartitionCoefficient = 1000, etc.
+
+var benzene = AquaticContaminant.Benzene;
+bool isConservative = benzene.IsConservative;  // false (has half-life)
+double lambda = benzene.DecayConstant;          // ln(2) / t½
+
+// Create a custom contaminant
+var custom = new AquaticContaminant("PFOS",
+    ContaminantType.Chemical,
+    halfLifeSeconds: 0,       // persistent (conservative tracer)
+    partitionCoefficient: 10,
+    toxicityThresholdMgL: 0.00007,
+    lethalThresholdMgL: 50);
+
+ContaminantLibrary.Register(custom);
+```
+
+| Contaminant | Type | Half-life | Kd (L/kg) | Toxicity (mg/L) |
+|-------------|------|-----------|-----------|-----------------|
+| Cs-137 | Radioactive | 30.17 yr | 1000 | 0.002 |
+| Sr-90 | Radioactive | 28.8 yr | 200 | 0.008 |
+| I-131 | Radioactive | 8.02 d | 10 | 0.003 |
+| Benzene | Chemical | 180 d | 1.8 | 0.005 |
+| Cyanide | Chemical | ∞ | 0 | 0.07 |
+| Mercury | Chemical | ∞ | 5000 | 0.001 |
+| E. coli | Biological | 2 d | 0 | 0.0001 |
+
 ---
 
 ## 🔥 Heat Extensions

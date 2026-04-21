@@ -218,6 +218,93 @@ namespace CSharpNumerics.Engines.GIS.Export
             return new UnityBinaryData(header, burnState, flameLength);
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  Save/Read — water contamination (magic "GWCN")
+        // ═══════════════════════════════════════════════════════════════
+
+        private static readonly byte[] ContaminationMagic = { (byte)'G', (byte)'W', (byte)'C', (byte)'N' };
+
+        /// <summary>
+        /// Saves a time series of contamination <see cref="SpreadSnapshot"/> to binary.
+        /// Per time step: float[cells] concentration + float[cells] velocity.
+        /// Uses magic "GWCN".
+        /// </summary>
+        public static void SaveContamination(
+            IReadOnlyList<SpreadSnapshot> snapshots,
+            GeoGrid grid,
+            TimeFrame timeFrame,
+            string path)
+        {
+            if (snapshots == null) throw new ArgumentNullException(nameof(snapshots));
+            if (grid == null) throw new ArgumentNullException(nameof(grid));
+            if (timeFrame == null) throw new ArgumentNullException(nameof(timeFrame));
+
+            using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+            using var bw = new BinaryWriter(fs);
+
+            WriteContaminationHeader(bw, grid, timeFrame, snapshots.Count);
+
+            foreach (var snap in snapshots)
+            {
+                WriteFloatLayer(bw, snap.Snapshot.GetLayer("concentration"));
+                WriteFloatLayer(bw, snap.Snapshot.GetLayer("velocity"));
+            }
+        }
+
+        /// <summary>
+        /// Reads a contamination binary file (magic "GWCN").
+        /// Returns header + per-timestep concentration and velocity layers.
+        /// </summary>
+        public static UnityBinaryData ReadContamination(string path)
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            using var br = new BinaryReader(fs);
+
+            var magic = br.ReadBytes(4);
+            if (magic.Length < 4 ||
+                magic[0] != ContaminationMagic[0] || magic[1] != ContaminationMagic[1] ||
+                magic[2] != ContaminationMagic[2] || magic[3] != ContaminationMagic[3])
+                throw new InvalidDataException("Invalid magic bytes — not a GWCN contamination file.");
+
+            int version = br.ReadInt32();
+            if (version != Version)
+                throw new InvalidDataException($"Unsupported version {version}.");
+
+            var header = ReadDimsAndTime(br);
+            int cellCount = header.Nx * header.Ny * header.Nz;
+
+            // Concentration in Concentration slot, Velocity in Probability slot
+            var concentration = new float[header.TimeStepCount][];
+            var velocity = new float[header.TimeStepCount][];
+
+            for (int t = 0; t < header.TimeStepCount; t++)
+            {
+                concentration[t] = ReadFloatLayer(br, cellCount);
+                velocity[t] = ReadFloatLayer(br, cellCount);
+            }
+
+            return new UnityBinaryData(header, concentration, velocity);
+        }
+
+        private static void WriteContaminationHeader(BinaryWriter bw, GeoGrid grid, TimeFrame timeFrame, int timeStepCount)
+        {
+            bw.Write(ContaminationMagic);
+            bw.Write(Version);
+            bw.Write(grid.Nx);
+            bw.Write(grid.Ny);
+            bw.Write(grid.Nz);
+            bw.Write(timeStepCount);
+            bw.Write(grid.XMin);
+            bw.Write(grid.XMax);
+            bw.Write(grid.YMin);
+            bw.Write(grid.YMax);
+            bw.Write(grid.ZMin);
+            bw.Write(grid.ZMax);
+            bw.Write(timeFrame.Start);
+            bw.Write(timeFrame.End);
+            bw.Write(timeFrame.StepSeconds);
+        }
+
         private static void WriteFireHeader(BinaryWriter bw, GeoGrid grid, TimeFrame timeFrame, int timeStepCount)
         {
             bw.Write(FireMagic);
