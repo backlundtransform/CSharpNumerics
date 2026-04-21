@@ -1,3 +1,4 @@
+using CSharpNumerics.Physics.Materials.Biological;
 using CSharpNumerics.Physics.Materials.Chemical;
 using CSharpNumerics.Physics.Materials.Nuclear.DecayChains;
 using CSharpNumerics.Physics.Materials.Nuclear.Isotopes;
@@ -32,11 +33,19 @@ namespace CSharpNumerics.Physics.Materials
         /// </summary>
         public ChemicalSubstance? Substance { get; }
 
+        /// <summary>The biological agent being dispersed. Null for non-biological materials.
+        /// When set, the simulator computes bioUnits, viableBioUnits, and infectiousDose layers.
+        /// </summary>
+        public BiologicalAgent? BiologicalAgent { get; }
+
         /// <summary>Whether this descriptor contains a radioactive isotope.</summary>
         public bool IsNuclear => Isotope.Name != null;
 
         /// <summary>Whether this descriptor contains a chemical substance.</summary>
         public bool IsChemical => Substance.HasValue;
+
+        /// <summary>Whether this descriptor contains a biological agent.</summary>
+        public bool IsBiological => BiologicalAgent.HasValue;
 
         internal MaterialDescriptor(Isotope isotope, DecayChain chain = null)
         {
@@ -54,6 +63,11 @@ namespace CSharpNumerics.Physics.Materials
             Isotope = isotope;
             Chain = chain;
             Substance = substance;
+        }
+
+        internal MaterialDescriptor(BiologicalAgent agent)
+        {
+            BiologicalAgent = agent;
         }
     }
 
@@ -120,6 +134,30 @@ namespace CSharpNumerics.Physics.Materials
         public static MaterialDescriptor Chemical(ChemicalSubstance substance)
         {
             return new MaterialDescriptor(substance);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Biological agents
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Creates a material descriptor for the named biological agent.
+        /// Looks up the agent in <see cref="BiologicalLibrary"/>.
+        /// </summary>
+        /// <param name="name">Agent code or alias (e.g. "Virus", "Bacteria"). Case-insensitive.</param>
+        public static MaterialDescriptor Biological(string name)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            var agent = BiologicalLibrary.Get(name);
+            return new MaterialDescriptor(agent);
+        }
+
+        /// <summary>
+        /// Creates a material descriptor from an explicit biological agent instance.
+        /// </summary>
+        public static MaterialDescriptor Biological(BiologicalAgent agent)
+        {
+            return new MaterialDescriptor(agent);
         }
 
         // ═══════════════════════════════════════════════════════════════

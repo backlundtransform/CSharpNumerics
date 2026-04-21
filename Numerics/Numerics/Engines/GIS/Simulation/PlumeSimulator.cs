@@ -209,6 +209,9 @@ namespace CSharpNumerics.Engines.GIS.Simulation
 
             if (Material.IsChemical)
                 ApplyChemicalLayers(snapshot, timeStepSeconds);
+
+            if (Material.IsBiological)
+                ApplyBiologicalLayers(snapshot, timeStepSeconds);
         }
 
         private void ApplyNuclearLayers(GridSnapshot snapshot, double timeStepSeconds)
@@ -258,6 +261,35 @@ namespace CSharpNumerics.Engines.GIS.Simulation
 
             snapshot.SetLayer("ppm", ppm);
             snapshot.SetLayer("toxicDose", toxicDose);
+        }
+
+        private void ApplyBiologicalLayers(GridSnapshot snapshot, double timeStepSeconds)
+        {
+            var agent = Material.BiologicalAgent.Value;
+            var concentrations = snapshot.GetValues();
+            int n = concentrations.Length;
+
+            var bioUnits = new double[n];
+            var viableBioUnits = new double[n];
+            var infectiousDose = new double[n];
+
+            double viabilityFraction = agent.ViabilityFractionAt(snapshot.Time);
+
+            for (int i = 0; i < n; i++)
+            {
+                // Convert kg/m³ → biological units/m³
+                bioUnits[i] = agent.KgM3ToUnitsPerM3(concentrations[i]);
+
+                // Apply viability decay
+                viableBioUnits[i] = bioUnits[i] * viabilityFraction;
+
+                // Infectious dose: viable units × exposure time step (units·s / m³)
+                infectiousDose[i] = viableBioUnits[i] * timeStepSeconds;
+            }
+
+            snapshot.SetLayer("bioUnits", bioUnits);
+            snapshot.SetLayer("viableBioUnits", viableBioUnits);
+            snapshot.SetLayer("infectiousDose", infectiousDose);
         }
     }
 }
