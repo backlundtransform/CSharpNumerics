@@ -151,10 +151,26 @@ public class WaterContaminationSimulator : ISpreadSimulator
 
                 // ── Step 2: Advection (upwind scheme) ──
                 // C_i^{n+1} = C_i^n - (u·dt)/(Rf·dx) · (C_i^n - C_upstream^n)
+                // For outlet cells (u=0) that have upstream neighbours with flow,
+                // use the mean upstream velocity so mass still arrives at the outlet.
                 double u = velocity[idx];
-                if (u > 0 && Rf > 0)
+                var ups = Network.GetUpstream(ix, iy);
+
+                double effectiveU = u;
+                if (u <= 0 && ups.Count > 0)
                 {
-                    var ups = Network.GetUpstream(ix, iy);
+                    double sumU = 0;
+                    int countU = 0;
+                    foreach (var up in ups)
+                    {
+                        double upU = velocity[up.iy * nx + up.ix];
+                        if (upU > 0) { sumU += upU; countU++; }
+                    }
+                    if (countU > 0) effectiveU = sumU / countU;
+                }
+
+                if (effectiveU > 0 && Rf > 0)
+                {
                     double upstreamConc = 0;
 
                     if (ups.Count == 1)
@@ -182,7 +198,9 @@ public class WaterContaminationSimulator : ISpreadSimulator
                     // Only apply advection to non-active-source cells
                     if (!(sourceMap.TryGetValue(idx, out var srcCheck) && t < srcCheck.durS))
                     {
-                        double courant = u * dt / (Rf * dx);
+                        double courant = effectiveU * dt / (Rf * dx);
+                        // Clamp courant to [0,1] for stability at outlets
+                        if (courant > 1.0) courant = 1.0;
                         newConc[idx] = concentration[idx] - courant * (concentration[idx] - upstreamConc);
                     }
                 }
@@ -191,7 +209,6 @@ public class WaterContaminationSimulator : ISpreadSimulator
                 double EL = dispersionEL[idx];
                 if (EL > 0 && Rf > 0)
                 {
-                    var ups = Network.GetUpstream(ix, iy);
                     var downs = Network.GetDownstream(ix, iy);
 
                     double cUp = 0, cDown = 0;

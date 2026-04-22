@@ -2,7 +2,9 @@ using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Simulation;
+using CSharpNumerics.ML.Clustering;
 using CSharpNumerics.ML.Clustering.Interfaces;
+using CSharpNumerics.ML.Clustering.Results;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -129,6 +131,11 @@ public class WaterContaminationMonteCarloResult
     /// <summary>
     /// Clusters the Monte Carlo iterations by their spatiotemporal contamination patterns
     /// and returns a <see cref="WaterContaminationAnalysisResult"/>.
+    /// <para>
+    /// Internally filters the scenario matrix to only include river cells that
+    /// carried non-zero concentration in at least one iteration, improving cluster
+    /// separation in the high-dimensional feature space.
+    /// </para>
     /// </summary>
     public WaterContaminationAnalysisResult AnalyzeWith(
         IClusteringModel algorithm,
@@ -137,12 +144,57 @@ public class WaterContaminationMonteCarloResult
         int maxK = 6)
     {
         var mcResult = ToMonteCarloScenarioResult();
-        var analysis = ScenarioClusterAnalyzer
-            .For(mcResult)
+
+        // ── Build river-cell-only feature matrix for clustering ──
+        // The full matrix is [Iterations × (cellCount × timeCount)].
+        // Most cells are non-river (always 0) which dilutes euclidean
+        // distances and prevents meaningful cluster separation.
+        int cellCount = Grid.CellCount;
+        int timeCount = AllSnapshots[0].Count;
+
+        var activeCells = new List<int>();
+        for (int c = 0; c < cellCount; c++)
+        {
+            bool active = false;
+            for (int i = 0; i < Iterations && !active; i++)
+                for (int t = 0; t < timeCount && !active; t++)
+                    if (mcResult.ScenarioMatrix.values[i, t * cellCount + c] > 0)
+                        active = true;
+            if (active) activeCells.Add(c);
+        }
+
+        Matrix clusterMatrix;
+        if (activeCells.Count > 0 && activeCells.Count < cellCount)
+        {
+            int filtCols = activeCells.Count * timeCount;
+            var filt = new double[Iterations, filtCols];
+            for (int i = 0; i < Iterations; i++)
+            {
+                for (int t = 0; t < timeCount; t++)
+                {
+                    int srcOff = t * cellCount;
+                    int dstOff = t * activeCells.Count;
+                    for (int ac = 0; ac < activeCells.Count; ac++)
+                        filt[i, dstOff + ac] = mcResult.ScenarioMatrix.values[i, srcOff + activeCells[ac]];
+                }
+            }
+            clusterMatrix = new Matrix(filt);
+        }
+        else
+        {
+            clusterMatrix = mcResult.ScenarioMatrix;
+        }
+
+        // Run clustering on the filtered feature matrix
+        var experiment = ClusteringExperiment
+            .For(clusterMatrix)
             .WithAlgorithm(algorithm)
             .TryClusterCounts(minK, maxK)
             .WithEvaluator(evaluator)
             .Run();
+
+        // Use full mcResult for snapshot reconstruction (GetClusterMeanSnapshots)
+        var analysis = new ClusterAnalysisResult(mcResult, experiment);
         return new WaterContaminationAnalysisResult(this, analysis);
     }
 }

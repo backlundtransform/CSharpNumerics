@@ -334,5 +334,70 @@ namespace NumericsTests
                 .OverTime(0, 100, 10)
                 .RunSingle();
         }
+
+        // ════════════════════════════════════════════════════════════════
+        //  Clustering — filtered matrix gives better than -1.0
+        // ════════════════════════════════════════════════════════════════
+
+        [TestMethod]
+        public void MonteCarlo_ClusteringScoreBetterThanNegativeOne()
+        {
+            var (grid, terrain, net, channels) = CreateStraightRiver();
+
+            var mcResult = RiskScenario
+                .ForWaterContamination()
+                .WithRiverNetwork(net)
+                .WithChannels(channels)
+                .WithTerrain(terrain)
+                .WithSource(5, 0, 100, double.MaxValue)
+                .WithContaminant(AquaticContaminant.Cyanide)
+                .WithDischarge(10)
+                .WithVariation(v => v
+                    .Discharge(5, 50)
+                    .SourceConcentration(20, 200))
+                .OverGrid(grid)
+                .OverTime(0, 600, 60)
+                .RunMonteCarlo(30, seed: 42);
+
+            var analysis = mcResult.AnalyzeWith(
+                new CSharpNumerics.ML.Clustering.Algorithms.KMeans { Seed = 42 },
+                new CSharpNumerics.ML.Clustering.Evaluators.SilhouetteEvaluator(),
+                minK: 2, maxK: 4);
+
+            double score = analysis.ClusterAnalysis.BestScore;
+            Assert.IsTrue(score > -1.0,
+                $"Silhouette score {score:F4} should be better than -1.0 after river-cell filtering");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  Outlet cell receives contamination via advection
+        // ════════════════════════════════════════════════════════════════
+
+        [TestMethod]
+        public void OutletCell_ReceivesContamination()
+        {
+            var (grid, terrain, net, channels) = CreateStraightRiver();
+
+            // Run long enough for plume to reach the outlet (iy=9)
+            var result = RiskScenario
+                .ForWaterContamination()
+                .WithRiverNetwork(net)
+                .WithChannels(channels)
+                .WithTerrain(terrain)
+                .WithSource(5, 0, 100, double.MaxValue)
+                .WithContaminant(AquaticContaminant.Cyanide) // conservative (no decay)
+                .WithDischarge(10)
+                .OverGrid(grid)
+                .OverTime(0, 1800, 60)
+                .RunSingle();
+
+            // The outlet cell is (5, 9) → flat index 9*10+5 = 95
+            var lastSnap = result.Snapshots[result.Snapshots.Count - 1];
+            var conc = lastSnap.Snapshot.GetLayer("concentration");
+            int outletIdx = 9 * grid.Nx + 5;
+
+            Assert.IsTrue(conc[outletIdx] > 0,
+                $"Outlet cell at (5,9) should have concentration > 0 but was {conc[outletIdx]}");
+        }
     }
 }
