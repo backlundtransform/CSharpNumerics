@@ -399,5 +399,44 @@ namespace NumericsTests
             Assert.IsTrue(conc[outletIdx] > 0,
                 $"Outlet cell at (5,9) should have concentration > 0 but was {conc[outletIdx]}");
         }
+
+        // ════════════════════════════════════════════════════════════════
+        //  ClusteringGrid overload — filtered matrix with grid search
+        // ════════════════════════════════════════════════════════════════
+
+        [TestMethod]
+        public void MonteCarlo_ClusteringGridOverload_AppliesFiltering()
+        {
+            var (grid, terrain, net, channels) = CreateStraightRiver();
+
+            var mcResult = RiskScenario
+                .ForWaterContamination()
+                .WithRiverNetwork(net)
+                .WithChannels(channels)
+                .WithTerrain(terrain)
+                .WithSource(5, 0, 100, double.MaxValue)
+                .WithContaminant(AquaticContaminant.Cyanide)
+                .WithDischarge(10)
+                .WithVariation(v => v
+                    .Discharge(5, 50)
+                    .SourceConcentration(20, 200))
+                .OverGrid(grid)
+                .OverTime(0, 600, 60)
+                .RunMonteCarlo(30, seed: 42);
+
+            var clusterGrid = new CSharpNumerics.ML.Clustering.ClusteringGrid()
+                .AddModel<CSharpNumerics.ML.Clustering.Algorithms.KMeans>(b =>
+                    b.Add("Seed", 42));
+
+            var analysis = mcResult.AnalyzeWith(
+                clusterGrid,
+                new CSharpNumerics.ML.Clustering.Evaluators.SilhouetteEvaluator(),
+                minK: 2, maxK: 3);
+
+            double score = analysis.ClusterAnalysis.BestScore;
+            Assert.IsTrue(score > -1.0,
+                $"Grid-search silhouette score {score:F4} should be better than -1.0");
+            Assert.IsTrue(analysis.ClusterAnalysis.BestClusterCount >= 2);
+        }
     }
 }

@@ -144,11 +144,58 @@ public class WaterContaminationMonteCarloResult
         int maxK = 6)
     {
         var mcResult = ToMonteCarloScenarioResult();
+        var clusterMatrix = BuildFilteredMatrix(mcResult);
 
-        // ── Build river-cell-only feature matrix for clustering ──
-        // The full matrix is [Iterations × (cellCount × timeCount)].
-        // Most cells are non-river (always 0) which dilutes euclidean
-        // distances and prevents meaningful cluster separation.
+        var experiment = ClusteringExperiment
+            .For(clusterMatrix)
+            .WithAlgorithm(algorithm)
+            .TryClusterCounts(minK, maxK)
+            .WithEvaluator(evaluator)
+            .Run();
+
+        var analysis = new ClusterAnalysisResult(mcResult, experiment);
+        return new WaterContaminationAnalysisResult(this, analysis);
+    }
+
+    /// <summary>
+    /// Clusters the Monte Carlo iterations using a full
+    /// <see cref="ClusteringGrid"/> hyperparameter search.
+    /// <para>
+    /// The same active-river-cell filtering is applied before clustering
+    /// to avoid diluting euclidean distances with zero-only non-river cells.
+    /// </para>
+    /// </summary>
+    public WaterContaminationAnalysisResult AnalyzeWith(
+        ClusteringGrid grid,
+        IClusteringEvaluator evaluator,
+        int minK = 2,
+        int maxK = 6)
+    {
+        var mcResult = ToMonteCarloScenarioResult();
+        var clusterMatrix = BuildFilteredMatrix(mcResult);
+
+        var experiment = ClusteringExperiment
+            .For(clusterMatrix)
+            .WithGrid(grid)
+            .TryClusterCounts(minK, maxK)
+            .WithEvaluator(evaluator)
+            .Run();
+
+        var analysis = new ClusterAnalysisResult(mcResult, experiment);
+        return new WaterContaminationAnalysisResult(this, analysis);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Internal — active-cell filtering
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Builds a feature matrix containing only columns for river cells
+    /// that carried non-zero concentration in at least one iteration.
+    /// Falls back to the full matrix if every cell is active.
+    /// </summary>
+    private Matrix BuildFilteredMatrix(MonteCarloScenarioResult mcResult)
+    {
         int cellCount = Grid.CellCount;
         int timeCount = AllSnapshots[0].Count;
 
@@ -163,7 +210,6 @@ public class WaterContaminationMonteCarloResult
             if (active) activeCells.Add(c);
         }
 
-        Matrix clusterMatrix;
         if (activeCells.Count > 0 && activeCells.Count < cellCount)
         {
             int filtCols = activeCells.Count * timeCount;
@@ -178,23 +224,9 @@ public class WaterContaminationMonteCarloResult
                         filt[i, dstOff + ac] = mcResult.ScenarioMatrix.values[i, srcOff + activeCells[ac]];
                 }
             }
-            clusterMatrix = new Matrix(filt);
-        }
-        else
-        {
-            clusterMatrix = mcResult.ScenarioMatrix;
+            return new Matrix(filt);
         }
 
-        // Run clustering on the filtered feature matrix
-        var experiment = ClusteringExperiment
-            .For(clusterMatrix)
-            .WithAlgorithm(algorithm)
-            .TryClusterCounts(minK, maxK)
-            .WithEvaluator(evaluator)
-            .Run();
-
-        // Use full mcResult for snapshot reconstruction (GetClusterMeanSnapshots)
-        var analysis = new ClusterAnalysisResult(mcResult, experiment);
-        return new WaterContaminationAnalysisResult(this, analysis);
+        return mcResult.ScenarioMatrix;
     }
 }
