@@ -2557,6 +2557,100 @@ var integratedZone = result.GenerateIntegratedExposurePolygon(
     threshold: 1000, layerName: "toxicDose");  // 1000 ppm·s
 ```
 
+---
+
+### 🦠 Biological Materials — Bioaerosol Agents
+
+**Namespace:** `CSharpNumerics.Physics.Materials.Biological`
+
+Model biological aerosol agents (viruses, bacteria, spores) with viability decay, unit-mass conversion (kg/m³ ↔ units/m³), and screening-level infectious dose layers. Integrates with the GIS dispersion pipeline via `Materials.Biological("Virus")`.
+
+#### Agent properties
+
+| Property | Description |
+|----------|-------------|
+| `Code` | Short identifier for lookup (e.g. `"Virus"`) |
+| `Name` | Human-readable name |
+| `Classification` | `BiologicalAgentClass` enum: `Virus`, `Bacteria`, `Spore` |
+| `TypicalDiameterMicrons` | Representative aerodynamic diameter (µm) |
+| `UnitMassKg` | Mass of one biological unit (kg) — converts kg/m³ → units/m³ |
+| `ViabilityHalfLifeSeconds` | Screening half-life for viability in air (seconds) |
+| `IsPersistent` | `true` when viability is treated as non-decaying |
+
+#### Built-in agents
+
+| Code | Name | Class | Diameter (µm) | Unit mass (kg) | Viability t½ |
+|------|------|-------|---------------|----------------|-------------|
+| Virus | Generic Viral Aerosol | Virus | 0.12 | 1 × 10⁻¹⁸ | 6 h |
+| Bacteria | Generic Bacterial Aerosol | Bacteria | 1.5 | 1 × 10⁻¹⁵ | 12 h |
+| Spore | Generic Biological Spore | Spore | 2.5 | 3 × 10⁻¹⁵ | 7 d |
+
+#### Agent lookup & custom registration
+
+```csharp
+using CSharpNumerics.Physics.Materials.Biological;
+
+// Static instances
+BiologicalAgent virus = BiologicalAgent.GenericVirus;
+BiologicalAgent bacteria = BiologicalAgent.GenericBacteria;
+BiologicalAgent spore = BiologicalAgent.GenericSpore;
+
+// Library lookup (case-insensitive, supports aliases)
+BiologicalAgent v = BiologicalLibrary.Get("virus");
+BiologicalAgent s = BiologicalLibrary.Get("Spores");   // alias
+bool found = BiologicalLibrary.TryGet("bacteria", out BiologicalAgent b);
+
+// All registered agents (de-duplicated)
+IReadOnlyCollection<BiologicalAgent> all = BiologicalLibrary.All();
+
+// Register custom agent with aliases
+BiologicalLibrary.Register(
+    new BiologicalAgent(
+        code: "Anthrax",
+        name: "Bacillus anthracis spore",
+        classification: BiologicalAgentClass.Spore,
+        typicalDiameterMicrons: 1.5,
+        unitMassKg: 1e-15,
+        viabilityHalfLifeSeconds: 30 * 24 * 3600),  // 30 days
+    "anthrax", "b.anthracis");
+```
+
+#### Unit conversion (kg/m³ ↔ units/m³)
+
+```csharp
+BiologicalAgent bacteria = BiologicalAgent.GenericBacteria;
+
+// Convert mass concentration to biological units per m³
+double units = bacteria.KgM3ToUnitsPerM3(2.5e-12);  // 2500 units/m³
+double kgm3  = bacteria.UnitsPerM3ToKgM3(units);    // round-trip
+
+// Viability fraction at a given time
+double fraction = bacteria.ViabilityFractionAt(6 * 3600);  // after 6 h
+```
+
+#### GIS pipeline integration
+
+```csharp
+using CSharpNumerics.Physics.Materials;
+
+// Attach biological material to a dispersion scenario
+var sim = new PlumeSimulator(
+    2.0, 8, new Vector(1, 0, 0), 50,
+    new Vector(0, 0, 50), StabilityClass.D);
+sim.Material = Materials.Biological("Bacteria");
+
+var snaps = sim.Run(grid, tf);
+
+// Snapshot layers: "bioUnits", "viableBioUnits", and "infectiousDose"
+double[] bioUnits     = snaps[0].GetLayer("bioUnits");
+double[] viable       = snaps[0].GetLayer("viableBioUnits");
+double[] infectious   = snaps[0].GetLayer("infectiousDose");
+```
+
+The `viableBioUnits` layer applies exponential viability decay based on the agent's half-life, so viable counts decrease over successive time steps while raw `bioUnits` reflect total transported mass only.
+
+---
+
 ### Viscous Flow Model (`IViscousFlowModel`)
 
 The `IViscousFlowModel` interface provides an abstraction for pipe flow physics used by simulation engines. The default implementation `ViscousFlowModel` encapsulates Hagen–Poiseuille physics.
