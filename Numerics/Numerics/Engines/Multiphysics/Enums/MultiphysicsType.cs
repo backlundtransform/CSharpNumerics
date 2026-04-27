@@ -15,5 +15,8 @@ public enum MultiphysicsType
     ElectricField,
 
     /// <summary>1D static beam analysis (Euler–Bernoulli): EIu⁗ = q.</summary>
-    BeamStress
+    BeamStress,
+
+    /// <summary>2D incompressible Navier–Stokes around a cylinder (Chorin projection method).</summary>
+    CylinderFlow
 }

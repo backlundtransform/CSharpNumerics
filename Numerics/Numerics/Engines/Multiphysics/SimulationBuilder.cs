@@ -40,6 +40,12 @@ public class SimulationBuilder
     internal double SectionRadius { get; private set; }
     internal double SecondMomentOverride { get; private set; }
 
+    // ── Cylinder (CylinderFlow) ──────────────────────────────────
+    internal double CylinderCenterX { get; private set; }
+    internal double CylinderCenterY { get; private set; }
+    internal double CylinderRadius { get; private set; }
+    internal double InletVelocity { get; private set; }
+
     // ── Boundary conditions ──────────────────────────────────────
     internal double TopBC { get; private set; }
     internal double BottomBC { get; private set; }
@@ -159,6 +165,34 @@ public class SimulationBuilder
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  Cylinder (CylinderFlow)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Define the cylinder obstacle for a CylinderFlow simulation.
+    /// </summary>
+    /// <param name="centerX">Centre x-position in metres.</param>
+    /// <param name="centerY">Centre y-position in metres.</param>
+    /// <param name="radius">Cylinder radius in metres.</param>
+    public SimulationBuilder WithCylinder(double centerX, double centerY, double radius)
+    {
+        CylinderCenterX = centerX;
+        CylinderCenterY = centerY;
+        CylinderRadius = radius;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the uniform freestream inlet velocity U∞ for CylinderFlow.
+    /// </summary>
+    /// <param name="u">Inlet velocity in m/s.</param>
+    public SimulationBuilder WithInletVelocity(double u)
+    {
+        InletVelocity = u;
+        return this;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  Boundary Conditions
     // ═══════════════════════════════════════════════════════════════
 
@@ -274,6 +308,7 @@ public class SimulationBuilder
             MultiphysicsType.PipeFlow => new PipeFlowSolver(new ViscousFlowModel()),
             MultiphysicsType.ElectricField => new ElectricFieldSolver(new ElectrostaticModel()),
             MultiphysicsType.BeamStress => new BeamStressSolver(new BeamModel()),
+            MultiphysicsType.CylinderFlow => new CylinderFlowSolver(),
             _ => throw new NotSupportedException($"Unknown simulation type: {Type}")
         };
 
@@ -311,6 +346,7 @@ public class SimulationBuilder
         {
             case MultiphysicsType.HeatPlate:
             case MultiphysicsType.ElectricField:
+            case MultiphysicsType.CylinderFlow:
                 if (Nx <= 0 || Ny <= 0)
                     throw new InvalidOperationException("2D geometry not set. Call WithGeometry(width, height, nx, ny).");
                 break;
@@ -319,6 +355,14 @@ public class SimulationBuilder
                 if (Nodes <= 0)
                     throw new InvalidOperationException("1D geometry not set. Call WithGeometry(length, nodes).");
                 break;
+        }
+
+        if (Type == MultiphysicsType.CylinderFlow)
+        {
+            if (CylinderRadius <= 0)
+                throw new InvalidOperationException("Cylinder not set. Call WithCylinder(centerX, centerY, radius).");
+            if (InletVelocity <= 0)
+                throw new InvalidOperationException("Inlet velocity not set. Call WithInletVelocity(u).");
         }
 
         if (Type == MultiphysicsType.BeamStress)

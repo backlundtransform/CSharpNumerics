@@ -50,6 +50,32 @@ public class SimulationResult
     /// <summary>Electric field y-component E_y [ix, iy] in V/m.</summary>
     public double[,] Ey { get; internal set; }
 
+    // ── Cylinder flow–specific ───────────────────────────────────
+
+    /// <summary>X-velocity field vx [ix, iy] in m/s (CylinderFlow).</summary>
+    public double[,] Vx { get; internal set; }
+
+    /// <summary>Y-velocity field vy [ix, iy] in m/s (CylinderFlow).</summary>
+    public double[,] Vy { get; internal set; }
+
+    /// <summary>Pressure field p [ix, iy] in Pa (CylinderFlow).</summary>
+    public double[,] Pressure { get; internal set; }
+
+    /// <summary>Vorticity field ω = ∂vy/∂x − ∂vx/∂y [ix, iy] in 1/s (CylinderFlow).</summary>
+    public double[,] Vorticity { get; internal set; }
+
+    /// <summary>Boolean mask [ix, iy] — true for cells inside the cylinder obstacle.</summary>
+    public bool[,] CylinderMask { get; internal set; }
+
+    /// <summary>Drag coefficient Cd (CylinderFlow).</summary>
+    public double DragCoefficient { get; internal set; }
+
+    /// <summary>Lift coefficient Cl (CylinderFlow).</summary>
+    public double LiftCoefficient { get; internal set; }
+
+    /// <summary>Strouhal number St = fD/U∞ (CylinderFlow, 0 if no shedding detected).</summary>
+    public double StrouhalNumber { get; internal set; }
+
     // ── Metadata ─────────────────────────────────────────────────
 
     /// <summary>Maximum value in the primary result field.</summary>

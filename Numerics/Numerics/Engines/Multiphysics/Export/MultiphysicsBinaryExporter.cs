@@ -125,6 +125,56 @@ public static class MultiphysicsBinaryExporter
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  Save — CylinderFlow result (vx, vy, pressure, vorticity)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Save a CylinderFlow <see cref="SimulationResult"/> to binary.
+    /// Stores 4 layers: vx, vy, pressure, vorticity.
+    /// </summary>
+    public static void Save(SimulationResult result, string path)
+    {
+        if (result.Vx == null)
+            throw new ArgumentException("Result does not contain velocity fields.");
+
+        int nx = result.Vx.GetLength(0);
+        int ny = result.Vx.GetLength(1);
+        int cellCount = nx * ny;
+
+        using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        using var w = new BinaryWriter(fs);
+
+        // Header
+        w.Write(Magic);
+        w.Write(Version);
+        w.Write((int)result.Type);
+        w.Write(nx);
+        w.Write(ny);
+        w.Write(0.0); // Dx unknown from result alone
+        w.Write(0.0); // Dy
+        w.Write(1);   // TimeStepCount = 1 (final frame)
+        w.Write(0.0); // Dt
+        w.Write(result.FinalTime);
+        w.Write(4);   // LayerCount = 4 (vx, vy, p, vorticity)
+
+        // Layer 0: vx
+        WriteField(w, result.Vx, nx, ny);
+        // Layer 1: vy
+        WriteField(w, result.Vy, nx, ny);
+        // Layer 2: pressure
+        WriteField(w, result.Pressure, nx, ny);
+        // Layer 3: vorticity
+        WriteField(w, result.Vorticity, nx, ny);
+    }
+
+    private static void WriteField(BinaryWriter w, double[,] field, int nx, int ny)
+    {
+        for (int iy = 0; iy < ny; iy++)
+            for (int ix = 0; ix < nx; ix++)
+                w.Write((float)field[ix, iy]);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  Read
     // ═══════════════════════════════════════════════════════════════
 

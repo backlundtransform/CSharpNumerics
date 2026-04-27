@@ -17,7 +17,7 @@ The engine builds on existing library capabilities:
 | Step | Uses |
 |------|------|
 | Materials | `EngineeringMaterial`, `EngineeringLibrary` (Physics) |
-| FD Spatial | `Grid2D`, `GridOperators.Laplacian2D`, `GridOperators.SolvePoisson2D` (Numerics) |
+| FD Spatial | `Grid2D`, `GridOperators.Laplacian2D`, `Advection2D`, `Divergence2D`, `SolvePoisson2D` (Numerics) |
 | Time Integration | Forward Euler (internal), `ITimeStepper` compatible |
 | Beam Theory | `SolidExtensions` — Euler-Bernoulli, Hooke's law (Physics) |
 | Monte Carlo | `IMonteCarloModel`, `MonteCarloSimulator` (Statistics) |
@@ -31,8 +31,7 @@ The engine builds on existing library capabilities:
 | `HeatPlate` | $\partial T/\partial t = \alpha \nabla^2 T + S$ | FD (Grid2D + Laplacian2D + forward Euler) | 2D |
 | `PipeFlow` | Hagen-Poiseuille (cylindrical Laplacian) | FD (1D transient) | 1D |
 | `ElectricField` | $\nabla^2 \varphi = -\rho/\varepsilon$ | Poisson solver (Gauss-Seidel) | 2D |
-| `BeamStress` | $EI u'''' = q$ | Analytical (SolidExtensions) | 1D |
-
+| `BeamStress` | $EI u'''' = q$ | Analytical (SolidExtensions) | 1D || `CylinderFlow` | Incompressible Navier-Stokes | Chorin projection (FD + Poisson) | 2D |
 ---
 
 ### Fluent API — SimulationType → SimulationBuilder → SimulationResult
@@ -111,6 +110,62 @@ double[,] potential = result.Field;   // φ(x, y)
 double[,] Ex = result.Ex;            // -∂φ/∂x
 double[,] Ey = result.Ey;            // -∂φ/∂y
 ```
+
+### CylinderFlow — 2D Incompressible Navier-Stokes
+
+Simulates viscous flow around a circular cylinder using Chorin's projection (fractional-step) method. Classic benchmark for observing the Kármán vortex street at moderate Reynolds numbers.
+
+$$\frac{\partial \mathbf{v}}{\partial t} + (\mathbf{v} \cdot \nabla)\mathbf{v} = -\frac{1}{\rho}\nabla p + \nu \nabla^2 \mathbf{v}, \quad \nabla \cdot \mathbf{v} = 0$$
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+    .WithMaterial(EngineeringLibrary.Water)         // uses KinematicViscosity
+    .WithGeometry(width: 2.0, height: 0.8, nx: 200, ny: 80)
+    .WithCylinder(centerX: 0.4, centerY: 0.4, radius: 0.05)
+    .WithInletVelocity(0.1)                          // U∞ = 0.1 m/s
+    .Solve(dt: 0.001, steps: 5000);
+
+double[,] vx = result.Vx;                // x-velocity field
+double[,] vy = result.Vy;                // y-velocity field
+double[,] p  = result.Pressure;          // pressure field
+double[,] w  = result.Vorticity;         // vorticity ω = ∂vy/∂x − ∂vx/∂y
+bool[,] mask = result.CylinderMask;      // obstacle cells
+double cd    = result.DragCoefficient;   // ≈ 1.3–1.5 at Re ≈ 100
+double cl    = result.LiftCoefficient;   // oscillates for vortex shedding
+double st    = result.StrouhalNumber;    // ≈ 0.2 at Re ≈ 100–200
+```
+
+#### Algorithm
+
+Each time step applies Chorin's fractional-step method:
+
+1. **Predict** — advection (`Advection2D`, upwind) + diffusion (`Laplacian2D`)
+2. **Pressure Poisson** — solve $\nabla^2 p = \nabla \cdot \mathbf{v}^* / \Delta t$ (`SolvePoisson2D`)
+3. **Correct** — $\mathbf{v}^{n+1} = \mathbf{v}^* - \Delta t \, \nabla p$ (`Gradient2D`)
+4. **Enforce BCs** — inlet (Dirichlet), outlet (Neumann), walls (free-slip), cylinder (no-slip mask)
+
+CFL-based adaptive time-step clamping ensures stability: $\Delta t \leq 0.4 \cdot \min(\Delta x / |u|_{max}, \Delta x^2 / 4\nu)$.
+
+#### Boundary Conditions
+
+| Boundary | Type |
+|----------|------|
+| Inlet (left) | Uniform velocity $U_\infty$ (Dirichlet) |
+| Outlet (right) | Zero-gradient $\partial v/\partial x = 0$ (Neumann) |
+| Top / Bottom | Free-slip ($v_y = 0$) |
+| Cylinder | No-slip ($\mathbf{v} = 0$, immersed boundary mask) |
+
+#### Post-Processing
+
+| Output | Description |
+|--------|-------------|
+| `Vorticity` | $\omega = \partial v_y/\partial x - \partial v_x/\partial y$ — ideal for visualization |
+| `DragCoefficient` | Pressure-based $C_d$ integrated around cylinder boundary |
+| `LiftCoefficient` | Pressure-based $C_l$ — oscillates during vortex shedding |
+| `StrouhalNumber` | $St = fD/U_\infty$ estimated from lift time series zero-crossings |
+| `Timeline` | Vorticity snapshots every 10 steps for animation |
+
+---
 
 ### BeamStress — 1D Euler-Bernoulli
 
@@ -310,14 +365,15 @@ Engines/Multiphysics/
 ├── SimulationBuilder.cs          ← fluent builder chain
 ├── SimulationResult.cs           ← unified result type
 ├── Enums/
-│   ├── MultiphysicsType.cs       ← HeatPlate | PipeFlow | ElectricField | BeamStress
+│   ├── MultiphysicsType.cs       ← HeatPlate | PipeFlow | ElectricField | BeamStress | CylinderFlow
 │   └── BeamSupport.cs            ← Cantilever | SimplySupported | FixedFixed
 ├── Solvers/
 │   ├── IMultiphysicsSolver.cs    ← internal solver interface
 │   ├── HeatPlateSolver.cs        ← 2D FD heat equation
 │   ├── PipeFlowSolver.cs         ← 1D cylindrical Laplacian
 │   ├── ElectricFieldSolver.cs    ← 2D Poisson + gradient
-│   └── BeamStressSolver.cs       ← analytical Euler-Bernoulli
+│   ├── BeamStressSolver.cs       ← analytical Euler-Bernoulli
+│   └── CylinderFlowSolver.cs     ← 2D Navier-Stokes (Chorin projection)
 ├── Snapshots/
 │   ├── FieldSnapshot.cs          ← time-stamped 2D scalar field
 │   ├── BeamSnapshot.cs           ← immutable beam curves

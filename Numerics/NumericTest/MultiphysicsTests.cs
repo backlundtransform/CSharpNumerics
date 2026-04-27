@@ -1242,4 +1242,259 @@ public class MultiphysicsTests
             Assert.IsTrue(json.Contains("\"type\":\"HeatPlate\""));
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CylinderFlow — Basic Solver
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void CylinderFlow_FluentAPI_ProducesResult()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.5, height: 0.2, nx: 50, ny: 20)
+            .WithCylinder(centerX: 0.1, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 20);
+
+        Assert.AreEqual(MultiphysicsType.CylinderFlow, result.Type);
+        Assert.IsNotNull(result.Vx);
+        Assert.IsNotNull(result.Vy);
+        Assert.IsNotNull(result.Pressure);
+        Assert.IsNotNull(result.Vorticity);
+        Assert.IsNotNull(result.CylinderMask);
+        Assert.AreEqual(50, result.Vx.GetLength(0));
+        Assert.AreEqual(20, result.Vx.GetLength(1));
+    }
+
+    [TestMethod]
+    public void CylinderFlow_CylinderMask_IsCorrect()
+    {
+        int nx = 40, ny = 20;
+        double width = 0.4, height = 0.2;
+        double cx = 0.1, cy = 0.1, cr = 0.02;
+
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: width, height: height, nx: nx, ny: ny)
+            .WithCylinder(centerX: cx, centerY: cy, radius: cr)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 5);
+
+        // Verify cells inside cylinder are masked
+        double dx = width / nx, dy = height / ny;
+        int maskedCount = 0;
+        for (int iy = 0; iy < ny; iy++)
+            for (int ix = 0; ix < nx; ix++)
+            {
+                double x = ix * dx, y = iy * dy;
+                double dist = Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (dist <= cr)
+                {
+                    Assert.IsTrue(result.CylinderMask[ix, iy],
+                        $"Cell ({ix},{iy}) at dist {dist:F4} should be masked");
+                    maskedCount++;
+                }
+            }
+        Assert.IsTrue(maskedCount > 0, "Should have some masked cells");
+    }
+
+    [TestMethod]
+    public void CylinderFlow_NoSlip_VelocityZeroInsideCylinder()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.4, height: 0.2, nx: 40, ny: 20)
+            .WithCylinder(centerX: 0.1, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 20);
+
+        // All cells inside the cylinder should have zero velocity
+        int nx = result.Vx.GetLength(0), ny = result.Vx.GetLength(1);
+        for (int iy = 0; iy < ny; iy++)
+            for (int ix = 0; ix < nx; ix++)
+            {
+                if (result.CylinderMask[ix, iy])
+                {
+                    Assert.AreEqual(0.0, result.Vx[ix, iy], 1e-12,
+                        $"Vx inside cylinder at ({ix},{iy}) should be 0");
+                    Assert.AreEqual(0.0, result.Vy[ix, iy], 1e-12,
+                        $"Vy inside cylinder at ({ix},{iy}) should be 0");
+                }
+            }
+    }
+
+    [TestMethod]
+    public void CylinderFlow_InletBC_MaintainsVelocity()
+    {
+        double uInlet = 0.05;
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.5, height: 0.2, nx: 50, ny: 20)
+            .WithCylinder(centerX: 0.15, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(uInlet)
+            .Solve(dt: 0.0005, steps: 30);
+
+        // Left column (inlet) should have Vx = uInlet, Vy = 0
+        int ny = result.Vx.GetLength(1);
+        for (int iy = 0; iy < ny; iy++)
+        {
+            Assert.AreEqual(uInlet, result.Vx[0, iy], 1e-10,
+                $"Inlet Vx at iy={iy} should be {uInlet}");
+            Assert.AreEqual(0.0, result.Vy[0, iy], 1e-10,
+                $"Inlet Vy at iy={iy} should be 0");
+        }
+    }
+
+    [TestMethod]
+    public void CylinderFlow_MassConservation_DivergenceNearZero()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.4, height: 0.2, nx: 40, ny: 20)
+            .WithCylinder(centerX: 0.1, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 30);
+
+        // Reconstruct divergence and check it's small at interior fluid cells
+        int nx = 40, ny = 20;
+        double dx = 0.4 / nx, dy = 0.2 / ny;
+        var grid = new Grid2D(nx, ny, dx, dy);
+
+        var vxFlat = new double[nx * ny];
+        var vyFlat = new double[nx * ny];
+        for (int iy = 0; iy < ny; iy++)
+            for (int ix = 0; ix < nx; ix++)
+            {
+                int idx = grid.Index(ix, iy);
+                vxFlat[idx] = result.Vx[ix, iy];
+                vyFlat[idx] = result.Vy[ix, iy];
+            }
+
+        var div = GridOperators.Divergence2D(
+            new VectorN(vxFlat), new VectorN(vyFlat), grid, BoundaryCondition.Dirichlet);
+
+        // Check divergence at interior fluid cells (exclude boundaries and cylinder)
+        double maxDiv = 0;
+        for (int iy = 2; iy < ny - 2; iy++)
+            for (int ix = 2; ix < nx - 2; ix++)
+            {
+                if (result.CylinderMask[ix, iy]) continue;
+                double d = Math.Abs(div[grid.Index(ix, iy)]);
+                if (d > maxDiv) maxDiv = d;
+            }
+
+        Assert.IsTrue(maxDiv < 1.0,
+            $"Max divergence at interior fluid cells should be small, got {maxDiv:E3}");
+    }
+
+    [TestMethod]
+    public void CylinderFlow_Timeline_HasSnapshots()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.4, height: 0.2, nx: 30, ny: 15)
+            .WithCylinder(centerX: 0.1, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 25);
+
+        Assert.IsNotNull(result.Timeline);
+        Assert.IsTrue(result.Timeline.Count > 0, "Should have vorticity timeline snapshots");
+        Assert.AreEqual(30, result.Timeline[0].GetLength(0));
+        Assert.AreEqual(15, result.Timeline[0].GetLength(1));
+    }
+
+    [TestMethod]
+    public void CylinderFlow_DragCoefficient_IsPositive()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.5, height: 0.2, nx: 50, ny: 20)
+            .WithCylinder(centerX: 0.12, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.02)
+            .Solve(dt: 0.0005, steps: 100);
+
+        // After some steps, drag coefficient should be positive
+        Assert.IsTrue(result.DragCoefficient > 0,
+            $"Drag coefficient should be positive, got {result.DragCoefficient:E3}");
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void CylinderFlow_WithoutCylinder_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.5, height: 0.2, nx: 50, ny: 20)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 10);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void CylinderFlow_WithoutInletVelocity_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.5, height: 0.2, nx: 50, ny: 20)
+            .WithCylinder(centerX: 0.1, centerY: 0.1, radius: 0.02)
+            .Solve(dt: 0.001, steps: 10);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CylinderFlow — Export
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void CylinderFlow_JsonExport_ContainsVelocityFields()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.3, height: 0.15, nx: 20, ny: 10)
+            .WithCylinder(centerX: 0.07, centerY: 0.075, radius: 0.015)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 10);
+
+        string json = MultiphysicsJsonExporter.ToJson(result);
+        Assert.IsTrue(json.Contains("\"type\":\"CylinderFlow\""));
+        Assert.IsTrue(json.Contains("\"vx\":["));
+        Assert.IsTrue(json.Contains("\"vy\":["));
+        Assert.IsTrue(json.Contains("\"pressure\":["));
+        Assert.IsTrue(json.Contains("\"vorticity\":["));
+        Assert.IsTrue(json.Contains("\"dragCoefficient\""));
+        Assert.IsTrue(json.Contains("\"strouhalNumber\""));
+    }
+
+    [TestMethod]
+    public void CylinderFlow_BinaryExport_RoundTrips()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry(width: 0.3, height: 0.15, nx: 20, ny: 10)
+            .WithCylinder(centerX: 0.07, centerY: 0.075, radius: 0.015)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 10);
+
+        string path = Path.Combine(Path.GetTempPath(), "test_cylinder.mphy");
+        try
+        {
+            MultiphysicsBinaryExporter.Save(result, path);
+            Assert.IsTrue(File.Exists(path));
+
+            var header = MultiphysicsBinaryExporter.ReadHeader(path);
+            Assert.AreEqual(MultiphysicsType.CylinderFlow, header.Type);
+            Assert.AreEqual(20, header.Nx);
+            Assert.AreEqual(10, header.Ny);
+            Assert.AreEqual(4, header.LayerCount);
+            Assert.IsTrue(header.Is2D);
+
+            var data = MultiphysicsBinaryExporter.Read(path);
+            Assert.AreEqual(4, data.Layers.Length); // vx, vy, p, vorticity
+            Assert.AreEqual(200, data.Layers[0].Length); // 20×10
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
 }

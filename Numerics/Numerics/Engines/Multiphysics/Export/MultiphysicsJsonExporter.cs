@@ -212,6 +212,17 @@ public static class MultiphysicsJsonExporter
                     AppendArray(sb, "stress", result.Stress);
                 }
                 break;
+
+            case MultiphysicsType.CylinderFlow:
+                if (result.Vx != null) AppendField2D(sb, "vx", result.Vx);
+                if (result.Vy != null) { sb.Append(','); AppendField2D(sb, "vy", result.Vy); }
+                if (result.Pressure != null) { sb.Append(','); AppendField2D(sb, "pressure", result.Pressure); }
+                if (result.Vorticity != null) { sb.Append(','); AppendField2D(sb, "vorticity", result.Vorticity); }
+                sb.Append(',');
+                AppendDouble(sb, "dragCoefficient", result.DragCoefficient); sb.Append(',');
+                AppendDouble(sb, "liftCoefficient", result.LiftCoefficient); sb.Append(',');
+                AppendDouble(sb, "strouhalNumber", result.StrouhalNumber);
+                break;
         }
 
         sb.Append('}');
