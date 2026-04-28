@@ -22,16 +22,22 @@ namespace CSharpNumerics.Engines.GIS.Analysis
         /// Layer to use: <c>null</c> for concentration (default values),
         /// or a named layer such as "activity" or "dose".
         /// </param>
+        /// <param name="excludeValues">
+        /// Optional set of cell values to exclude from the computation.
+        /// Cells matching any of these values are treated as zero.
+        /// Useful for filtering out non-data states (e.g. firebreaks).
+        /// </param>
         public static ExposurePolygon PeakExposure(
             IList<GridSnapshot> snapshots,
             double threshold,
-            string layerName = null)
+            string layerName = null,
+            ISet<double> excludeValues = null)
         {
             if (snapshots == null || snapshots.Count == 0)
                 throw new ArgumentException("Snapshots list must not be empty.", nameof(snapshots));
 
             var grid = snapshots[0].Grid;
-            double[] peakGround = ComputePeakGround(snapshots, grid, layerName);
+            double[] peakGround = ComputePeakGround(snapshots, grid, layerName, excludeValues);
 
             return BuildPolygon(grid, peakGround, threshold,
                 layerName ?? "concentration", ExposureType.Peak);
@@ -48,17 +54,22 @@ namespace CSharpNumerics.Engines.GIS.Analysis
         /// <param name="layerName">
         /// Layer to use: <c>null</c> for concentration, or "activity", "dose", etc.
         /// </param>
+        /// <param name="excludeValues">
+        /// Optional set of cell values to exclude from the computation.
+        /// Cells matching any of these values are treated as zero.
+        /// </param>
         public static ExposurePolygon IntegratedExposure(
             IList<GridSnapshot> snapshots,
             double stepSeconds,
             double threshold,
-            string layerName = null)
+            string layerName = null,
+            ISet<double> excludeValues = null)
         {
             if (snapshots == null || snapshots.Count == 0)
                 throw new ArgumentException("Snapshots list must not be empty.", nameof(snapshots));
 
             var grid = snapshots[0].Grid;
-            double[] integratedGround = ComputeIntegratedGround(snapshots, grid, stepSeconds, layerName);
+            double[] integratedGround = ComputeIntegratedGround(snapshots, grid, stepSeconds, layerName, excludeValues);
 
             return BuildPolygon(grid, integratedGround, threshold,
                 layerName ?? "concentration", ExposureType.Integrated);
@@ -69,7 +80,8 @@ namespace CSharpNumerics.Engines.GIS.Analysis
         // ═══════════════════════════════════════════════════════════════
 
         private static double[] ComputePeakGround(
-            IList<GridSnapshot> snapshots, GeoGrid grid, string layerName)
+            IList<GridSnapshot> snapshots, GeoGrid grid, string layerName,
+            ISet<double> excludeValues = null)
         {
             int groundCells = grid.Nx * grid.Ny;
             double[] peak = new double[groundCells];
@@ -83,6 +95,8 @@ namespace CSharpNumerics.Engines.GIS.Analysis
                         int groundIdx = iy * grid.Nx + ix;
                         int flatIdx = grid.Index(ix, iy, 0); // z = 0 slice
                         double val = GetValue(snap, flatIdx, layerName);
+                        if (excludeValues != null && excludeValues.Contains(val))
+                            continue;
                         if (val > peak[groundIdx])
                             peak[groundIdx] = val;
                     }
@@ -93,7 +107,8 @@ namespace CSharpNumerics.Engines.GIS.Analysis
 
         private static double[] ComputeIntegratedGround(
             IList<GridSnapshot> snapshots, GeoGrid grid,
-            double stepSeconds, string layerName)
+            double stepSeconds, string layerName,
+            ISet<double> excludeValues = null)
         {
             int groundCells = grid.Nx * grid.Ny;
             double[] integrated = new double[groundCells];
@@ -107,6 +122,8 @@ namespace CSharpNumerics.Engines.GIS.Analysis
                         int groundIdx = iy * grid.Nx + ix;
                         int flatIdx = grid.Index(ix, iy, 0);
                         double val = GetValue(snap, flatIdx, layerName);
+                        if (excludeValues != null && excludeValues.Contains(val))
+                            continue;
                         integrated[groundIdx] += val * stepSeconds;
                     }
                 }

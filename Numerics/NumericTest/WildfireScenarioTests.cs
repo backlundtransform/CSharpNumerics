@@ -412,5 +412,68 @@ namespace NumericTest
         }
 
         #endregion
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Firebreak / water exclusion
+        // ═══════════════════════════════════════════════════════════════
+
+        #region Firebreak exclusion
+
+        [TestMethod]
+        public void FirePerimeter_ExcludesFirebreakCells()
+        {
+            // Grid with a strip of NoFuel (water) cells down the middle column.
+            // Fire ignites on the left side. The perimeter should not include
+            // the firebreak cells even though their burnState numeric value (3)
+            // exceeds the 0.5 threshold.
+            var grid = MakeGrid(250, 25);
+            var terrain = FlatTerrain(grid);
+            var fuelMap = UniformGrass(grid);
+
+            // Set the middle column to NoFuel (→ Firebreak)
+            int midX = grid.Nx / 2;
+            for (int iy = 0; iy < grid.Ny; iy++)
+                fuelMap.SetFuel(midX, iy, FuelModelType.NoFuel);
+
+            // Ignite on the left side
+            var result = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(1, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .OverGrid(grid)
+                .OverTime(0, 600, 60)
+                .RunSingle();
+
+            var lastIdx = result.Snapshots.Count - 1;
+            var perimeter = result.GenerateFirePerimeter(lastIdx);
+
+            Assert.IsNotNull(perimeter);
+
+            // Verify that firebreak cells are NOT counted in the perimeter.
+            // The exceedance count should only include Burning/Burned cells,
+            // not Firebreak cells.
+            var lastSnap = result.Snapshots[lastIdx];
+            int firebreakCount = 0;
+            int burnedCount = 0;
+            var bs = lastSnap.Snapshot.GetLayer("burnState");
+            for (int i = 0; i < bs.Length; i++)
+            {
+                int s = (int)bs[i];
+                if (s == (int)CellBurnState.Firebreak) firebreakCount++;
+                if (s == (int)CellBurnState.Burning || s == (int)CellBurnState.Burned) burnedCount++;
+            }
+
+            Assert.IsTrue(firebreakCount > 0, "Should have firebreak cells.");
+            Assert.IsTrue(burnedCount > 0, "Should have burned cells.");
+
+            // ExceedanceCellCount should match only burned/burning cells
+            Assert.IsTrue(perimeter.ExceedanceCellCount <= burnedCount,
+                $"Perimeter exceedance count ({perimeter.ExceedanceCellCount}) should not exceed " +
+                $"burned cell count ({burnedCount}). Firebreak cells must be excluded.");
+        }
+
+        #endregion
     }
 }

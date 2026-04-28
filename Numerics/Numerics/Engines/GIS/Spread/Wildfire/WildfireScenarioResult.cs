@@ -59,7 +59,8 @@ public class WildfireScenarioResult
     /// <summary>
     /// Generates a fire perimeter polygon at the given time-step index.
     /// Uses marching squares on the burnState layer (threshold = 0.5 to capture
-    /// Burning + Burned cells).
+    /// Burning + Burned cells). Firebreak cells are excluded so that the
+    /// perimeter does not extend over non-burnable areas such as water.
     /// </summary>
     public ExposurePolygon GenerateFirePerimeter(int timeIndex)
     {
@@ -68,7 +69,8 @@ public class WildfireScenarioResult
 
         var snap = Snapshots[timeIndex];
         var gridSnapshots = new List<GridSnapshot> { snap.Snapshot };
-        return ExposurePolygonGenerator.PeakExposure(gridSnapshots, 0.5, "burnState");
+        var exclude = new HashSet<double> { (double)CellBurnState.Firebreak };
+        return ExposurePolygonGenerator.PeakExposure(gridSnapshots, 0.5, "burnState", exclude);
     }
 
     /// <summary>
