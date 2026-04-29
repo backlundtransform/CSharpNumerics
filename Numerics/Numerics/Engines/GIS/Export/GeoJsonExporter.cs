@@ -4,6 +4,7 @@ using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Spread;
 using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
+using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
 using CSharpNumerics.Engines.GIS.Terrain;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -299,6 +300,7 @@ namespace CSharpNumerics.Engines.GIS.Export
                 AppendCoord(sb, pos, proj);
                 sb.Append("]},\"properties\":{");
                 AppendPropInt(sb, "burnState", (int)bs[i], true);
+                AppendPropBool(sb, "isFirebreak", (int)bs[i] == (int)CellBurnState.Firebreak, false);
                 AppendProp(sb, "flameLength", fl[i], false);
                 AppendProp(sb, "rateOfSpread", ros[i], false);
                 AppendProp(sb, "timeStep", snapshot.Time, false);
@@ -344,6 +346,7 @@ namespace CSharpNumerics.Engines.GIS.Export
                     AppendCoord(sb, pos, proj);
                     sb.Append("]},\"properties\":{");
                     AppendPropInt(sb, "burnState", (int)bs[i], true);
+                    AppendPropBool(sb, "isFirebreak", (int)bs[i] == (int)CellBurnState.Firebreak, false);
                     AppendProp(sb, "flameLength", fl[i], false);
                     AppendProp(sb, "rateOfSpread", ros[i], false);
                     AppendProp(sb, "timeStep", snap.Time, false);
@@ -435,6 +438,7 @@ namespace CSharpNumerics.Engines.GIS.Export
                 AppendCoord(sb, pos, proj);
                 sb.Append("]},\"properties\":{");
                 AppendProp(sb, "burnProbability", mcResult.BurnProbability[i], true);
+                AppendPropBool(sb, "isFirebreak", mcResult.FirebreakMask[i], false);
                 AppendPropInt(sb, "iterations", mcResult.Iterations, false);
                 sb.Append("}}");
             }
@@ -832,6 +836,15 @@ namespace CSharpNumerics.Engines.GIS.Export
             sb.Append(name);
             sb.Append("\":");
             sb.Append(value);
+        }
+
+        private static void AppendPropBool(StringBuilder sb, string name, bool value, bool first)
+        {
+            if (!first) sb.Append(',');
+            sb.Append('"');
+            sb.Append(name);
+            sb.Append("\":");
+            sb.Append(value ? "true" : "false");
         }
 
         private static void AppendSnapshotLayers(StringBuilder sb, GridSnapshot snapshot, int cellIndex)

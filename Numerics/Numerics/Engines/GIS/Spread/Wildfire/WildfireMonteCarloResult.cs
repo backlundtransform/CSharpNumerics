@@ -2,6 +2,7 @@ using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Simulation;
+using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
 using CSharpNumerics.ML.Clustering.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -60,6 +61,26 @@ public class WildfireMonteCarloResult
     /// Per-iteration snapshot lists for optional downstream analysis (clustering).
     /// </summary>
     public IReadOnlyList<IReadOnlyList<SpreadSnapshot>> AllSnapshots { get; }
+
+    /// <summary>
+    /// Per-cell boolean mask indicating which cells are firebreaks (water,
+    /// no-fuel). Length = Nx × Ny. Derived from the first snapshot of the
+    /// first iteration. Frontend consumers can use this to distinguish
+    /// non-burnable terrain from cells that simply did not ignite.
+    /// </summary>
+    public bool[] FirebreakMask
+    {
+        get
+        {
+            if (AllSnapshots == null || AllSnapshots.Count == 0 || AllSnapshots[0].Count == 0)
+                return new bool[Grid.CellCount];
+            var bs = AllSnapshots[0][0].Snapshot.GetLayer("burnState");
+            var mask = new bool[bs.Length];
+            for (int i = 0; i < bs.Length; i++)
+                mask[i] = (int)bs[i] == (int)CellBurnState.Firebreak;
+            return mask;
+        }
+    }
 
     /// <summary>
     /// Creates a Monte Carlo wildfire result.

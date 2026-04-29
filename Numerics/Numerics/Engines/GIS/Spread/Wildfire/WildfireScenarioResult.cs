@@ -57,6 +57,27 @@ public class WildfireScenarioResult
     }
 
     /// <summary>
+    /// Per-cell boolean mask indicating which cells are firebreaks (water,
+    /// no-fuel, or other non-burnable terrain). Length = Nx × Ny.
+    /// Derived from the <c>burnState</c> layer of the first snapshot.
+    /// Frontend consumers can use this to render water/non-burnable areas
+    /// distinctly without inspecting the raw <c>burnState</c> enum values.
+    /// </summary>
+    public bool[] FirebreakMask
+    {
+        get
+        {
+            if (Snapshots.Count == 0)
+                return new bool[Grid.Nx * Grid.Ny];
+            var bs = Snapshots[0].Snapshot.GetLayer("burnState");
+            var mask = new bool[bs.Length];
+            for (int i = 0; i < bs.Length; i++)
+                mask[i] = (int)bs[i] == (int)CellBurnState.Firebreak;
+            return mask;
+        }
+    }
+
+    /// <summary>
     /// Generates a fire perimeter polygon at the given time-step index.
     /// Uses marching squares on the burnState layer (threshold = 0.5 to capture
     /// Burning + Burned cells). Firebreak cells are excluded so that the

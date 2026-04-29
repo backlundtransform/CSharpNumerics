@@ -196,6 +196,14 @@ namespace NumericTest
             Assert.AreEqual(0, a);
         }
 
+        [TestMethod]
+        public void Cesium_BurnStateToColor_Firebreak_IsBlue()
+        {
+            var (r, g, b, a) = CesiumExporter.BurnStateToColor((int)CellBurnState.Firebreak);
+            Assert.IsTrue(b > r, "Firebreak should be predominantly blue.");
+            Assert.IsTrue(a > 0, "Firebreak should be visible.");
+        }
+
         // ═══════════════════════════════════════════════════════════════
         //  Unity binary — fire round-trip
         // ═══════════════════════════════════════════════════════════════
@@ -294,6 +302,140 @@ namespace NumericTest
             {
                 if (File.Exists(path)) File.Delete(path);
             }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Firebreak mask and isFirebreak export
+        // ═══════════════════════════════════════════════════════════════
+
+        [TestMethod]
+        public void FirebreakMask_IdentifiesNoFuelCells()
+        {
+            var grid = new GeoGrid(0, 200, 0, 200, 0, 0, 25);
+            var terrain = TerrainGrid.FromFunction(grid, (x, y) => 0);
+            var fuelMap = new FuelMap(grid);
+            fuelMap.SetUniformFuel(FuelModelType.ShortGrass);
+            fuelMap.SetUniformMoisture(0.05);
+
+            // Set a row of NoFuel cells (water)
+            for (int ix = 0; ix < grid.Nx; ix++)
+                fuelMap.SetFuel(ix, 0, FuelModelType.NoFuel);
+
+            var result = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .OverGrid(grid)
+                .OverTime(0, 120, 60)
+                .RunSingle();
+
+            var mask = result.FirebreakMask;
+            Assert.AreEqual(grid.Nx * grid.Ny, mask.Length);
+
+            // Row 0 should be firebreak
+            for (int ix = 0; ix < grid.Nx; ix++)
+                Assert.IsTrue(mask[0 * grid.Nx + ix],
+                    $"Cell ({ix}, 0) should be firebreak.");
+
+            // Row 1+ should NOT be firebreak (they have fuel)
+            Assert.IsFalse(mask[1 * grid.Nx + 0],
+                "Cell (0, 1) should not be firebreak.");
+        }
+
+        [TestMethod]
+        public void MonteCarloFirebreakMask_IdentifiesNoFuelCells()
+        {
+            var grid = new GeoGrid(0, 200, 0, 200, 0, 0, 25);
+            var terrain = TerrainGrid.FromFunction(grid, (x, y) => 0);
+            var fuelMap = new FuelMap(grid);
+            fuelMap.SetUniformFuel(FuelModelType.ShortGrass);
+            fuelMap.SetUniformMoisture(0.05);
+
+            // Set a column of NoFuel cells
+            for (int iy = 0; iy < grid.Ny; iy++)
+                fuelMap.SetFuel(0, iy, FuelModelType.NoFuel);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(1, 5))
+                .OverGrid(grid)
+                .OverTime(0, 120, 60)
+                .RunMonteCarlo(3, seed: 42);
+
+            var mask = mcResult.FirebreakMask;
+
+            // Column 0 should be firebreak
+            for (int iy = 0; iy < grid.Ny; iy++)
+                Assert.IsTrue(mask[iy * grid.Nx + 0],
+                    $"Cell (0, {iy}) should be firebreak.");
+
+            // BurnProbability should be 0 for firebreak cells
+            for (int iy = 0; iy < grid.Ny; iy++)
+                Assert.AreEqual(0, mcResult.BurnProbability[iy * grid.Nx + 0], 1e-10,
+                    $"BurnProbability at firebreak ({iy}) should be 0.");
+        }
+
+        [TestMethod]
+        public void GeoJson_SpreadSnapshot_Contains_IsFirebreak()
+        {
+            var grid = new GeoGrid(0, 200, 0, 200, 0, 0, 25);
+            var terrain = TerrainGrid.FromFunction(grid, (x, y) => 0);
+            var fuelMap = new FuelMap(grid);
+            fuelMap.SetUniformFuel(FuelModelType.ShortGrass);
+            fuelMap.SetUniformMoisture(0.05);
+            fuelMap.SetFuel(0, 0, FuelModelType.NoFuel);
+
+            var result = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .OverGrid(grid)
+                .OverTime(0, 120, 60)
+                .RunSingle();
+
+            string json = GeoJsonExporter.ToGeoJson(result.Snapshots[0]);
+
+            Assert.IsTrue(json.Contains("\"isFirebreak\":true"),
+                "GeoJSON should contain isFirebreak:true for NoFuel cells.");
+            Assert.IsTrue(json.Contains("\"isFirebreak\":false"),
+                "GeoJSON should contain isFirebreak:false for normal cells.");
+        }
+
+        [TestMethod]
+        public void GeoJson_BurnProbability_Contains_IsFirebreak()
+        {
+            var grid = new GeoGrid(0, 200, 0, 200, 0, 0, 25);
+            var terrain = TerrainGrid.FromFunction(grid, (x, y) => 0);
+            var fuelMap = new FuelMap(grid);
+            fuelMap.SetUniformFuel(FuelModelType.ShortGrass);
+            fuelMap.SetUniformMoisture(0.05);
+            fuelMap.SetFuel(0, 0, FuelModelType.NoFuel);
+
+            var mcResult = RiskScenario
+                .ForWildfire()
+                .WithTerrain(terrain)
+                .WithFuel(fuelMap)
+                .WithIgnition(grid.Nx / 2, grid.Ny / 2)
+                .WithWind(3.0, new Vector(1, 0, 0))
+                .WithVariation(v => v.WindSpeed(1, 5))
+                .OverGrid(grid)
+                .OverTime(0, 120, 60)
+                .RunMonteCarlo(3, seed: 42);
+
+            string json = GeoJsonExporter.BurnProbabilityToGeoJson(mcResult);
+
+            Assert.IsTrue(json.Contains("\"isFirebreak\":true"),
+                "Burn probability GeoJSON should flag firebreak cells.");
+            Assert.IsTrue(json.Contains("\"isFirebreak\":false"),
+                "Burn probability GeoJSON should flag non-firebreak cells.");
         }
     }
 }

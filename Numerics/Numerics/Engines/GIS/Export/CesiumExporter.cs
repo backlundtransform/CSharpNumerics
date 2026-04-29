@@ -339,7 +339,8 @@ namespace CSharpNumerics.Engines.GIS.Export
 
         /// <summary>
         /// Maps <see cref="CellBurnState"/> to RGBA (0-255).
-        /// Burning → red, Burned → grey, Unburned/Firebreak → transparent.
+        /// Burning → red, Burned → grey, Firebreak → blue (water/non-burnable),
+        /// Unburned → transparent.
         /// </summary>
         public static (int r, int g, int b, int a) BurnStateToColor(int burnState)
         {
@@ -347,7 +348,7 @@ namespace CSharpNumerics.Engines.GIS.Export
             {
                 case (int)CellBurnState.Burning: return (255, 50, 0, 220);   // red-orange
                 case (int)CellBurnState.Burned: return (128, 128, 128, 160); // grey
-                case (int)CellBurnState.Firebreak: return (60, 60, 60, 100); // dark grey
+                case (int)CellBurnState.Firebreak: return (30, 100, 200, 120); // blue (water/non-burnable)
                 default: return (0, 0, 0, 0);                                // transparent
             }
         }
