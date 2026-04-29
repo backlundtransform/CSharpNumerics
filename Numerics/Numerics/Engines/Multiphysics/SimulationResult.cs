@@ -76,6 +76,34 @@ public class SimulationResult
     /// <summary>Strouhal number St = fD/U∞ (CylinderFlow, 0 if no shedding detected).</summary>
     public double StrouhalNumber { get; internal set; }
 
+    // ── Magnetic field–specific ──────────────────────────────────
+
+    /// <summary>Magnetic vector potential A [ix, iy] in T·m (MagneticField).</summary>
+    public double[,] VectorPotential { get; internal set; }
+
+    /// <summary>Magnetic field x-component Bx [ix, iy] in T (MagneticField).</summary>
+    public double[,] Bx { get; internal set; }
+
+    /// <summary>Magnetic field y-component By [ix, iy] in T (MagneticField).</summary>
+    public double[,] By { get; internal set; }
+
+    // ── Plane stress–specific ────────────────────────────────────
+
+    /// <summary>X-displacement field ux [ix, iy] in m (PlaneStress).</summary>
+    public double[,] Ux { get; internal set; }
+
+    /// <summary>Y-displacement field uy [ix, iy] in m (PlaneStress).</summary>
+    public double[,] Uy { get; internal set; }
+
+    /// <summary>Normal stress σxx [ix, iy] in Pa (PlaneStress).</summary>
+    public double[,] StressXX { get; internal set; }
+
+    /// <summary>Normal stress σyy [ix, iy] in Pa (PlaneStress).</summary>
+    public double[,] StressYY { get; internal set; }
+
+    /// <summary>Shear stress τxy [ix, iy] in Pa (PlaneStress).</summary>
+    public double[,] StressXY { get; internal set; }
+
     // ── Metadata ─────────────────────────────────────────────────
 
     /// <summary>Maximum value in the primary result field.</summary>

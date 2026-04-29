@@ -1,6 +1,6 @@
 ## ⚡ Multiphysics Engine
 
-A fluent simulation engine for four student-friendly PDE simulations on simple geometries, designed for visualization in Unity or web platforms. Built on existing finite difference infrastructure (`Grid2D`, `GridOperators`, `ITimeStepper`) with engineering materials, binary/JSON export, and optional ML/Monte Carlo integration.
+A fluent simulation engine for student-friendly PDE simulations on simple geometries, designed for visualization in Unity or web platforms. Built on existing finite difference infrastructure (`Grid2D`, `GridOperators`, `ITimeStepper`) with engineering materials, binary/JSON export, and optional ML/Monte Carlo integration.
 
 **Namespace:** `CSharpNumerics.Engines.Multiphysics`
 
@@ -31,7 +31,11 @@ The engine builds on existing library capabilities:
 | `HeatPlate` | $\partial T/\partial t = \alpha \nabla^2 T + S$ | FD (Grid2D + Laplacian2D + forward Euler) | 2D |
 | `PipeFlow` | Hagen-Poiseuille (cylindrical Laplacian) | FD (1D transient) | 1D |
 | `ElectricField` | $\nabla^2 \varphi = -\rho/\varepsilon$ | Poisson solver (Gauss-Seidel) | 2D |
-| `BeamStress` | $EI u'''' = q$ | Analytical (SolidExtensions) | 1D || `CylinderFlow` | Incompressible Navier-Stokes | Chorin projection (FD + Poisson) | 2D |
+| `BeamStress` | $EI u'''' = q$ | Analytical (SolidExtensions) | 1D |
+| `CylinderFlow` | Incompressible Navier-Stokes | Chorin projection (FD + Poisson) | 2D |
+| `FluidFlow2D` | Incompressible Navier-Stokes (rectangular) | Chorin projection (FD + Poisson) | 2D |
+| `MagneticField` | $\nabla^2 A = -\mu J$ (magnetostatics) | Poisson solver (Gauss-Seidel) | 2D |
+| `PlaneStress` | Navier-Cauchy (plane stress elasticity) | FD (SOR iterative) | 2D |
 ---
 
 ### Fluent API — SimulationType → SimulationBuilder → SimulationResult
@@ -164,6 +168,119 @@ CFL-based adaptive time-step clamping ensures stability: $\Delta t \leq 0.4 \cdo
 | `LiftCoefficient` | Pressure-based $C_l$ — oscillates during vortex shedding |
 | `StrouhalNumber` | $St = fD/U_\infty$ estimated from lift time series zero-crossings |
 | `Timeline` | Vorticity snapshots every 10 steps for animation |
+
+---
+
+### FluidFlow2D — 2D Transient Navier-Stokes
+
+Solves incompressible Navier-Stokes on a rectangular domain using the Chorin projection method. Unlike `CylinderFlow`, this type operates on an open domain without an embedded obstacle — ideal for lid-driven cavity, channel flow, or general 2D flow simulations.
+
+$$\frac{\partial \mathbf{v}}{\partial t} + (\mathbf{v} \cdot \nabla)\mathbf{v} = -\frac{1}{\rho}\nabla p + \nu \nabla^2 \mathbf{v}, \quad \nabla \cdot \mathbf{v} = 0$$
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.FluidFlow2D)
+    .WithMaterial(EngineeringLibrary.Water)
+    .WithGeometry(width: 0.1, height: 0.1, nx: 40, ny: 40)
+    .WithBoundary(top: 0.1, bottom: 0, left: 0, right: 0)  // lid-driven cavity
+    .WithInletVelocity(0.01)
+    .Solve(dt: 0.001, steps: 500);
+
+double[,] vx = result.Vx;             // x-velocity field
+double[,] vy = result.Vy;             // y-velocity field
+double[,] p  = result.Pressure;       // pressure field
+double[,] mag = result.Field;         // velocity magnitude |v|
+List<double[,]> timeline = result.Timeline;  // per-step snapshots
+```
+
+#### Boundary Conditions
+
+| Boundary | Type |
+|----------|------|
+| Inlet (left) | Uniform velocity (Dirichlet) |
+| Outlet (right) | Zero-gradient (Neumann) |
+| Top / Bottom | No-slip ($\mathbf{v} = 0$), or driven (set via `WithBoundary`) |
+
+#### Algorithm
+
+Same Chorin fractional-step as `CylinderFlow`:
+
+1. **Predict** — advection (upwind) + diffusion (Laplacian2D) → $\mathbf{v}^*$
+2. **Pressure Poisson** — $\nabla^2 p = (\rho/\Delta t) \nabla \cdot \mathbf{v}^*$
+3. **Correct** — $\mathbf{v}^{n+1} = \mathbf{v}^* - (\Delta t/\rho) \nabla p$
+
+CFL-limited adaptive time-stepping for stability.
+
+---
+
+### MagneticField — 2D Magnetostatics
+
+Solves the magnetic vector potential Poisson equation with material permeability support:
+
+$$\nabla^2 A = -\mu_0 \mu_r \cdot J$$
+
+where $A$ is the z-component of the vector potential and $J$ is the current density. After solving, computes $\mathbf{B} = \nabla \times A$:
+
+$$B_x = \frac{\partial A}{\partial y}, \quad B_y = -\frac{\partial A}{\partial x}$$
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.MagneticField)
+    .WithMaterial(EngineeringLibrary.Steel)       // μ_r = 100 (ferromagnetic)
+    .WithGeometry(width: 0.2, height: 0.2, nx: 50, ny: 50)
+    .WithBoundary(top: 0, bottom: 0, left: 0, right: 0)  // A = 0 at infinity
+    .AddSource(25, 25, 1e6)                                // J = 1 MA/m²
+    .Solve(maxIterations: 10000, tolerance: 1e-7);
+
+double[,] A  = result.VectorPotential;  // magnetic vector potential A(x,y)
+double[,] bx = result.Bx;              // B_x = ∂A/∂y
+double[,] by = result.By;              // B_y = −∂A/∂x
+double[,] bMag = result.Field;         // |B| = √(Bx² + By²)
+```
+
+The solver uses the material's `MagneticPermeability` ($\mu_r$) — ferromagnetic materials like Steel ($\mu_r = 100$) produce significantly stronger fields than non-magnetic materials.
+
+---
+
+### PlaneStress — 2D Plane Stress Elasticity
+
+Solves the 2D Navier-Cauchy equilibrium equations for plane stress using iterative SOR (Successive Over-Relaxation). Produces displacement and stress tensor fields.
+
+$$c_{11} \frac{\partial^2 u_x}{\partial x^2} + c_{33} \frac{\partial^2 u_x}{\partial y^2} + (c_{12}+c_{33}) \frac{\partial^2 u_y}{\partial x \partial y} + f_x = 0$$
+
+with plane-stress constitutive law: $c_{11} = E/(1-\nu^2)$, $c_{12} = \nu \cdot c_{11}$, $c_{33} = G = E/(2(1+\nu))$.
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.PlaneStress)
+    .WithMaterial(EngineeringLibrary.Steel)
+    .WithGeometry(width: 1.0, height: 0.1, nx: 50, ny: 10)
+    .AddSource(40, 5, 1e6)               // point force Fx at interior node
+    .WithSource(500)                      // uniform distributed load (Fy)
+    .Solve(maxIterations: 10000, tolerance: 1e-9);
+
+double[,] ux = result.Ux;              // x-displacement
+double[,] uy = result.Uy;              // y-displacement
+double[,] sxx = result.StressXX;       // normal stress σxx
+double[,] syy = result.StressYY;       // normal stress σyy
+double[,] sxy = result.StressXY;       // shear stress τxy
+double[,] vonMises = result.Field;     // von Mises stress field
+```
+
+#### Boundary Conditions
+
+| Boundary | Type |
+|----------|------|
+| Left | Fixed (Dirichlet: $u_x = u_y = 0$) |
+| Right | Free (Neumann) |
+| Bottom | Roller ($u_y = 0$, free in $x$) |
+| Top | Free (Neumann) |
+
+#### Output Fields
+
+| Field | Description |
+|-------|-------------|
+| `Ux`, `Uy` | Displacement components (m) |
+| `StressXX`, `StressYY` | Normal stress (Pa) |
+| `StressXY` | Shear stress (Pa) |
+| `Field` | Von Mises equivalent stress $\sigma_{vM} = \sqrt{\sigma_{xx}^2 - \sigma_{xx}\sigma_{yy} + \sigma_{yy}^2 + 3\tau_{xy}^2}$ |
 
 ---
 
@@ -365,7 +482,7 @@ Engines/Multiphysics/
 ├── SimulationBuilder.cs          ← fluent builder chain
 ├── SimulationResult.cs           ← unified result type
 ├── Enums/
-│   ├── MultiphysicsType.cs       ← HeatPlate | PipeFlow | ElectricField | BeamStress | CylinderFlow
+│   ├── MultiphysicsType.cs       ← HeatPlate | PipeFlow | ElectricField | BeamStress | CylinderFlow | FluidFlow2D | MagneticField | PlaneStress
 │   └── BeamSupport.cs            ← Cantilever | SimplySupported | FixedFixed
 ├── Solvers/
 │   ├── IMultiphysicsSolver.cs    ← internal solver interface
@@ -373,7 +490,10 @@ Engines/Multiphysics/
 │   ├── PipeFlowSolver.cs         ← 1D cylindrical Laplacian
 │   ├── ElectricFieldSolver.cs    ← 2D Poisson + gradient
 │   ├── BeamStressSolver.cs       ← analytical Euler-Bernoulli
-│   └── CylinderFlowSolver.cs     ← 2D Navier-Stokes (Chorin projection)
+│   ├── CylinderFlowSolver.cs     ← 2D Navier-Stokes (Chorin projection)
+│   ├── FluidFlow2DSolver.cs      ← 2D Navier-Stokes (rectangular domain)
+│   ├── MagneticFieldSolver.cs    ← 2D magnetostatics (Poisson for A)
+│   └── PlaneStressSolver.cs      ← 2D plane-stress elasticity (SOR)
 ├── Snapshots/
 │   ├── FieldSnapshot.cs          ← time-stamped 2D scalar field
 │   ├── BeamSnapshot.cs           ← immutable beam curves

@@ -2,7 +2,7 @@ namespace CSharpNumerics.Physics.Materials.Engineering;
 
 /// <summary>
 /// Immutable material descriptor for multiphysics simulations.
-/// Carries thermal, fluid, electrical, and structural properties.
+/// Carries thermal, fluid, electrical, magnetic, and structural properties.
 /// </summary>
 public readonly struct EngineeringMaterial
 {
@@ -23,6 +23,9 @@ public readonly struct EngineeringMaterial
 
     /// <summary>Relative electric permittivity ε_r (dimensionless).</summary>
     public double ElectricPermittivity { get; }
+
+    /// <summary>Relative magnetic permeability μ_r (dimensionless).</summary>
+    public double MagneticPermeability { get; }
 
     /// <summary>Young's modulus E in Pa.</summary>
     public double YoungsModulus { get; }
@@ -48,7 +51,8 @@ public readonly struct EngineeringMaterial
         double dynamicViscosity,
         double electricPermittivity,
         double youngsModulus,
-        double poissonsRatio)
+        double poissonsRatio,
+        double magneticPermeability = 1.0)
     {
         Name = name;
         ThermalConductivity = thermalConductivity;
@@ -56,6 +60,7 @@ public readonly struct EngineeringMaterial
         Density = density;
         DynamicViscosity = dynamicViscosity;
         ElectricPermittivity = electricPermittivity;
+        MagneticPermeability = magneticPermeability;
         YoungsModulus = youngsModulus;
         PoissonsRatio = poissonsRatio;
     }

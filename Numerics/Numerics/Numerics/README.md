@@ -465,6 +465,24 @@ var field = new VectorField(p => p.y, p => -p.x, p => 0);
 var curl = field.Curl((1, 4, 2));
 ```
 
+**Grid Evaluation**
+
+`EvaluateRange` walks a diagonal line. For proper 2D arrow-plot rendering, use `EvaluateGrid2D`:
+
+```csharp
+var field = new VectorField(p => -p.y, p => p.x, p => 0);
+
+// Structured nx × ny grid of vectors
+var grid = field.EvaluateGrid2D(
+    xmin: -2, xmax: 2,
+    ymin: -2, ymax: 2,
+    nx: 20, ny: 20);
+
+// Returns IDictionary<Vector, Vector> — position → field value
+foreach (var (pos, val) in grid)
+    Console.WriteLine($"({pos.x:F1}, {pos.y:F1}) → ({val.x:F2}, {val.y:F2})");
+```
+
 ---
 
 ## 🧊 Tensor Field

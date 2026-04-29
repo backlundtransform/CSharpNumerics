@@ -309,6 +309,9 @@ public class SimulationBuilder
             MultiphysicsType.ElectricField => new ElectricFieldSolver(new ElectrostaticModel()),
             MultiphysicsType.BeamStress => new BeamStressSolver(new BeamModel()),
             MultiphysicsType.CylinderFlow => new CylinderFlowSolver(),
+            MultiphysicsType.FluidFlow2D => new FluidFlow2DSolver(),
+            MultiphysicsType.MagneticField => new MagneticFieldSolver(),
+            MultiphysicsType.PlaneStress => new PlaneStressSolver(),
             _ => throw new NotSupportedException($"Unknown simulation type: {Type}")
         };
 
@@ -347,6 +350,9 @@ public class SimulationBuilder
             case MultiphysicsType.HeatPlate:
             case MultiphysicsType.ElectricField:
             case MultiphysicsType.CylinderFlow:
+            case MultiphysicsType.FluidFlow2D:
+            case MultiphysicsType.MagneticField:
+            case MultiphysicsType.PlaneStress:
                 if (Nx <= 0 || Ny <= 0)
                     throw new InvalidOperationException("2D geometry not set. Call WithGeometry(width, height, nx, ny).");
                 break;

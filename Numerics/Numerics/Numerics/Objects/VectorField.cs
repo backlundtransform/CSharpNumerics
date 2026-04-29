@@ -42,6 +42,34 @@ namespace CSharpNumerics.Numerics.Objects
             return vectorField;
         }
 
+        /// <summary>
+        /// Evaluates the vector field on a structured 2D grid (z = 0).
+        /// Returns vectors at each (x, y) point for arrow-plot rendering.
+        /// </summary>
+        /// <param name="xmin">Minimum x coordinate.</param>
+        /// <param name="xmax">Maximum x coordinate.</param>
+        /// <param name="ymin">Minimum y coordinate.</param>
+        /// <param name="ymax">Maximum y coordinate.</param>
+        /// <param name="nx">Number of evaluation points in x.</param>
+        /// <param name="ny">Number of evaluation points in y.</param>
+        /// <returns>Dictionary mapping position vectors to field vectors on the 2D grid.</returns>
+        public IDictionary<Vector, Vector> EvaluateGrid2D(double xmin, double xmax, double ymin, double ymax, int nx, int ny)
+        {
+            var vectorField = new Dictionary<Vector, Vector>();
+            double dx = (nx > 1) ? (xmax - xmin) / (nx - 1) : 0.0;
+            double dy = (ny > 1) ? (ymax - ymin) / (ny - 1) : 0.0;
+
+            for (int j = 0; j < ny; j++)
+            {
+                for (int i = 0; i < nx; i++)
+                {
+                    var point = new Vector(xmin + i * dx, ymin + j * dy, 0.0);
+                    vectorField.Add(point, new Vector(fx(point), fy(point), fz(point)));
+                }
+            }
+            return vectorField;
+        }
+
 
         public Vector Curl((double, double, double) points)
         {

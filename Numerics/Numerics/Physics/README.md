@@ -2799,7 +2799,7 @@ double sigma = beam.BendingStress(moment: m2, halfHeight: 0.05, secondMoment: 8.
 
 ## 🏭 Engineering Materials
 
-The `EngineeringMaterial` immutable struct bundles thermo-mechanical-electrical properties for multiphysics simulations. The `EngineeringLibrary` provides common pre-defined materials.
+The `EngineeringMaterial` immutable struct bundles thermo-mechanical-electrical-magnetic properties for multiphysics simulations. The `EngineeringLibrary` provides common pre-defined materials.
 
 **Namespace:** `CSharpNumerics.Physics.Materials.Engineering`
 
@@ -2812,6 +2812,7 @@ The `EngineeringMaterial` immutable struct bundles thermo-mechanical-electrical 
 | `Density` | kg/m³ | Mass density $\rho$ |
 | `DynamicViscosity` | Pa·s | Dynamic viscosity $\mu$ |
 | `ElectricPermittivity` | F/m | Dielectric permittivity $\varepsilon$ |
+| `MagneticPermeability` | — | Relative magnetic permeability $\mu_r$ |
 | `YoungsModulus` | Pa | Young's modulus $E$ |
 | `PoissonsRatio` | — | Poisson's ratio $\nu$ |
 
@@ -2827,31 +2828,48 @@ The `EngineeringMaterial` immutable struct bundles thermo-mechanical-electrical 
 ```csharp
 using CSharpNumerics.Physics.Materials.Engineering;
 
-var steel = EngineeringLibrary.Steel;       // E=200 GPa, k=50 W/(m·K)
-var al    = EngineeringLibrary.Aluminum;    // E=69 GPa, k=237 W/(m·K)
-var cu    = EngineeringLibrary.Copper;      // E=117 GPa, k=401 W/(m·K)
-var water = EngineeringLibrary.Water;       // μ=1e-3 Pa·s, ρ=1000 kg/m³
-var air   = EngineeringLibrary.Air;         // μ=1.81e-5 Pa·s
-var conc  = EngineeringLibrary.Concrete;    // E=30 GPa
-var glass = EngineeringLibrary.Glass;       // E=70 GPa
+// Metals
+var steel = EngineeringLibrary.Steel;            // E=200 GPa, k=50 W/(m·K), μ_r=100
+var al    = EngineeringLibrary.Aluminum;         // E=69 GPa, k=237 W/(m·K)
+var cu    = EngineeringLibrary.Copper;           // E=120 GPa, k=401 W/(m·K)
+var ti    = EngineeringLibrary.Titanium;         // E=116 GPa, k=21.9 W/(m·K)
+var brass = EngineeringLibrary.Brass;            // E=100 GPa, k=109 W/(m·K)
+var ss    = EngineeringLibrary.StainlessSteel;   // E=193 GPa, k=16 W/(m·K)
 
-double alpha = steel.ThermalDiffusivity;     // k/(ρ·cp)
-double nu    = water.KinematicViscosity;     // μ/ρ
+// Fluids
+var water = EngineeringLibrary.Water;            // μ=1e-3 Pa·s, ρ=998 kg/m³
+var air   = EngineeringLibrary.Air;              // μ=1.81e-5 Pa·s
+var oil   = EngineeringLibrary.Oil;              // μ=0.03 Pa·s, ρ=870 kg/m³
+var glyc  = EngineeringLibrary.Glycerin;         // μ=1.412 Pa·s, ρ=1261 kg/m³
+
+// Construction / Structural
+var conc  = EngineeringLibrary.Concrete;         // E=30 GPa
+var glass = EngineeringLibrary.Glass;            // E=70 GPa
+var wood  = EngineeringLibrary.Wood;             // E=12 GPa, k=0.15 W/(m·K)
+var rub   = EngineeringLibrary.Rubber;           // E=0.01 GPa, ν=0.49
+var hdpe  = EngineeringLibrary.Plastic;          // E=1.1 GPa (HDPE)
+
+double alpha = steel.ThermalDiffusivity;         // k/(ρ·cp)
+double nu    = water.KinematicViscosity;         // μ/ρ
+double muR   = steel.MagneticPermeability;       // 100.0 (ferromagnetic)
 ```
 
 ### Custom Materials
 
 ```csharp
-var titanium = new EngineeringMaterial(
-    name: "Titanium",
-    thermalConductivity: 21.9,        // W/(m·K)
-    specificHeat: 523,                // J/(kg·K)
-    density: 4507,                    // kg/m³
+var iron = new EngineeringMaterial(
+    name: "Iron",
+    thermalConductivity: 80,          // W/(m·K)
+    specificHeat: 450,                // J/(kg·K)
+    density: 7874,                    // kg/m³
     dynamicViscosity: 0,              // not a fluid
     electricPermittivity: 0,
-    youngsModulus: 116e9,             // Pa
-    poissonsRatio: 0.34);
+    youngsModulus: 211e9,             // Pa
+    poissonsRatio: 0.29,
+    magneticPermeability: 5000.0);    // ferromagnetic
 ```
+
+`magneticPermeability` defaults to 1.0 (vacuum/non-magnetic) when omitted.
 
 ---
 

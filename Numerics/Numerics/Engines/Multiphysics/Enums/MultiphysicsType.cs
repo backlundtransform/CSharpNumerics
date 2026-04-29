@@ -1,7 +1,7 @@
 namespace CSharpNumerics.Engines.Multiphysics.Enums;
 
 /// <summary>
-/// The four simulation types supported by the multiphysics engine.
+/// The simulation types supported by the multiphysics engine.
 /// </summary>
 public enum MultiphysicsType
 {
@@ -18,5 +18,14 @@ public enum MultiphysicsType
     BeamStress,
 
     /// <summary>2D incompressible Navier–Stokes around a cylinder (Chorin projection method).</summary>
-    CylinderFlow
+    CylinderFlow,
+
+    /// <summary>2D transient Navier–Stokes on a rectangular domain (Chorin projection method).</summary>
+    FluidFlow2D,
+
+    /// <summary>2D magnetostatics: ∇²A = −μJ (vector potential formulation).</summary>
+    MagneticField,
+
+    /// <summary>2D plane-stress elasticity: displacement and stress tensor fields.</summary>
+    PlaneStress
 }
