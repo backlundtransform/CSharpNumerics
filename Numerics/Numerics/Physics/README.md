@@ -2651,6 +2651,59 @@ The `viableBioUnits` layer applies exponential viability decay based on the agen
 
 ---
 
+### Kármán Vortex Street
+
+The `KarmanVortexStreetExtensions` class provides formulas for analysing periodic vortex shedding behind bluff bodies (cylinders). It covers the Roshko empirical Strouhal–Reynolds correlation, vortex street geometry (von Kármán stability ratio), regime classification, and the idealised wake-drag formula.
+
+| Formula | Method | Description |
+|---------|--------|-------------|
+| $f = \mathrm{St} \cdot U / D$ | `VortexSheddingFrequency` | Shedding frequency from Strouhal number |
+| $\mathrm{St} \approx 0.198(1 - 19.7/\mathrm{Re})$ | `RoshkoStrouhalNumber` | Roshko (1954) empirical correlation |
+| $f = \mathrm{St}(\mathrm{Re}) \cdot U / D$ | `VortexSheddingFrequencyFromReynolds` | Shedding frequency from Reynolds number |
+| $\mathrm{Ro} = f D^2 / \nu$ | `RoshkoNumber` | Roshko number (= St · Re) |
+| $a = U / f$ | `VortexStreamwiseSpacing` | Longitudinal spacing between vortices |
+| $h/a = \tfrac{1}{\pi}\mathrm{arccosh}(\sqrt{2})$ | `StableSpacingRatio` | Von Kármán stability criterion ≈ 0.281 |
+| $h = (h/a) \cdot a$ | `VortexLateralSpacing` | Cross-stream spacing between rows |
+| $U_v \approx 0.875\,U$ | `VortexConvectionVelocity` | Downstream vortex convection speed |
+| — | `IsPeriodicSheddingRegime` | True if 47 < Re < 2×10⁵ |
+| — | `CylinderWakeRegime` | Wake regime string from Re |
+| $C_d$ (wake momentum) | `VortexStreetDragCoefficient` | Idealised wake-drag from vortex spacing |
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics;
+
+// Roshko's Strouhal–Reynolds correlation for a circular cylinder
+double Re = 1000;
+double St = Re.RoshkoStrouhalNumber();           // ≈ 0.194
+
+// Vortex shedding frequency
+double U = 5.0, D = 0.05;
+double f = St.VortexSheddingFrequency(U, D);     // ≈ 19.4 Hz
+
+// Or directly from Reynolds number
+double f2 = Re.VortexSheddingFrequencyFromReynolds(U, D);
+
+// Roshko number Ro = f·D²/ν
+double nu = 1e-5;
+double Ro = f.RoshkoNumber(D, nu);
+
+// Vortex street geometry
+double a = U.VortexStreamwiseSpacing(f);         // streamwise spacing
+double h = a.VortexLateralSpacing();             // lateral spacing ≈ 0.281·a
+
+// Vortex convection velocity
+double Uv = U.VortexConvectionVelocity();        // ≈ 0.875·U
+
+// Regime classification
+bool shedding = Re.IsPeriodicSheddingRegime();   // true
+string regime = Re.CylinderWakeRegime();         // "Turbulent transition"
+
+// Wake-drag coefficient from vortex street
+double Cd = h.VortexStreetDragCoefficient(a, U, Uv, D);
+```
+
+---
+
 ### Viscous Flow Model (`IViscousFlowModel`)
 
 The `IViscousFlowModel` interface provides an abstraction for pipe flow physics used by simulation engines. The default implementation `ViscousFlowModel` encapsulates Hagen–Poiseuille physics.
