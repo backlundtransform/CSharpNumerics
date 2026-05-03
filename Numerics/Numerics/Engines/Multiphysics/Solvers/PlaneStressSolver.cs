@@ -1,5 +1,6 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
-using CSharpNumerics.Numerics.FiniteDifference;
+using CSharpNumerics.Numerics.FiniteElement;
+using CSharpNumerics.Numerics.FiniteElement.Enums;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -7,15 +8,8 @@ using System.Collections.Generic;
 namespace CSharpNumerics.Engines.Multiphysics.Solvers;
 
 /// <summary>
-/// Solves 2D plane-stress linear elasticity using an iterative finite-difference approach.
-/// Equilibrium equations (body forces neglected, point loads applied):
-///   ∂σxx/∂x + ∂τxy/∂y = 0
-///   ∂τxy/∂x + ∂σyy/∂y = 0
-/// with constitutive law (plane stress):
-///   σxx = E/(1−ν²)(εxx + ν·εyy)
-///   σyy = E/(1−ν²)(εyy + ν·εxx)
-///   τxy  = E/(2(1+ν))·γxy
-/// Solved iteratively for displacements (ux, uy) using a relaxation method.
+/// Solves 2D linear elasticity using a finite-element pipeline on a structured triangular mesh.
+/// Public output stays aligned with the legacy Nx×Ny field layout for compatibility.
 /// </summary>
 internal class PlaneStressSolver : IMultiphysicsSolver
 {
@@ -25,166 +19,32 @@ internal class PlaneStressSolver : IMultiphysicsSolver
         double E = mat.YoungsModulus;
         double nu = mat.PoissonsRatio;
 
-        double dx = cfg.GeomWidth / cfg.Nx;
-        double dy = cfg.GeomHeight / cfg.Ny;
-        var grid = new Grid2D(cfg.Nx, cfg.Ny, dx, dy);
-        int nx = cfg.Nx, ny = cfg.Ny;
+        int nx = cfg.Nx;
+        int ny = cfg.Ny;
+        bool planeStress = cfg.PlaneType == PlaneType.PlaneStress;
 
-        // Plane-stress stiffness coefficients
-        double c11 = E / (1.0 - nu * nu);          // σxx per εxx
-        double c12 = nu * c11;                      // coupling
-        double c33 = E / (2.0 * (1.0 + nu));       // shear modulus G
+        var mesh = new Mesh2D(cfg.GeomWidth, cfg.GeomHeight, nx, ny, ElementType.Tri);
+        var assembler = new Assembler2D(mesh, new TriElement(), E, nu, cfg.Thickness, planeStress);
+        assembler.Assemble();
 
-        // Displacement fields
-        var ux = new double[nx, ny];
-        var uy = new double[nx, ny];
-
-        // External force field (from point sources)
-        // Sources2D: (ix, iy, value) — value is force magnitude applied in x-direction
-        // For y-forces, use negative iy encoding or separate. Here, assume Sources2D is Fx.
-        var fx = new double[nx, ny];
-        var fy = new double[nx, ny];
         foreach (var (ix, iy, value) in cfg.Sources2D)
         {
-            if (ix >= 0 && ix < nx && iy >= 0 && iy < ny)
-                fx[ix, iy] = value;
+            int nodeX = Math.Clamp(ix, 0, nx);
+            int nodeY = Math.Clamp(iy, 0, ny);
+            int nodeIndex = mesh.GetNodeIndex(nodeX, nodeY);
+            assembler.ApplyNodalLoad(nodeIndex, 0, value);
         }
 
-        // Apply body force from UniformLoad (in y-direction, like gravity/distributed)
-        if (cfg.UniformLoad != 0)
-        {
-            for (int iy = 0; iy < ny; iy++)
-                for (int ix = 0; ix < nx; ix++)
-                    fy[ix, iy] = cfg.UniformLoad;
-        }
+        if (cfg.UniformLoad != 0.0)
+            assembler.ApplyBodyForce(0.0, cfg.UniformLoad);
 
-        // Boundary conditions:
-        // Left boundary (ix=0): fixed (ux=uy=0) — Dirichlet
-        // Right boundary: traction from RightBC (applied force density)
-        // Top/Bottom: free or constrained based on TopBC/BottomBC
-        // LeftBC: displacement constraint (0 = fixed)
+        var fixedDofs = BuildBoundaryConditions(mesh);
+        var displacement = assembler.Solve(fixedDofs);
+        assembler.ComputeElementStresses(displacement, out var elementSxx, out var elementSyy, out var elementSxy);
 
-        // Iterative Gauss-Seidel relaxation for the Navier-Cauchy equations
-        double invDx2 = 1.0 / (dx * dx);
-        double invDy2 = 1.0 / (dy * dy);
-        double inv4DxDy = 1.0 / (4.0 * dx * dy);
-        double omega = 1.4; // SOR relaxation factor
-
-        int iterations = 0;
-        double residual = double.MaxValue;
-
-        for (int iter = 0; iter < cfg.MaxIterations && residual > cfg.Tolerance; iter++)
-        {
-            residual = 0;
-            iterations = iter + 1;
-
-            for (int iy = 1; iy < ny - 1; iy++)
-            {
-                for (int ix = 1; ix < nx - 1; ix++)
-                {
-                    // Skip left boundary (fixed)
-                    if (ix == 0) continue;
-
-                    // Navier-Cauchy eq 1 (x-equilibrium):
-                    // c11·∂²ux/∂x² + c33·∂²ux/∂y² + (c12+c33)·∂²uy/∂x∂y + fx = 0
-                    double uxOld = ux[ix, iy];
-                    double d2uxdx2 = (ux[ix + 1, iy] - 2.0 * ux[ix, iy] + ux[ix - 1, iy]) * invDx2;
-                    double d2uxdy2 = (ux[ix, iy + 1] - 2.0 * ux[ix, iy] + ux[ix, iy - 1]) * invDy2;
-                    double d2uydxdy = (uy[ix + 1, iy + 1] - uy[ix - 1, iy + 1]
-                                     - uy[ix + 1, iy - 1] + uy[ix - 1, iy - 1]) * inv4DxDy;
-
-                    double rhs_x = -(c12 + c33) * d2uydxdy - fx[ix, iy];
-                    double denom_x = -2.0 * c11 * invDx2 - 2.0 * c33 * invDy2;
-                    double numX = rhs_x - c11 * (ux[ix + 1, iy] + ux[ix - 1, iy]) * invDx2
-                                        - c33 * (ux[ix, iy + 1] + ux[ix, iy - 1]) * invDy2;
-                    double uxNew = numX / denom_x;
-                    ux[ix, iy] = uxOld + omega * (uxNew - uxOld);
-
-                    // Navier-Cauchy eq 2 (y-equilibrium):
-                    // c33·∂²uy/∂x² + c11·∂²uy/∂y² + (c12+c33)·∂²ux/∂x∂y + fy = 0
-                    double uyOld = uy[ix, iy];
-                    double d2uydx2 = (uy[ix + 1, iy] - 2.0 * uy[ix, iy] + uy[ix - 1, iy]) * invDx2;
-                    double d2uydy2 = (uy[ix, iy + 1] - 2.0 * uy[ix, iy] + uy[ix, iy - 1]) * invDy2;
-                    double d2uxdxdy = (ux[ix + 1, iy + 1] - ux[ix - 1, iy + 1]
-                                     - ux[ix + 1, iy - 1] + ux[ix - 1, iy - 1]) * inv4DxDy;
-
-                    double rhs_y = -(c12 + c33) * d2uxdxdy - fy[ix, iy];
-                    double denom_y = -2.0 * c33 * invDx2 - 2.0 * c11 * invDy2;
-                    double numY = rhs_y - c33 * (uy[ix + 1, iy] + uy[ix - 1, iy]) * invDx2
-                                        - c11 * (uy[ix, iy + 1] + uy[ix, iy - 1]) * invDy2;
-                    double uyNew = numY / denom_y;
-                    uy[ix, iy] = uyOld + omega * (uyNew - uyOld);
-
-                    residual += (ux[ix, iy] - uxOld) * (ux[ix, iy] - uxOld)
-                              + (uy[ix, iy] - uyOld) * (uy[ix, iy] - uyOld);
-                }
-            }
-
-            // Apply BCs: left = fixed
-            for (int iy = 0; iy < ny; iy++)
-            {
-                ux[0, iy] = 0;
-                uy[0, iy] = 0;
-            }
-
-            // Right boundary: Neumann (free or traction)
-            for (int iy = 0; iy < ny; iy++)
-            {
-                ux[nx - 1, iy] = ux[nx - 2, iy];
-                uy[nx - 1, iy] = uy[nx - 2, iy];
-            }
-
-            // Bottom boundary: fixed in y (roller)
-            for (int ix = 0; ix < nx; ix++)
-            {
-                uy[ix, 0] = 0;
-                ux[ix, 0] = ux[ix, 1]; // free in x (roller)
-            }
-
-            // Top boundary: free
-            for (int ix = 0; ix < nx; ix++)
-            {
-                ux[ix, ny - 1] = ux[ix, ny - 2];
-                uy[ix, ny - 1] = uy[ix, ny - 2];
-            }
-
-            residual = Math.Sqrt(residual / (nx * ny));
-        }
-
-        // Compute stress fields from final displacement
-        var sxx = new double[nx, ny];
-        var syy = new double[nx, ny];
-        var sxy = new double[nx, ny];
-
-        for (int iy = 1; iy < ny - 1; iy++)
-        {
-            for (int ix = 1; ix < nx - 1; ix++)
-            {
-                double exx = (ux[ix + 1, iy] - ux[ix - 1, iy]) / (2.0 * dx);
-                double eyy = (uy[ix, iy + 1] - uy[ix, iy - 1]) / (2.0 * dy);
-                double gxy = (ux[ix, iy + 1] - ux[ix, iy - 1]) / (2.0 * dy)
-                           + (uy[ix + 1, iy] - uy[ix - 1, iy]) / (2.0 * dx);
-
-                sxx[ix, iy] = c11 * exx + c12 * eyy;
-                syy[ix, iy] = c12 * exx + c11 * eyy;
-                sxy[ix, iy] = c33 * gxy;
-            }
-        }
-
-        // Primary field: von Mises stress for min/max
-        double[,] vonMises = new double[nx, ny];
-        double minV = double.MaxValue, maxV = double.MinValue;
-        for (int iy = 0; iy < ny; iy++)
-            for (int ix = 0; ix < nx; ix++)
-            {
-                double vm = Math.Sqrt(sxx[ix, iy] * sxx[ix, iy]
-                                    - sxx[ix, iy] * syy[ix, iy]
-                                    + syy[ix, iy] * syy[ix, iy]
-                                    + 3.0 * sxy[ix, iy] * sxy[ix, iy]);
-                vonMises[ix, iy] = vm;
-                if (vm < minV) minV = vm;
-                if (vm > maxV) maxV = vm;
-            }
+        BuildFieldOutputs(mesh, displacement, elementSxx, elementSyy, elementSxy,
+            out var ux, out var uy, out var sxx, out var syy, out var sxy, out var vonMises,
+            out double minV, out double maxV);
 
         return new SimulationResult
         {
@@ -197,8 +57,106 @@ internal class PlaneStressSolver : IMultiphysicsSolver
             StressXY = sxy,
             MaxValue = maxV,
             MinValue = minV,
-            Iterations = iterations,
-            FinalTime = residual
+            Iterations = 1,
+            FinalTime = 0.0
         };
+    }
+
+    private static Dictionary<int, double> BuildBoundaryConditions(Mesh2D mesh)
+    {
+        var fixedDofs = new Dictionary<int, double>();
+
+        for (int iy = 0; iy <= mesh.Ny; iy++)
+        {
+            int node = mesh.GetNodeIndex(0, iy);
+            fixedDofs[node * 2] = 0.0;
+            fixedDofs[node * 2 + 1] = 0.0;
+        }
+
+        for (int ix = 0; ix <= mesh.Nx; ix++)
+        {
+            int node = mesh.GetNodeIndex(ix, 0);
+            fixedDofs[node * 2 + 1] = 0.0;
+        }
+
+        return fixedDofs;
+    }
+
+    private static void BuildFieldOutputs(
+        Mesh2D mesh,
+        VectorN displacement,
+        double[] elementSxx,
+        double[] elementSyy,
+        double[] elementSxy,
+        out double[,] ux,
+        out double[,] uy,
+        out double[,] sxx,
+        out double[,] syy,
+        out double[,] sxy,
+        out double[,] vonMises,
+        out double minV,
+        out double maxV)
+    {
+        int nx = mesh.Nx;
+        int ny = mesh.Ny;
+        int nodesPerRow = nx + 1;
+
+        ux = new double[nx, ny];
+        uy = new double[nx, ny];
+        sxx = new double[nx, ny];
+        syy = new double[nx, ny];
+        sxy = new double[nx, ny];
+        vonMises = new double[nx, ny];
+
+        var nodeSxx = new double[nodesPerRow * (ny + 1)];
+        var nodeSyy = new double[nodesPerRow * (ny + 1)];
+        var nodeSxy = new double[nodesPerRow * (ny + 1)];
+        var nodeCounts = new int[nodesPerRow * (ny + 1)];
+
+        for (int e = 0; e < mesh.ElementCount; e++)
+        {
+            for (int local = 0; local < mesh.NodesPerElement; local++)
+            {
+                int node = mesh.Elements[e, local];
+                nodeSxx[node] += elementSxx[e];
+                nodeSyy[node] += elementSyy[e];
+                nodeSxy[node] += elementSxy[e];
+                nodeCounts[node]++;
+            }
+        }
+
+        for (int node = 0; node < nodeCounts.Length; node++)
+        {
+            if (nodeCounts[node] == 0)
+                continue;
+
+            nodeSxx[node] /= nodeCounts[node];
+            nodeSyy[node] /= nodeCounts[node];
+            nodeSxy[node] /= nodeCounts[node];
+        }
+
+        minV = double.MaxValue;
+        maxV = double.MinValue;
+
+        for (int iy = 0; iy < ny; iy++)
+        {
+            for (int ix = 0; ix < nx; ix++)
+            {
+                int node = mesh.GetNodeIndex(ix, iy);
+                ux[ix, iy] = displacement[node * 2];
+                uy[ix, iy] = displacement[node * 2 + 1];
+                sxx[ix, iy] = nodeSxx[node];
+                syy[ix, iy] = nodeSyy[node];
+                sxy[ix, iy] = nodeSxy[node];
+
+                double vm = Math.Sqrt(sxx[ix, iy] * sxx[ix, iy]
+                                    - sxx[ix, iy] * syy[ix, iy]
+                                    + syy[ix, iy] * syy[ix, iy]
+                                    + 3.0 * sxy[ix, iy] * sxy[ix, iy]);
+                vonMises[ix, iy] = vm;
+                if (vm < minV) minV = vm;
+                if (vm > maxV) maxV = vm;
+            }
+        }
     }
 }

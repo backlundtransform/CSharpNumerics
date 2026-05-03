@@ -1,5 +1,6 @@
 using CSharpNumerics.Engines.Multiphysics;
 using CSharpNumerics.Engines.Multiphysics.Enums;
+using CSharpNumerics.Numerics.FiniteElement.Enums;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Physics.Materials.Engineering;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -285,6 +286,29 @@ public class NewMultiphysicsTests
 
         // Field should contain von Mises stress > 0 somewhere
         Assert.IsTrue(result.MaxValue > 0, "Von Mises stress field should have positive values.");
+    }
+
+    [TestMethod]
+    public void PlaneStress_PlaneStrain_IsStifferThanPlaneStress()
+    {
+        var planeStress = SimulationType.Create(MultiphysicsType.PlaneStress)
+            .WithMaterial(EngineeringLibrary.Steel)
+            .WithGeometry(width: 0.5, height: 0.1, nx: 20, ny: 8)
+            .WithThickness(0.01)
+            .WithPlaneType(PlaneType.PlaneStress)
+            .AddSource(15, 4, 1e5)
+            .Solve(maxIterations: 5000, tolerance: 1e-9);
+
+        var planeStrain = SimulationType.Create(MultiphysicsType.PlaneStress)
+            .WithMaterial(EngineeringLibrary.Steel)
+            .WithGeometry(width: 0.5, height: 0.1, nx: 20, ny: 8)
+            .WithThickness(0.01)
+            .WithPlaneType(PlaneType.PlaneStrain)
+            .AddSource(15, 4, 1e5)
+            .Solve(maxIterations: 5000, tolerance: 1e-9);
+
+        Assert.IsTrue(MaxAbs(planeStrain.Ux) < MaxAbs(planeStress.Ux),
+            "Plane strain should be stiffer and therefore displace less than plane stress.");
     }
 
     // ═══════════════════════════════════════════════════════════════

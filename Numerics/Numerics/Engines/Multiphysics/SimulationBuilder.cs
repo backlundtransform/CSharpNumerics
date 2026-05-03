@@ -1,4 +1,5 @@
 using CSharpNumerics.Engines.Multiphysics.Enums;
+using CSharpNumerics.Numerics.FiniteElement.Enums;
 using CSharpNumerics.Engines.Multiphysics.Solvers;
 using CSharpNumerics.Physics.Electromagnetism;
 using CSharpNumerics.Physics.FluidDynamics;
@@ -45,6 +46,8 @@ public class SimulationBuilder
     internal double CylinderCenterY { get; private set; }
     internal double CylinderRadius { get; private set; }
     internal double InletVelocity { get; private set; }
+    internal double Thickness { get; private set; } = 1.0;
+    internal PlaneType PlaneType { get; private set; } = PlaneType.PlaneStress;
 
     // ── Boundary conditions ──────────────────────────────────────
     internal double TopBC { get; private set; }
@@ -189,6 +192,24 @@ public class SimulationBuilder
     public SimulationBuilder WithInletVelocity(double u)
     {
         InletVelocity = u;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the constitutive assumption for plane elasticity problems.
+    /// </summary>
+    public SimulationBuilder WithPlaneType(PlaneType planeType)
+    {
+        PlaneType = planeType;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the section thickness used by 2D plane-stress/plane-strain elements.
+    /// </summary>
+    public SimulationBuilder WithThickness(double thickness)
+    {
+        Thickness = thickness;
         return this;
     }
 
@@ -378,5 +399,8 @@ public class SimulationBuilder
             if (ComputeSecondMoment() <= 0)
                 throw new InvalidOperationException("Cross-section not set. Call WithCrossSection() or WithSecondMoment().");
         }
+
+        if (Type == MultiphysicsType.PlaneStress && Thickness <= 0)
+            throw new InvalidOperationException("Thickness must be positive. Call WithThickness(thickness).");
     }
 }
