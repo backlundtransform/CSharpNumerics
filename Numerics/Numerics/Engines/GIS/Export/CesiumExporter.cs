@@ -3,6 +3,7 @@ using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.VolumetricContamination;
 using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
 using CSharpNumerics.Engines.GIS.Spread.WaterContamination.Enums;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
@@ -302,6 +303,32 @@ namespace CSharpNumerics.Engines.GIS.Export
             string path,
             string name = "Water Contamination")
             => File.WriteAllText(path, ToContaminationCzml(snapshots, timeFrame, name), Encoding.UTF8);
+
+        /// <summary>
+        /// Generates a CZML document from 3D volumetric contamination snapshots.
+        /// Re-uses the existing contamination CZML pipeline (one packet per cell
+        /// with time-varying colour), but the 3D cell positions produce true
+        /// volumetric visualisation in Cesium with altitude variation.
+        /// </summary>
+        /// <param name="result">Volumetric contamination result.</param>
+        /// <param name="timeFrame">The simulation time frame.</param>
+        /// <param name="name">Document name shown in Cesium viewer.</param>
+        public static string ToVolumetricContaminationCzml(
+            VolumetricContaminationResult result,
+            TimeFrame timeFrame,
+            string name = "Volumetric Contamination")
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return ToContaminationCzml(result.Snapshots, timeFrame, name);
+        }
+
+        /// <summary>Write volumetric contamination CZML to a file.</summary>
+        public static void SaveVolumetricContaminationCzml(
+            VolumetricContaminationResult result,
+            TimeFrame timeFrame,
+            string path,
+            string name = "Volumetric Contamination")
+            => File.WriteAllText(path, ToVolumetricContaminationCzml(result, timeFrame, name), Encoding.UTF8);
 
         /// <summary>
         /// Maps normalised contamination level [0..1] and state to RGBA.

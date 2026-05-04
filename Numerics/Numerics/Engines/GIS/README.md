@@ -830,6 +830,104 @@ var data = UnityBinaryExporter.ReadContamination("water.bin");
 
 ---
 
+### 2D Water Contamination Simulator
+
+Extends the 1D river model to 2D open water (lakes, estuaries, coastal areas). Implements full-grid advection-diffusion with anisotropic diffusion and a prescribed velocity field.
+
+```csharp
+using CSharpNumerics.Engines.GIS.Scenario;
+
+var result = RiskScenario
+    .ForWaterContamination2D()
+    .WithSource(50, 50, 100.0, double.MaxValue)
+    .WithContaminant(ContaminantLibrary.Get("Benzene"))
+    .WithDiffusion(1.0, 0.5)                        // Dx, Dy (anisotropic)
+    .WithCurrent(0.1, 0)                             // uniform flow
+    .WithLandMask(coastlineMask)
+    .OverGrid(grid)
+    .OverTime(0, 86400, 60)
+    .RunSingle();
+
+double peak = result.MaxConcentration;
+double area = result.AffectedAreaM2;
+var polygon = result.GenerateContaminationExtent(result.Snapshots.Count - 1, 0.01);
+```
+
+---
+
+### Volumetric (3D) Water Contamination
+
+Full 3D advection-diffusion for contaminant transport with depth variation. Models vertical stratification (Dv ≪ Dh), 3D current fields, and depth profiles.
+
+**Governing equation:**
+
+$$\frac{\partial c}{\partial t} = D_h\left(\frac{\partial^2 c}{\partial x^2} + \frac{\partial^2 c}{\partial y^2}\right) + D_v\frac{\partial^2 c}{\partial z^2} - \mathbf{v} \cdot \nabla c - \lambda c + S$$
+
+**Fluent API:**
+
+```csharp
+var grid = new GeoGrid(0, 1000, 0, 1000, 0, 50, 10); // 100×100×5 cells
+
+var result = RiskScenario
+    .ForVolumetricContamination()
+    .WithSource(50, 50, 3, 100.0, double.MaxValue)   // ix, iy, iz, mg/L, duration
+    .WithDiffusivity(1.0, 0.01)                        // Dh=1, Dv=0.01 (stratified)
+    .WithCurrent(0.1, 0, 0)                            // surface current
+    .WithLandMask(seabedMask)
+    .OverGrid(grid)
+    .OverTime(0, 86400, 60)
+    .RunSingle();
+
+// 3D analysis
+double peak = result.MaxConcentration;
+double[] peakField = result.PeakConcentration3D();     // per-cell peak over time
+double maxDepth = result.MaxAffectedDepth(0.01);       // deepest contaminated z
+
+// Depth profile at a point
+var profile = result.GetDepthProfile(50, 50);
+double peakDepth = profile.MaxConcentrationDepth;
+
+// Horizontal slices
+double[] surface = result.SurfaceSlice(result.Snapshots.Count - 1);
+double[] bottom  = result.BottomSlice(result.Snapshots.Count - 1);
+double[] atDepth = result.HorizontalSlice(result.Snapshots.Count - 1, iz: 2);
+
+// Surface contamination extent polygon
+var polygon = result.GenerateContaminationExtent(
+    result.Snapshots.Count - 1, 0.01);
+```
+
+**Export:**
+
+```csharp
+// GeoJSON — horizontal slice at depth layer
+string json = GeoJsonExporter.VolumetricContaminationToGeoJson(result, iz: 3);
+// Includes: concentration, contaminationState, depth, isLand properties
+
+// GeoJSON — depth profile at a point
+string profile = GeoJsonExporter.DepthProfileToGeoJson(result, ix: 50, iy: 50);
+
+// CZML — full 3D time-animated (uses cell altitude for true volumetric vis)
+CesiumExporter.SaveVolumetricContaminationCzml(result, timeFrame, "vol.czml");
+
+// Unity binary
+UnityBinaryExporter.SaveVolumetric(result, timeFrame, "vol3d.bin");
+
+// CSV depth profile
+DepthProfileCsvExporter.Save(result, 50, 50, "depth_profile.csv");
+```
+
+**SpreadSnapshot layers (same as 2D):**
+
+| Layer | Description |
+|-------|-------------|
+| `concentration` | Dissolved concentration (mg/L) |
+| `contaminationState` | 0 = Clean, 1 = Contaminated, 2 = Source, 3 = Land |
+| `velocity` | Current speed magnitude (m/s) |
+| `exposureTime` | Seconds above toxicity threshold |
+
+---
+
 ### Architecture
 
 ```
@@ -869,6 +967,19 @@ Engines/GIS/
 │       ├── WaterContaminationVariation.cs      — discharge/conc/Manning ranges
 │       └── Enums/
 │           └── CellContaminationState.cs       — Clean, Contaminated, Decayed, Source
+│   ├── WaterContamination2D/
+│   │   ├── WaterContamination2DSimulator.cs    — 2-D advection-diffusion on grid
+│   │   ├── WaterContamination2DParameters.cs   — anisotropic diffusion, velocity field
+│   │   ├── WaterContamination2DScenarioBuilder.cs — fluent builder
+│   │   └── WaterContamination2DResult.cs       — deterministic result
+│   └── VolumetricContamination/
+│       ├── VolumetricContaminationSimulator.cs  — 3-D advection-diffusion (Nx×Ny×Nz)
+│       ├── VolumetricContaminationParameters.cs — Dh/Dv, 3D velocity, land mask, decay
+│       ├── VolumetricContaminationScenarioBuilder.cs — fluent builder
+│       ├── VolumetricContaminationResult.cs    — depth profiles, slices, 3D peak
+│       ├── DepthProfile.cs                     — concentration-vs-depth at (ix,iy)
+│       └── Enums/
+│           └── ContaminationCellState3D.cs     — Clean, Contaminated, Source, Land
 ├── Scenario/
 │   ├── TimeFrame.cs            — time range value-object
 │   ├── RiskScenario.cs         — fluent entry point (+ ForWildfire())

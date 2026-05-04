@@ -1497,4 +1497,482 @@ public class MultiphysicsTests
             if (File.Exists(path)) File.Delete(path);
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Fluent API — HeatBlock3D
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void HeatBlock3D_FluentAPI_ProducesResult()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 10, ny: 10, nz: 10)
+            .WithBoundary3D(top: 100.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.0001, steps: 20);
+
+        Assert.AreEqual(MultiphysicsType.HeatBlock3D, result.Type);
+        Assert.IsNotNull(result.Field3D);
+        Assert.IsNotNull(result.Timeline3D);
+        Assert.AreEqual(21, result.Timeline3D.Count); // initial + 20 steps
+        Assert.AreEqual(100.0, result.MaxValue, 0.1);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_BoundaryConditions_AreApplied()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Steel)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 200.0, bottom: 50.0, left: 50.0, right: 50.0, front: 50.0, back: 50.0)
+            .WithInitialCondition(50.0)
+            .Solve(dt: 0.001, steps: 5);
+
+        // Top face interior point should be 200
+        double topMid = result.Field3D[4, 7, 4]; // ix=4, iy=7 (top row), iz=4
+        Assert.AreEqual(200.0, topMid, 0.01);
+
+        // Bottom face interior point should be 50
+        double botMid = result.Field3D[4, 0, 4];
+        Assert.AreEqual(50.0, botMid, 0.01);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_WithSource_IncreasesTemperature()
+    {
+        var noSource = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 10, ny: 10, nz: 10)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.0001, steps: 20);
+
+        var withSource = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 10, ny: 10, nz: 10)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(0.0)
+            .AddSource3D(5, 5, 5, 1e6)
+            .Solve(dt: 0.0001, steps: 20);
+
+        Assert.IsTrue(withSource.MaxValue > noSource.MaxValue,
+            "Source should increase temperature");
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_UniformIC_BoundaryDriven_Decays()
+    {
+        // Start at 100, cool to 0 on all faces — interior should decrease
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 10, ny: 10, nz: 10)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.0001, steps: 50);
+
+        // Centre should have cooled from 100 towards 0
+        double centre = result.Field3D[5, 5, 5];
+        Assert.IsTrue(centre < 100.0, $"Centre should cool, got {centre}");
+        Assert.IsTrue(centre > 0.0, $"Centre should still be above 0, got {centre}");
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_InitialCondition3D_IsApplied()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition3D((x, y, z) => 50.0)
+            .Solve(dt: 0.0001, steps: 1);
+
+        // First timeline entry (initial) should have 50 at interior
+        double[,,] initial = result.Timeline3D[0];
+        double interior = initial[4, 4, 4];
+        Assert.AreEqual(50.0, interior, 1.0);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_SliceXY_MatchesField()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 100.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(50.0)
+            .Solve(dt: 0.0001, steps: 10);
+
+        int iz = 4;
+        var slice = result.SliceXY(iz);
+        Assert.AreEqual(8, slice.GetLength(0));
+        Assert.AreEqual(8, slice.GetLength(1));
+
+        for (int iy = 0; iy < 8; iy++)
+            for (int ix = 0; ix < 8; ix++)
+                Assert.AreEqual(result.Field3D[ix, iy, iz], slice[ix, iy], 1e-12);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_SliceXZ_MatchesField()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 100.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(20.0)
+            .Solve(dt: 0.0001, steps: 5);
+
+        int iy = 3;
+        var slice = result.SliceXZ(iy);
+        Assert.AreEqual(8, slice.GetLength(0));
+        Assert.AreEqual(8, slice.GetLength(1));
+
+        for (int iz = 0; iz < 8; iz++)
+            for (int ix = 0; ix < 8; ix++)
+                Assert.AreEqual(result.Field3D[ix, iy, iz], slice[ix, iz], 1e-12);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_SliceYZ_MatchesField()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 100.0, back: 0.0)
+            .WithInitialCondition(20.0)
+            .Solve(dt: 0.0001, steps: 5);
+
+        int ix = 3;
+        var slice = result.SliceYZ(ix);
+        Assert.AreEqual(8, slice.GetLength(0));
+        Assert.AreEqual(8, slice.GetLength(1));
+
+        for (int iz = 0; iz < 8; iz++)
+            for (int iy = 0; iy < 8; iy++)
+                Assert.AreEqual(result.Field3D[ix, iy, iz], slice[iy, iz], 1e-12);
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_Timeline_GrowsWithSteps()
+    {
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 6, ny: 6, nz: 6)
+            .WithBoundary3D(top: 100.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.0001, steps: 30);
+
+        Assert.AreEqual(31, result.Timeline3D.Count);
+        Assert.AreEqual(6, result.Timeline3D[0].GetLength(0));
+        Assert.AreEqual(6, result.Timeline3D[0].GetLength(1));
+        Assert.AreEqual(6, result.Timeline3D[0].GetLength(2));
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void HeatBlock3D_WithoutNz_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry(width: 0.1, height: 0.1, nx: 10, ny: 10) // 2D geometry — missing Nz
+            .WithBoundary3D(top: 0.0, bottom: 0.0, left: 0.0, right: 0.0, front: 0.0, back: 0.0)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.0001, steps: 5);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Fluent API — FluidDiffusion3D
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void FluidDiffusion3D_PureDiffusion_SphericalSpread()
+    {
+        // Zero velocity, point source IC at centre → should spread radially
+        int n = 12;
+        var result = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithInitialCondition3D((x, y, z) =>
+            {
+                double cx = 0.5, cy = 0.5, cz = 0.5;
+                double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
+                return r2 < 0.04 ? 100.0 : 0.0;
+            })
+            .Solve(dt: 0.001, steps: 50);
+
+        Assert.AreEqual(MultiphysicsType.FluidDiffusion3D, result.Type);
+        Assert.IsNotNull(result.Field3D);
+
+        // Centre should have decreased from initial
+        double centre = result.Field3D[n / 2, n / 2, n / 2];
+        Assert.IsTrue(centre < 100.0, $"Centre should diffuse away, got {centre}");
+        Assert.IsTrue(centre > 0.0, $"Centre should still be positive, got {centre}");
+    }
+
+    [TestMethod]
+    public void FluidDiffusion3D_UniformAdvection_ShiftsPlume()
+    {
+        // Uniform velocity in +x should shift mass centroid downstream
+        // compared to pure diffusion (zero velocity).
+        int n = 12;
+        double vxVal = 1.0;
+
+        Func<double, double, double, double> blob = (x, y, z) =>
+        {
+            double r2 = (x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5) + (z - 0.5) * (z - 0.5);
+            return r2 < 0.04 ? 50.0 : 0.0;
+        };
+
+        var noDrift = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithInitialCondition3D(blob)
+            .Solve(dt: 0.005, steps: 40);
+
+        var withDrift = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithVelocityField3D((x, y, z) => (vxVal, 0, 0))
+            .WithInitialCondition3D(blob)
+            .Solve(dt: 0.005, steps: 40);
+
+        // Compute x-centroid for both: ΣcᵢXᵢ / Σcᵢ
+        double centroidNoDrift = XCentroid(noDrift.Field3D, n, 1.0 / n);
+        double centroidDrift = XCentroid(withDrift.Field3D, n, 1.0 / n);
+
+        Assert.IsTrue(centroidDrift > centroidNoDrift,
+            $"Advected centroid ({centroidDrift:F3}) should be downstream of pure diffusion ({centroidNoDrift:F3})");
+    }
+
+    private static double XCentroid(double[,,] field, int n, double dx)
+    {
+        double sumCX = 0, sumC = 0;
+        for (int iz = 0; iz < n; iz++)
+            for (int iy = 0; iy < n; iy++)
+                for (int ix = 0; ix < n; ix++)
+                {
+                    double c = field[ix, iy, iz];
+                    double x = ix * dx;
+                    sumCX += c * x;
+                    sumC += c;
+                }
+        return sumC > 0 ? sumCX / sumC : 0;
+    }
+
+    [TestMethod]
+    public void FluidDiffusion3D_WithSource_IncreasesConcentration()
+    {
+        int n = 10;
+        var noSource = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.5, height: 0.5, depth: 0.5, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.001, steps: 20);
+
+        var withSource = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.5, height: 0.5, depth: 0.5, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithInitialCondition(0.0)
+            .AddSource3D(5, 5, 5, 100.0)
+            .Solve(dt: 0.001, steps: 20);
+
+        Assert.IsTrue(withSource.MaxValue > noSource.MaxValue,
+            "Source should increase concentration");
+    }
+
+    [TestMethod]
+    public void FluidDiffusion3D_CFL_Warning()
+    {
+        // Very large velocity should trigger CFL flag
+        int n = 8;
+        var result = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithVelocityField3D((x, y, z) => (100.0, 0, 0)) // very fast
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.1, steps: 1); // large dt
+
+        Assert.IsTrue(result.CflClamped, "CFL flag should be set for large velocity");
+    }
+
+    [TestMethod]
+    public void FluidDiffusion3D_Timeline_GrowsWithSteps()
+    {
+        int n = 6;
+        var result = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.5, height: 0.5, depth: 0.5, nx: n, ny: n, nz: n)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithDiffusionCoefficient(0.01)
+            .WithInitialCondition(10.0)
+            .Solve(dt: 0.001, steps: 15);
+
+        Assert.AreEqual(16, result.Timeline3D.Count); // initial + 15
+        Assert.AreEqual(n, result.Timeline3D[0].GetLength(0));
+        Assert.AreEqual(n, result.Timeline3D[0].GetLength(1));
+        Assert.AreEqual(n, result.Timeline3D[0].GetLength(2));
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void FluidDiffusion3D_WithoutDiffusionCoeff_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 1.0, height: 1.0, depth: 1.0, nx: 8, ny: 8, nz: 8)
+            .WithBoundary3D(top: 0, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+            .WithInitialCondition(0.0)
+            .Solve(dt: 0.001, steps: 5);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Fluent API — CylinderFlow3D
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void CylinderFlow3D_FluentAPI_ProducesResult()
+    {
+        int nx = 30, ny = 15, nz = 6;
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.3, height: 0.15, depth: 0.06, nx: nx, ny: ny, nz: nz)
+            .WithCylinder(centerX: 0.08, centerY: 0.075, radius: 0.015)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 5);
+
+        Assert.AreEqual(MultiphysicsType.CylinderFlow3D, result.Type);
+        Assert.IsNotNull(result.Field3D);
+        Assert.IsNotNull(result.Vx3D);
+        Assert.IsNotNull(result.Vy3D);
+        Assert.IsNotNull(result.Vz3D);
+        Assert.IsNotNull(result.Pressure3D);
+        Assert.IsNotNull(result.CylinderMask3D);
+
+        Assert.AreEqual(nx, result.Vx3D.GetLength(0));
+        Assert.AreEqual(ny, result.Vx3D.GetLength(1));
+        Assert.AreEqual(nz, result.Vx3D.GetLength(2));
+    }
+
+    [TestMethod]
+    public void CylinderFlow3D_NoSlip_VelocityZeroInsideCylinder()
+    {
+        int nx = 30, ny = 15, nz = 4;
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.3, height: 0.15, depth: 0.04, nx: nx, ny: ny, nz: nz)
+            .WithCylinder(centerX: 0.08, centerY: 0.075, radius: 0.015)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 10);
+
+        // All cells inside cylinder should have zero velocity
+        for (int iz = 0; iz < nz; iz++)
+            for (int iy = 0; iy < ny; iy++)
+                for (int ix = 0; ix < nx; ix++)
+                {
+                    if (result.CylinderMask3D[ix, iy])
+                    {
+                        Assert.AreEqual(0.0, result.Vx3D[ix, iy, iz], 1e-12,
+                            $"Vx inside cylinder at ({ix},{iy},{iz})");
+                        Assert.AreEqual(0.0, result.Vy3D[ix, iy, iz], 1e-12,
+                            $"Vy inside cylinder at ({ix},{iy},{iz})");
+                        Assert.AreEqual(0.0, result.Vz3D[ix, iy, iz], 1e-12,
+                            $"Vz inside cylinder at ({ix},{iy},{iz})");
+                    }
+                }
+    }
+
+    [TestMethod]
+    public void CylinderFlow3D_Drag_IsReasonable()
+    {
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.5, height: 0.2, depth: 0.04, nx: 40, ny: 16, nz: 4)
+            .WithCylinder(centerX: 0.12, centerY: 0.1, radius: 0.02)
+            .WithInletVelocity(0.02)
+            .Solve(dt: 0.0005, steps: 50);
+
+        // After some steps, drag coefficient should have non-trivial magnitude
+        double absCd = Math.Abs(result.DragCoefficient);
+        Assert.IsTrue(absCd > 1e-6,
+            $"Drag should have non-trivial magnitude, got {result.DragCoefficient:E3}");
+    }
+
+    [TestMethod]
+    public void CylinderFlow3D_AxialSymmetry_ZSlicesAreSimilar()
+    {
+        // With periodic z BCs and uniform initial conditions, all z-slices should be similar
+        int nx = 20, ny = 10, nz = 6;
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.2, height: 0.1, depth: 0.06, nx: nx, ny: ny, nz: nz)
+            .WithCylinder(centerX: 0.05, centerY: 0.05, radius: 0.01)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 10);
+
+        // Compare z-slices of vx: take interior z-slices (1 and nz-2)
+        double maxDiff = 0;
+        for (int iy = 1; iy < ny - 1; iy++)
+            for (int ix = 1; ix < nx - 1; ix++)
+            {
+                double diff = Math.Abs(result.Vx3D[ix, iy, 1] - result.Vx3D[ix, iy, nz - 2]);
+                if (diff > maxDiff) maxDiff = diff;
+            }
+
+        Assert.IsTrue(maxDiff < 0.01,
+            $"Z-slices should be similar (periodic z), max diff = {maxDiff:E3}");
+    }
+
+    [TestMethod]
+    public void CylinderFlow3D_VelocityMagnitude_PositiveEverywhere()
+    {
+        int nx = 20, ny = 10, nz = 4;
+        var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.2, height: 0.1, depth: 0.04, nx: nx, ny: ny, nz: nz)
+            .WithCylinder(centerX: 0.05, centerY: 0.05, radius: 0.01)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 5);
+
+        // Field3D is velocity magnitude, should be ≥ 0 everywhere
+        for (int iz = 0; iz < nz; iz++)
+            for (int iy = 0; iy < ny; iy++)
+                for (int ix = 0; ix < nx; ix++)
+                    Assert.IsTrue(result.Field3D[ix, iy, iz] >= 0,
+                        $"Velocity magnitude at ({ix},{iy},{iz}) should be ≥ 0");
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void CylinderFlow3D_WithoutCylinder_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.3, height: 0.15, depth: 0.06, nx: 20, ny: 10, nz: 4)
+            .WithInletVelocity(0.01)
+            .Solve(dt: 0.001, steps: 5);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void CylinderFlow3D_WithoutInletVelocity_Throws()
+    {
+        SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+            .WithMaterial(EngineeringLibrary.Water)
+            .WithGeometry3D(width: 0.3, height: 0.15, depth: 0.06, nx: 20, ny: 10, nz: 4)
+            .WithCylinder(centerX: 0.08, centerY: 0.075, radius: 0.015)
+            .Solve(dt: 0.001, steps: 5);
+    }
 }

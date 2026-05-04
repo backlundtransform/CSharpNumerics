@@ -30,6 +30,10 @@ public class SimulationBuilder
     internal int Nx { get; private set; }
     internal int Ny { get; private set; }
 
+    // ── 3D Geometry (HeatBlock3D) ────────────────────────────────
+    internal double GeomDepth { get; private set; }
+    internal int Nz { get; private set; }
+
     // ── 1D Geometry (PipeFlow / BeamStress) ──────────────────────
     internal double GeomLength { get; private set; }
     internal double GeomRadius { get; private set; }
@@ -49,11 +53,18 @@ public class SimulationBuilder
     internal double Thickness { get; private set; } = 1.0;
     internal PlaneType PlaneType { get; private set; } = PlaneType.PlaneStress;
 
+    // ── FluidDiffusion3D ─────────────────────────────────────────
+    internal double DiffusionCoefficient { get; private set; }
+    internal Func<double, double, double, (double, double, double)> VelocityField3D { get; private set; }
+    internal bool HasVelocityField3D { get; private set; }
+
     // ── Boundary conditions ──────────────────────────────────────
     internal double TopBC { get; private set; }
     internal double BottomBC { get; private set; }
     internal double LeftBC { get; private set; }
     internal double RightBC { get; private set; }
+    internal double FrontBC { get; private set; }
+    internal double BackBC { get; private set; }
     internal BeamSupport? Support { get; private set; }
     internal double PressureGradient { get; private set; }
 
@@ -61,9 +72,12 @@ public class SimulationBuilder
     internal double InitialValue { get; private set; }
     internal Func<double, double, double> InitialFunc { get; private set; }
     internal bool HasInitialFunc { get; private set; }
+    internal Func<double, double, double, double> InitialFunc3D { get; private set; }
+    internal bool HasInitialFunc3D { get; private set; }
 
     // ── Sources ──────────────────────────────────────────────────
     internal List<(int ix, int iy, double value)> Sources2D { get; } = new();
+    internal List<(int ix, int iy, int iz, double value)> Sources3D { get; } = new();
     internal List<(double position, double value)> Sources1D { get; } = new();
     internal double UniformLoad { get; private set; }
 
@@ -106,6 +120,26 @@ public class SimulationBuilder
         GeomHeight = height;
         Nx = nx;
         Ny = ny;
+        return this;
+    }
+
+    /// <summary>
+    /// Define a 3D rectangular domain (HeatBlock3D).
+    /// </summary>
+    /// <param name="width">Physical width (x) in metres.</param>
+    /// <param name="height">Physical height (y) in metres.</param>
+    /// <param name="depth">Physical depth (z) in metres.</param>
+    /// <param name="nx">Grid cells in x.</param>
+    /// <param name="ny">Grid cells in y.</param>
+    /// <param name="nz">Grid cells in z.</param>
+    public SimulationBuilder WithGeometry3D(double width, double height, double depth, int nx, int ny, int nz)
+    {
+        GeomWidth = width;
+        GeomHeight = height;
+        GeomDepth = depth;
+        Nx = nx;
+        Ny = ny;
+        Nz = nz;
         return this;
     }
 
@@ -196,6 +230,26 @@ public class SimulationBuilder
     }
 
     /// <summary>
+    /// Set a prescribed 3D velocity field for advection-diffusion (FluidDiffusion3D).
+    /// The function maps physical coordinates (x, y, z) to velocity (vx, vy, vz).
+    /// </summary>
+    public SimulationBuilder WithVelocityField3D(Func<double, double, double, (double, double, double)> field)
+    {
+        VelocityField3D = field ?? throw new ArgumentNullException(nameof(field));
+        HasVelocityField3D = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the scalar diffusion coefficient D (m²/s) for advection-diffusion (FluidDiffusion3D).
+    /// </summary>
+    public SimulationBuilder WithDiffusionCoefficient(double D)
+    {
+        DiffusionCoefficient = D;
+        return this;
+    }
+
+    /// <summary>
     /// Set the constitutive assumption for plane elasticity problems.
     /// </summary>
     public SimulationBuilder WithPlaneType(PlaneType planeType)
@@ -226,6 +280,21 @@ public class SimulationBuilder
         BottomBC = bottom;
         LeftBC = left;
         RightBC = right;
+        return this;
+    }
+
+    /// <summary>
+    /// Set Dirichlet boundary values on all six faces of a 3D domain.
+    /// </summary>
+    public SimulationBuilder WithBoundary3D(
+        double top, double bottom, double left, double right, double front, double back)
+    {
+        TopBC = top;
+        BottomBC = bottom;
+        LeftBC = left;
+        RightBC = right;
+        FrontBC = front;
+        BackBC = back;
         return this;
     }
 
@@ -268,6 +337,14 @@ public class SimulationBuilder
         return this;
     }
 
+    /// <summary>Set a spatially varying 3D initial condition via a function (x, y, z) → value.</summary>
+    public SimulationBuilder WithInitialCondition3D(Func<double, double, double, double> func)
+    {
+        InitialFunc3D = func ?? throw new ArgumentNullException(nameof(func));
+        HasInitialFunc3D = true;
+        return this;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  Sources
     // ═══════════════════════════════════════════════════════════════
@@ -279,6 +356,16 @@ public class SimulationBuilder
     public SimulationBuilder AddSource(int ix, int iy, double value)
     {
         Sources2D.Add((ix, iy, value));
+        return this;
+    }
+
+    /// <summary>
+    /// Add a 3D point source at grid indices (ix, iy, iz).
+    /// For HeatBlock3D: volumetric power in W/m³.
+    /// </summary>
+    public SimulationBuilder AddSource3D(int ix, int iy, int iz, double value)
+    {
+        Sources3D.Add((ix, iy, iz, value));
         return this;
     }
 
@@ -333,6 +420,9 @@ public class SimulationBuilder
             MultiphysicsType.FluidFlow2D => new FluidFlow2DSolver(),
             MultiphysicsType.MagneticField => new MagneticFieldSolver(),
             MultiphysicsType.PlaneStress => new PlaneStressSolver(),
+            MultiphysicsType.HeatBlock3D => new HeatBlock3DSolver(new HeatTransferModel()),
+            MultiphysicsType.FluidDiffusion3D => new FluidDiffusion3DSolver(),
+            MultiphysicsType.CylinderFlow3D => new CylinderFlow3DSolver(),
             _ => throw new NotSupportedException($"Unknown simulation type: {Type}")
         };
 
@@ -377,6 +467,12 @@ public class SimulationBuilder
                 if (Nx <= 0 || Ny <= 0)
                     throw new InvalidOperationException("2D geometry not set. Call WithGeometry(width, height, nx, ny).");
                 break;
+            case MultiphysicsType.HeatBlock3D:
+            case MultiphysicsType.FluidDiffusion3D:
+            case MultiphysicsType.CylinderFlow3D:
+                if (Nx <= 0 || Ny <= 0 || Nz <= 0)
+                    throw new InvalidOperationException("3D geometry not set. Call WithGeometry3D(width, height, depth, nx, ny, nz).");
+                break;
             case MultiphysicsType.PipeFlow:
             case MultiphysicsType.BeamStress:
                 if (Nodes <= 0)
@@ -391,6 +487,17 @@ public class SimulationBuilder
             if (InletVelocity <= 0)
                 throw new InvalidOperationException("Inlet velocity not set. Call WithInletVelocity(u).");
         }
+
+        if (Type == MultiphysicsType.CylinderFlow3D)
+        {
+            if (CylinderRadius <= 0)
+                throw new InvalidOperationException("Cylinder not set. Call WithCylinder(centerX, centerY, radius).");
+            if (InletVelocity <= 0)
+                throw new InvalidOperationException("Inlet velocity not set. Call WithInletVelocity(u).");
+        }
+
+        if (Type == MultiphysicsType.FluidDiffusion3D && DiffusionCoefficient <= 0)
+            throw new InvalidOperationException("Diffusion coefficient not set. Call WithDiffusionCoefficient(D).");
 
         if (Type == MultiphysicsType.BeamStress)
         {

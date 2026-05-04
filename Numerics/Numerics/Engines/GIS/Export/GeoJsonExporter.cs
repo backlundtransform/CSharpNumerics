@@ -2,6 +2,7 @@ using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.VolumetricContamination;
 using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire.Enums;
@@ -708,6 +709,131 @@ namespace CSharpNumerics.Engines.GIS.Export
             string path,
             ExportMetadata metadata = null)
             => File.WriteAllText(path, ExceedanceProbabilityToGeoJson(mcResult, metadata), Encoding.UTF8);
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Volumetric Contamination (3D) GeoJSON
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Exports a horizontal slice (at depth layer <paramref name="iz"/>) of a
+        /// volumetric contamination result to GeoJSON point features.
+        /// Each cell includes concentration, contamination state, depth, and
+        /// isLand properties.
+        /// </summary>
+        public static string VolumetricContaminationToGeoJson(
+            VolumetricContaminationResult result,
+            int iz,
+            int timeIndex = -1,
+            ExportMetadata metadata = null)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            var grid = result.Grid;
+            if (iz < 0 || iz >= grid.Nz) throw new ArgumentOutOfRangeException(nameof(iz));
+
+            int ti = timeIndex < 0 ? result.Snapshots.Count - 1 : timeIndex;
+            if (ti < 0 || ti >= result.Snapshots.Count)
+                throw new ArgumentOutOfRangeException(nameof(timeIndex));
+
+            var snap = result.Snapshots[ti];
+            var conc = snap.Snapshot.GetLayer("concentration");
+            var state = snap.Snapshot.GetLayer("contaminationState");
+            var proj = grid.Projection;
+            double depth = grid.ZMin + iz * grid.Step;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, snap.Time, proj);
+            sb.Append("\"features\":[");
+
+            bool first = true;
+            for (int iy = 0; iy < grid.Ny; iy++)
+            {
+                for (int ix = 0; ix < grid.Nx; ix++)
+                {
+                    int idx = grid.Index(ix, iy, iz);
+                    var pos = grid.CellCentre(ix, iy, iz);
+
+                    if (!first) sb.Append(',');
+                    first = false;
+
+                    sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                    AppendCoord(sb, pos, proj);
+                    sb.Append("]},\"properties\":{");
+                    AppendProp(sb, "concentration", conc[idx], true);
+                    AppendPropInt(sb, "contaminationState", (int)state[idx], false);
+                    AppendProp(sb, "depth", depth, false);
+                    AppendPropBool(sb, "isLand", (int)state[idx] == 3, false);
+                    AppendProp(sb, "timeStep", snap.Time, false);
+                    sb.Append("}}");
+                }
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Exports a depth profile at horizontal position (ix, iy) as GeoJSON
+        /// point features — one per depth layer with concentration and depth.
+        /// </summary>
+        public static string DepthProfileToGeoJson(
+            VolumetricContaminationResult result,
+            int ix, int iy,
+            int timeIndex = -1,
+            ExportMetadata metadata = null)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            var grid = result.Grid;
+            if (ix < 0 || ix >= grid.Nx) throw new ArgumentOutOfRangeException(nameof(ix));
+            if (iy < 0 || iy >= grid.Ny) throw new ArgumentOutOfRangeException(nameof(iy));
+
+            int ti = timeIndex < 0 ? result.Snapshots.Count - 1 : timeIndex;
+            var profile = result.GetDepthProfile(ix, iy, ti);
+            var proj = grid.Projection;
+
+            var sb = new StringBuilder();
+            sb.Append('{');
+            sb.Append("\"type\":\"FeatureCollection\",");
+            AppendMetadata(sb, metadata, result.Snapshots[ti].Time, proj);
+            sb.Append("\"features\":[");
+
+            for (int iz = 0; iz < profile.Depths.Length; iz++)
+            {
+                if (iz > 0) sb.Append(',');
+                var pos = grid.CellCentre(ix, iy, iz);
+
+                sb.Append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[");
+                AppendCoord(sb, pos, proj);
+                sb.Append("]},\"properties\":{");
+                AppendProp(sb, "depth", profile.Depths[iz], true);
+                AppendProp(sb, "concentration", profile.Concentrations[iz], false);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return sb.ToString();
+        }
+
+        /// <summary>Save a volumetric contamination horizontal slice to GeoJSON file.</summary>
+        public static void SaveVolumetricContamination(
+            VolumetricContaminationResult result,
+            int iz,
+            string path,
+            int timeIndex = -1,
+            ExportMetadata metadata = null)
+            => File.WriteAllText(path,
+                VolumetricContaminationToGeoJson(result, iz, timeIndex, metadata), Encoding.UTF8);
+
+        /// <summary>Save a depth profile to GeoJSON file.</summary>
+        public static void SaveDepthProfile(
+            VolumetricContaminationResult result,
+            int ix, int iy,
+            string path,
+            int timeIndex = -1,
+            ExportMetadata metadata = null)
+            => File.WriteAllText(path,
+                DepthProfileToGeoJson(result, ix, iy, timeIndex, metadata), Encoding.UTF8);
 
         // ═══════════════════════════════════════════════════════════════
         //  File writers

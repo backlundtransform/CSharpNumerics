@@ -27,5 +27,14 @@ public enum MultiphysicsType
     MagneticField,
 
     /// <summary>2D plane-stress elasticity: displacement and stress tensor fields.</summary>
-    PlaneStress
+    PlaneStress,
+
+    /// <summary>3D heat conduction: ∂T/∂t = α∇²T + source (volumetric).</summary>
+    HeatBlock3D,
+
+    /// <summary>3D advection-diffusion: ∂c/∂t = D∇²c − v·∇c + source.</summary>
+    FluidDiffusion3D,
+
+    /// <summary>3D incompressible Navier–Stokes around a cylinder (Chorin projection, periodic z).</summary>
+    CylinderFlow3D
 }

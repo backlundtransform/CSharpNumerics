@@ -1,4 +1,6 @@
+using CSharpNumerics.Engines.GIS.Spread.VolumetricContamination;
 using CSharpNumerics.Engines.GIS.Spread.WaterContamination;
+using CSharpNumerics.Engines.GIS.Spread.WaterContamination2D;
 using CSharpNumerics.Engines.GIS.Spread.Wildfire;
 using CSharpNumerics.Numerics.Objects;
 
@@ -42,5 +44,19 @@ namespace CSharpNumerics.Engines.GIS.Scenario
         /// </summary>
         public static WaterContaminationScenarioBuilder ForWaterContamination()
             => new WaterContaminationScenarioBuilder();
+
+        /// <summary>
+        /// Begin building a 2D water contamination spread risk scenario
+        /// for open water bodies (lakes, estuaries, coastal areas).
+        /// </summary>
+        public static WaterContamination2DScenarioBuilder ForWaterContamination2D()
+            => new WaterContamination2DScenarioBuilder();
+
+        /// <summary>
+        /// Begin building a 3D volumetric water contamination spread scenario
+        /// for lakes, oceans, and estuaries with depth variation.
+        /// </summary>
+        public static VolumetricContaminationScenarioBuilder ForVolumetricContamination()
+            => new VolumetricContaminationScenarioBuilder();
     }
 }

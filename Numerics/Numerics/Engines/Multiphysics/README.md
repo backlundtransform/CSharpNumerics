@@ -317,6 +317,56 @@ double[] x = result.Positions;             // node positions
 
 ---
 
+### HeatBlock3D — 3D Transient Heat Equation
+
+Forward Euler diffusion in a solid block with six-face Dirichlet boundary conditions:
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+    .WithMaterial(EngineeringLibrary.Steel)
+    .WithGeometry3D(width: 1.0, height: 1.0, depth: 0.5, nx: 20, ny: 20, nz: 10)
+    .WithBoundary3D(top: 100, bottom: 0, left: 0, right: 0, front: 0, back: 0)
+    .Solve(dt: 0.0001, steps: 5000);
+
+double[,,] T = result.Field3D;           // temperature at final step
+double[,] sliceXY = result.SliceXY(5);   // horizontal cross-section at iz=5
+```
+
+### FluidDiffusion3D — 3D Advection-Diffusion
+
+Scalar transport in a prescribed 3D velocity field:
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.FluidDiffusion3D)
+    .WithGeometry3D(1.0, 1.0, 1.0, 20, 20, 20)
+    .WithDiffusionCoefficient(0.01)
+    .WithVelocityField3D((x, y, z) => (0.1, 0, 0))
+    .AddSource3D(10, 10, 10, 100.0)
+    .WithBoundary3D(0, 0, 0, 0, 0, 0)
+    .Solve(dt: 0.001, steps: 2000);
+
+double[,,] c = result.Field3D;
+```
+
+### CylinderFlow3D — 3D Incompressible Navier-Stokes
+
+Extension of `CylinderFlow` with axial (z) variation. Uses Chorin projection on `Grid3D`:
+
+```csharp
+var result = SimulationType.Create(MultiphysicsType.CylinderFlow3D)
+    .WithMaterial(EngineeringLibrary.Water)
+    .WithGeometry3D(2.0, 0.8, 0.4, 40, 16, 8)
+    .WithCylinder(0.4, 0.4, 0.05)
+    .WithInletVelocity(0.1)
+    .Solve(dt: 0.001, steps: 3000);
+
+double[,,] vx = result.Vx3D;
+double[,,] p  = result.Pressure3D;
+double cd     = result.DragCoefficient;
+```
+
+---
+
 ### Snapshots & Timeline
 
 Time-stamped field data for animation and export:

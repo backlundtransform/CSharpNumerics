@@ -2,6 +2,7 @@ using CSharpNumerics.Engines.GIS.Analysis;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Engines.GIS.Scenario;
 using CSharpNumerics.Engines.GIS.Spread;
+using CSharpNumerics.Engines.GIS.Spread.VolumetricContamination;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -284,6 +285,19 @@ namespace CSharpNumerics.Engines.GIS.Export
             }
 
             return new UnityBinaryData(header, concentration, velocity);
+        }
+
+        /// <summary>
+        /// Saves a 3D volumetric contamination result to binary format.
+        /// Delegates to <see cref="SaveContamination"/> using the result's snapshots and grid.
+        /// </summary>
+        public static void SaveVolumetric(
+            VolumetricContaminationResult result,
+            TimeFrame timeFrame,
+            string path)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            SaveContamination(result.Snapshots, result.Grid, timeFrame, path);
         }
 
         private static void WriteContaminationHeader(BinaryWriter bw, GeoGrid grid, TimeFrame timeFrame, int timeStepCount)

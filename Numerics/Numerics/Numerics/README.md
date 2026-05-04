@@ -964,6 +964,40 @@ var (solution, iterations) = GridOperators.SolvePoisson2D(
 double[,] phi = grid.ToArray(solution);
 ```
 
+### Grid3D — 3D Finite Difference
+
+Structured 3D grid with row-major indexing (ix fastest, then iy, then iz):
+
+```csharp
+var grid = new Grid3D(nx: 20, ny: 20, nz: 10, dx: 0.5, dy: 0.5, dz: 0.5);
+
+int flat = grid.Index(5, 10, 3);        // (ix, iy, iz) → flat index
+var (ix, iy, iz) = grid.Index3D(flat);   // flat → (ix, iy, iz)
+
+// Initialize from function
+VectorN u = grid.Initialize((x, y, z) => x * x + y * y + z * z);
+
+// Pack / unpack between flat VectorN and 3D array
+double[,,] arr = grid.ToArray(u);
+VectorN v = grid.ToVector(arr);
+```
+
+### 3D Discrete Operators
+
+| Operator | Method | Description |
+|----------|--------|-------------|
+| Laplacian | `GridOperators3D.Laplacian3D(u, grid, bc)` | 7-point stencil |
+| Gradient | `GridOperators3D.Gradient3D(u, grid, bc)` | Central differences |
+| Divergence | `GridOperators3D.Divergence3D(fx, fy, fz, grid, bc)` | Divergence of vector field |
+| Advection | `GridOperators3D.Advection3D(u, vx, vy, vz, grid, bc)` | First-order upwind |
+| Poisson | `GridOperators3D.SolvePoisson3D(rhs, grid, mask, vals)` | Gauss-Seidel iterative |
+
+```csharp
+// Laplacian of a quadratic field (interior cells ≈ 6.0)
+var u = grid.Initialize((x, y, z) => x * x + y * y + z * z);
+var lap = GridOperators3D.Laplacian3D(u, grid, BoundaryCondition.Dirichlet);
+```
+
 ---
 
 ## �📏 Linear Systems
