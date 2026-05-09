@@ -19,4 +19,12 @@ public class HeatTransferModel : IHeatTransferModel
         double rhoCp = density * specificHeat;
         return rhoCp > 0 ? power / rhoCp : 0;
     }
+
+    public double ConvectiveBoundaryRate(double h, double density, double specificHeat,
+        double dx, double cellTemperature, double ambientTemperature)
+    {
+        double rhoCp = density * specificHeat;
+        if (rhoCp <= 0 || dx <= 0) return 0;
+        return -h / (rhoCp * dx) * (cellTemperature - ambientTemperature);
+    }
 }

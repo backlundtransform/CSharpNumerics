@@ -2025,6 +2025,7 @@ The `IHeatTransferModel` interface provides an abstraction for thermal physics u
 |--------|-------------|
 | `ThermalDiffusivity(k, ρ, cₚ)` | Computes $\alpha = k / (\rho c_p)$ |
 | `HeatSourceRate(Q, ρ, cₚ)` | Converts volumetric power to temperature rate $Q / (\rho c_p)$ |
+| `ConvectiveBoundaryRate(h, ρ, cₚ, dx, T, T∞)` | Robin BC correction: $-h / (\rho c_p \cdot dx) \cdot (T - T_\infty)$ |
 
 ```csharp
 using CSharpNumerics.Physics.Thermodynamics;
@@ -2037,6 +2038,12 @@ double alpha = heat.ThermalDiffusivity(conductivity: 50, density: 7800, specific
 
 double rate = heat.HeatSourceRate(power: 1e6, density: 7800, specificHeat: 500);
 // temperature rate from 1 MW/m³ source
+
+// Robin / convection boundary correction (used by HeatPlate / HeatBlock3D solvers)
+double correction = heat.ConvectiveBoundaryRate(
+    h: 50, density: 2700, specificHeat: 900, dx: 0.01,
+    cellTemperature: 100, ambientTemperature: 20);
+// < 0 — boundary cools towards ambient
 ```
 
 ---

@@ -1975,4 +1975,174 @@ public class MultiphysicsTests
             .WithCylinder(centerX: 0.08, centerY: 0.075, radius: 0.015)
             .Solve(dt: 0.001, steps: 5);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Convection (Robin) Boundary Conditions
+    // ═══════════════════════════════════════════════════════════════
+
+    [TestMethod]
+    public void HeatPlate_ConvectionBC_CoolsToAmbient()
+    {
+        // Hot plate (100 K) cooling to ambient (20 K) via convection on all faces.
+        // Use a small domain so diffusion reaches the centre quickly.
+        double ambient = 20.0;
+        double h = 50.0; // W/(m²·K)
+
+        var result = SimulationType.Create(MultiphysicsType.HeatPlate)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry(width: 0.02, height: 0.02, nx: 10, ny: 10)
+            .WithConvectionBoundary(h, ambient)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.00001, steps: 2000);
+
+        Assert.IsNotNull(result.Field);
+
+        // Interior temperature should have dropped from 100 towards ambient
+        double centerT = result.Field[5, 5];
+        Assert.IsTrue(centerT < 100.0, $"Centre ({centerT:F2}) should cool from 100 K");
+        Assert.IsTrue(centerT > ambient, $"Centre ({centerT:F2}) should still be above ambient");
+    }
+
+    [TestMethod]
+    public void HeatPlate_ConvectionBC_ConvergesLowerThanDirichlet()
+    {
+        // Convection BC with T∞=0 should cool slower than Dirichlet T=0
+        // because convection provides finite resistance while Dirichlet instantly clamps.
+        double h = 10.0;
+
+        var dirichlet = SimulationType.Create(MultiphysicsType.HeatPlate)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry(width: 0.05, height: 0.05, nx: 10, ny: 10)
+            .WithBoundary(top: 0, bottom: 0, left: 0, right: 0)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.00005, steps: 200);
+
+        var convection = SimulationType.Create(MultiphysicsType.HeatPlate)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry(width: 0.05, height: 0.05, nx: 10, ny: 10)
+            .WithConvectionBoundary(h, 0.0)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.00005, steps: 200);
+
+        double dirichletCenter = dirichlet.Field[5, 5];
+        double convectionCenter = convection.Field[5, 5];
+
+        // Convection should retain more heat (cool slower)
+        Assert.IsTrue(convectionCenter > dirichletCenter,
+            $"Convection centre ({convectionCenter:F2}) should be warmer than Dirichlet ({dirichletCenter:F2})");
+    }
+
+    [TestMethod]
+    public void HeatPlate_MixedBC_DirichletAndConvection()
+    {
+        // Top = Dirichlet 200 K, other faces = convection to 20 K.
+        // Use small domain + aluminum (high α) so heat reaches centre quickly.
+        double ambient = 20.0;
+        double h = 25.0;
+
+        var result = SimulationType.Create(MultiphysicsType.HeatPlate)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry(width: 0.02, height: 0.02, nx: 10, ny: 10)
+            .WithConvectionBoundary(h, ambient)
+            .WithFaceBoundary("top", FaceBoundaryCondition.Dirichlet(200.0))
+            .WithInitialCondition(ambient)
+            .Solve(dt: 0.000005, steps: 3000);
+
+        // Top row should be fixed at 200
+        double topMid = result.Field[5, 9];
+        Assert.AreEqual(200.0, topMid, 0.01);
+
+        // Interior should have heated above ambient due to top heating
+        double center = result.Field[5, 5];
+        Assert.IsTrue(center > ambient, $"Centre ({center:F2}) should heat up from top BC");
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_ConvectionBC_CoolsToAmbient()
+    {
+        // Hot block cooling convectively on all six faces
+        double ambient = 25.0;
+        double h = 40.0;
+
+        var result = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Aluminum)
+            .WithGeometry3D(width: 0.1, height: 0.1, depth: 0.1, nx: 8, ny: 8, nz: 8)
+            .WithConvectionBoundary3D(h, ambient)
+            .WithInitialCondition(200.0)
+            .Solve(dt: 0.00005, steps: 300);
+
+        Assert.IsNotNull(result.Field3D);
+
+        double centerT = result.Field3D[4, 4, 4];
+        Assert.IsTrue(centerT < 200.0, "Centre should cool from 200 K");
+        Assert.IsTrue(centerT > ambient, "Centre should still be above ambient");
+    }
+
+    [TestMethod]
+    public void HeatBlock3D_ConvectionBC_SlowerThanDirichlet()
+    {
+        double h = 10.0;
+        int n = 6;
+
+        var dirichlet = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry3D(width: 0.05, height: 0.05, depth: 0.05, nx: n, ny: n, nz: n)
+            .WithBoundary3D(0, 0, 0, 0, 0, 0)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.00005, steps: 200);
+
+        var convection = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+            .WithMaterial(EngineeringLibrary.Copper)
+            .WithGeometry3D(width: 0.05, height: 0.05, depth: 0.05, nx: n, ny: n, nz: n)
+            .WithConvectionBoundary3D(h, 0.0)
+            .WithInitialCondition(100.0)
+            .Solve(dt: 0.00005, steps: 200);
+
+        double dirichletCenter = dirichlet.Field3D[n / 2, n / 2, n / 2];
+        double convectionCenter = convection.Field3D[n / 2, n / 2, n / 2];
+
+        Assert.IsTrue(convectionCenter > dirichletCenter,
+            $"Convection centre ({convectionCenter:F2}) should be warmer than Dirichlet ({dirichletCenter:F2})");
+    }
+
+    [TestMethod]
+    public void ConvectiveBoundaryRate_CorrectSign()
+    {
+        // When T_cell > T_ambient, the rate should be negative (cooling)
+        var model = new CSharpNumerics.Physics.Thermodynamics.HeatTransferModel();
+        double rate = model.ConvectiveBoundaryRate(
+            h: 50, density: 2700, specificHeat: 900, dx: 0.01,
+            cellTemperature: 100, ambientTemperature: 20);
+
+        Assert.IsTrue(rate < 0, "Rate should be negative when cell is hotter than ambient");
+    }
+
+    [TestMethod]
+    public void ConvectiveBoundaryRate_ZeroWhenEqual()
+    {
+        var model = new CSharpNumerics.Physics.Thermodynamics.HeatTransferModel();
+        double rate = model.ConvectiveBoundaryRate(
+            h: 50, density: 2700, specificHeat: 900, dx: 0.01,
+            cellTemperature: 20, ambientTemperature: 20);
+
+        Assert.AreEqual(0.0, rate, 1e-15);
+    }
+
+    [TestMethod]
+    public void FaceBoundaryCondition_DirichletFactory()
+    {
+        var bc = FaceBoundaryCondition.Dirichlet(300.0);
+        Assert.AreEqual(FaceBCType.Dirichlet, bc.Type);
+        Assert.AreEqual(300.0, bc.Temperature, 1e-10);
+        Assert.AreEqual(0.0, bc.HeatTransferCoefficient, 1e-10);
+    }
+
+    [TestMethod]
+    public void FaceBoundaryCondition_ConvectionFactory()
+    {
+        var bc = FaceBoundaryCondition.Convection(heatTransferCoefficient: 25, ambientTemperature: 20);
+        Assert.AreEqual(FaceBCType.Convection, bc.Type);
+        Assert.AreEqual(20.0, bc.Temperature, 1e-10);
+        Assert.AreEqual(25.0, bc.HeatTransferCoefficient, 1e-10);
+    }
 }

@@ -332,6 +332,54 @@ double[,,] T = result.Field3D;           // temperature at final step
 double[,] sliceXY = result.SliceXY(5);   // horizontal cross-section at iz=5
 ```
 
+### Convection (Robin) Boundary Conditions
+
+Both `HeatPlate` and `HeatBlock3D` support **convective boundary conditions** (Newton's law of cooling) in addition to fixed-temperature Dirichlet BCs. The Robin condition $-k\,\partial T/\partial n = h(T - T_\infty)$ models realistic cooling to ambient — no hard-clamped wall temperature required.
+
+#### All faces convective
+
+```csharp
+// 2D plate cooling from 100 K to ambient 20 K
+var result = SimulationType.Create(MultiphysicsType.HeatPlate)
+    .WithMaterial(EngineeringLibrary.Aluminum)
+    .WithGeometry(width: 0.02, height: 0.02, nx: 20, ny: 20)
+    .WithConvectionBoundary(heatTransferCoefficient: 50, ambientTemperature: 20)
+    .WithInitialCondition(100.0)
+    .Solve(dt: 0.00001, steps: 5000);
+
+// 3D block — same idea, six faces
+var result3D = SimulationType.Create(MultiphysicsType.HeatBlock3D)
+    .WithMaterial(EngineeringLibrary.Copper)
+    .WithGeometry3D(0.05, 0.05, 0.05, 10, 10, 10)
+    .WithConvectionBoundary3D(heatTransferCoefficient: 40, ambientTemperature: 25)
+    .WithInitialCondition(200.0)
+    .Solve(dt: 0.00005, steps: 2000);
+```
+
+#### Mixed Dirichlet + Convection
+
+Override individual faces after setting the default:
+
+```csharp
+// Top face fixed at 200 K (heated surface), other faces convect to ambient
+var result = SimulationType.Create(MultiphysicsType.HeatPlate)
+    .WithMaterial(EngineeringLibrary.Aluminum)
+    .WithGeometry(width: 0.02, height: 0.02, nx: 20, ny: 20)
+    .WithConvectionBoundary(25.0, 20.0)                       // default: all faces convective
+    .WithFaceBoundary("top", FaceBoundaryCondition.Dirichlet(200.0))  // override top
+    .WithInitialCondition(20.0)
+    .Solve(dt: 0.000005, steps: 5000);
+```
+
+| Face string | 2D faces | 3D faces |
+|-------------|----------|----------|
+| `"top"` | iy = ny−1 | iy = ny−1 |
+| `"bottom"` | iy = 0 | iy = 0 |
+| `"left"` | ix = 0 | ix = 0 |
+| `"right"` | ix = nx−1 | ix = nx−1 |
+| `"front"` | — | iz = 0 |
+| `"back"` | — | iz = nz−1 |
+
 ### FluidDiffusion3D — 3D Advection-Diffusion
 
 Scalar transport in a prescribed 3D velocity field:

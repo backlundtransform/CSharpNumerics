@@ -68,6 +68,15 @@ public class SimulationBuilder
     internal BeamSupport? Support { get; private set; }
     internal double PressureGradient { get; private set; }
 
+    // ── Per-face thermal BC overrides (default = Dirichlet) ──────
+    internal FaceBoundaryCondition TopFaceBC { get; private set; }
+    internal FaceBoundaryCondition BottomFaceBC { get; private set; }
+    internal FaceBoundaryCondition LeftFaceBC { get; private set; }
+    internal FaceBoundaryCondition RightFaceBC { get; private set; }
+    internal FaceBoundaryCondition FrontFaceBC { get; private set; }
+    internal FaceBoundaryCondition BackFaceBC { get; private set; }
+    internal bool HasConvectionBC { get; private set; }
+
     // ── Initial condition ────────────────────────────────────────
     internal double InitialValue { get; private set; }
     internal Func<double, double, double> InitialFunc { get; private set; }
@@ -295,6 +304,65 @@ public class SimulationBuilder
         RightBC = right;
         FrontBC = front;
         BackBC = back;
+        return this;
+    }
+
+    /// <summary>
+    /// Set convective (Robin) boundary conditions on all four faces of a 2D domain.
+    /// −k ∂T/∂n = h(T − T∞) at each boundary face.
+    /// </summary>
+    /// <param name="heatTransferCoefficient">Convective coefficient h in W/(m²·K).</param>
+    /// <param name="ambientTemperature">Far-field fluid temperature T∞ in K.</param>
+    public SimulationBuilder WithConvectionBoundary(double heatTransferCoefficient, double ambientTemperature)
+    {
+        var bc = FaceBoundaryCondition.Convection(heatTransferCoefficient, ambientTemperature);
+        TopFaceBC = bc;
+        BottomFaceBC = bc;
+        LeftFaceBC = bc;
+        RightFaceBC = bc;
+        HasConvectionBC = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Set convective (Robin) boundary conditions on all six faces of a 3D domain.
+    /// −k ∂T/∂n = h(T − T∞) at each boundary face.
+    /// </summary>
+    /// <param name="heatTransferCoefficient">Convective coefficient h in W/(m²·K).</param>
+    /// <param name="ambientTemperature">Far-field fluid temperature T∞ in K.</param>
+    public SimulationBuilder WithConvectionBoundary3D(double heatTransferCoefficient, double ambientTemperature)
+    {
+        var bc = FaceBoundaryCondition.Convection(heatTransferCoefficient, ambientTemperature);
+        TopFaceBC = bc;
+        BottomFaceBC = bc;
+        LeftFaceBC = bc;
+        RightFaceBC = bc;
+        FrontFaceBC = bc;
+        BackFaceBC = bc;
+        HasConvectionBC = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Override the boundary condition on a single 2D face. Use after
+    /// <see cref="WithBoundary"/> or <see cref="WithConvectionBoundary"/>
+    /// to mix Dirichlet and Robin conditions.
+    /// </summary>
+    /// <param name="face">Which face to set (Top, Bottom, Left, Right).</param>
+    /// <param name="bc">The boundary condition for that face.</param>
+    public SimulationBuilder WithFaceBoundary(string face, FaceBoundaryCondition bc)
+    {
+        switch (face.ToLowerInvariant())
+        {
+            case "top": TopFaceBC = bc; break;
+            case "bottom": BottomFaceBC = bc; break;
+            case "left": LeftFaceBC = bc; break;
+            case "right": RightFaceBC = bc; break;
+            case "front": FrontFaceBC = bc; break;
+            case "back": BackFaceBC = bc; break;
+            default: throw new ArgumentException($"Unknown face: {face}");
+        }
+        HasConvectionBC = true;
         return this;
     }
 
