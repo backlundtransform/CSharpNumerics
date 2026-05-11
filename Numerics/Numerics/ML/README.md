@@ -1863,6 +1863,76 @@ Exposes: `MaxSteps` → number of time steps per episode
 
 See the [GIS-RL Integration](#-gis-rl-integration) section below for full usage.
 
+**Flight (Game Engine)**
+
+Class: `FlightEnv`
+
+RL environment wrapping the 6DOF flight dynamics engine. The agent flies an aircraft through waypoints while maintaining stable flight.
+
+| Property | Value |
+|---|---|
+| Constructor | `(config?, waypoints?, dt?, maxSteps?, waypointRadius?, initAltitude?, initAirspeed?)` |
+| Observation | `VectorN([altitude, airspeed, α, β, roll, pitch, yaw, p, q, r, dist, headingErr])`, size 12 |
+| Actions | 4 (continuous: throttle, pitch, roll, yaw) |
+| Discrete | ❌ |
+| Settable | All constructor params |
+
+Reward: positive for approaching waypoints, bonus on arrival, penalty for stall/crash/excessive bank. Small fuel bonus for lower throttle.
+
+```csharp
+using CSharpNumerics.ML.ReinforcementLearning.Environments;
+
+var env = new FlightEnv(initAltitude: 1000, initAirspeed: 60);
+var (state, info) = env.Reset(seed: 42);
+
+// Continuous action: [throttle, pitch, roll, yaw]
+var action = new VectorN(new[] { 0.7, 0.1, 0.0, 0.0 });
+var (nextState, reward, done, _, stepInfo) = env.Step(action);
+```
+
+**Dogfight (Game Engine)**
+
+Class: `DogfightEnv`
+
+Multi-agent pursuit-evasion with two aircraft. Formulated from the pursuer's perspective; the evader follows a scripted evasion policy.
+
+| Property | Value |
+|---|---|
+| Constructor | `(config?, dt?, maxSteps?, killRadius?, killAspect?, initSeparation?)` |
+| Observation | `VectorN([pursuer(6), relEvader(6), rates(3), engagement(3)])`, size 18 |
+| Actions | 4 (continuous: throttle, pitch, roll, yaw) |
+| Discrete | ❌ |
+
+Reward: positive for closing range, maintaining firing solution; large bonus for intercept (range < `killRadius` and aspect < `killAspect`).
+
+```csharp
+var env = new DogfightEnv(killRadius: 300, killAspect: 0.52);
+var (state, _) = env.Reset();
+// Train with PPO or DDPG for pursuit-evasion behaviour
+```
+
+**Fluid Navigation (Game Engine)**
+
+Class: `FluidNavigationEnv`
+
+Agent navigates a point-mass through a 2D wind/current field to reach a target while minimizing energy. The wind field is a live `GameFluidSolver2D` simulation.
+
+| Property | Value |
+|---|---|
+| Constructor | `(gridSize?, dt?, maxSteps?, targetRadius?, agentMass?, maxThrust?)` |
+| Observation | `VectorN([agentX, agentY, agentVx, agentVy, windU, windV, targetDx, targetDy])`, size 8 |
+| Actions | 2 (continuous: thrustX, thrustY) |
+| Discrete | ❌ |
+
+Reward: positive for approaching target, bonus on arrival, penalty per step and proportional to thrust magnitude (fuel cost).
+
+```csharp
+var env = new FluidNavigationEnv(gridSize: 32, maxThrust: 2.0);
+var (state, _) = env.Reset(seed: 7);
+var action = new VectorN(new[] { 0.5, 0.3 });
+var (next, reward, done, _, _) = env.Step(action);
+```
+
 ---
 
 ## 🔁 Replay Buffers

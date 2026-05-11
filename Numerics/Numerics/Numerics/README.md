@@ -1530,5 +1530,61 @@ VectorN u = asm.Solve(bc);
 | Dirichlet elimination | `ApplyDirichlet(...)` |
 | Iterative solve | `SolvePCG(...)` |
 
+---
 
+## 🧭 Frame Transforms
 
+The `FrameTransforms` utility class provides coordinate frame transformations commonly used in flight dynamics and rigid-body simulation. Transforms between world (inertial), body (fixed to object), and wind (aligned with velocity) frames.
+
+**Body ↔ World (Quaternion-based)**
+
+```csharp
+using CSharpNumerics.Numerics.Objects;
+
+var attitude = Quaternion.FromEulerAngles(0.3, 0.5, 0.7);
+var bodyVec = new Vector(1, 2, 3);
+
+// Body frame → World frame: v_world = q · v · q*
+Vector world = FrameTransforms.BodyToWorld(attitude, bodyVec);
+
+// World frame → Body frame: v_body = q* · v · q
+Vector body = FrameTransforms.WorldToBody(attitude, world);
+// Round-trips perfectly: body ≈ bodyVec
+```
+
+**Body ↔ Wind (Angle of Attack & Sideslip)**
+
+```csharp
+double alpha = 0.1;  // angle of attack
+double beta = 0.05;  // sideslip angle
+var v = new Vector(100, 5, 10);
+
+Vector wind = FrameTransforms.BodyToWind(alpha, beta, v);
+Vector back = FrameTransforms.WindToBody(alpha, beta, wind);
+// Round-trips perfectly: back ≈ v
+```
+
+**Aerodynamic Angles**
+
+```csharp
+var bodyVelocity = new Vector(100, 5, 10);
+
+double alpha = FrameTransforms.AngleOfAttack(bodyVelocity);   // atan2(w, u)
+double beta  = FrameTransforms.SideslipAngle(bodyVelocity);    // asin(v / |V|)
+```
+
+**Direction Cosine Matrix**
+
+```csharp
+Matrix dcm = FrameTransforms.DCM(attitude);  // 3×3 rotation matrix from quaternion
+```
+
+| Method | Description |
+|--------|-------------|
+| `BodyToWorld(q, v)` | Rotate vector from body to world frame |
+| `WorldToBody(q, v)` | Rotate vector from world to body frame |
+| `BodyToWind(α, β, v)` | Transform to wind frame using AoA and sideslip |
+| `WindToBody(α, β, v)` | Transform from wind frame back to body frame |
+| `AngleOfAttack(v)` | Compute α from body-frame velocity |
+| `SideslipAngle(v)` | Compute β from body-frame velocity |
+| `DCM(q)` | Quaternion → 3×3 rotation matrix |
