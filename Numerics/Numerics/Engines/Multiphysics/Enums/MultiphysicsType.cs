@@ -36,5 +36,8 @@ public enum MultiphysicsType
     FluidDiffusion3D,
 
     /// <summary>3D incompressible Navier–Stokes around a cylinder (Chorin projection, periodic z).</summary>
-    CylinderFlow3D
+    CylinderFlow3D,
+
+    /// <summary>2D potential flow past an airfoil (Hess-Smith panel method).</summary>
+    AirfoilFlow
 }

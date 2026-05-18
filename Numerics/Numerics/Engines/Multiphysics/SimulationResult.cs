@@ -130,6 +130,26 @@ public class SimulationResult
     /// <summary>Boolean mask [ix, iy] — true for cells inside the cylinder (CylinderFlow3D). Same at all z.</summary>
     public bool[,] CylinderMask3D { get; internal set; }
 
+    // ── Airfoil flow–specific ────────────────────────────────────
+
+    /// <summary>Pressure coefficient distribution on the airfoil surface (AirfoilFlow).</summary>
+    public double[] CpDistribution { get; internal set; }
+
+    /// <summary>Tangential velocity on the airfoil surface (AirfoilFlow).</summary>
+    public double[] SurfaceVelocity { get; internal set; }
+
+    /// <summary>Airfoil surface panel midpoint x-coordinates (AirfoilFlow).</summary>
+    public double[] AirfoilX { get; internal set; }
+
+    /// <summary>Airfoil surface panel midpoint y-coordinates (AirfoilFlow).</summary>
+    public double[] AirfoilY { get; internal set; }
+
+    /// <summary>Moment coefficient about the quarter-chord (AirfoilFlow).</summary>
+    public double MomentCoefficient { get; internal set; }
+
+    /// <summary>Circulation vortex strength Γ (AirfoilFlow).</summary>
+    public double Circulation { get; internal set; }
+
     /// <summary>CFL flag — true if the solver clamped dt due to CFL condition.</summary>
     public bool CflClamped { get; internal set; }
 

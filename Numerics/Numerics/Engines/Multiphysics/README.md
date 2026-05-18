@@ -36,6 +36,7 @@ The engine builds on existing library capabilities:
 | `FluidFlow2D` | Incompressible Navier-Stokes (rectangular) | Chorin projection (FD + Poisson) | 2D |
 | `MagneticField` | $\nabla^2 A = -\mu J$ (magnetostatics) | Poisson solver (Gauss-Seidel) | 2D |
 | `PlaneStress` | Navier-Cauchy (plane stress elasticity) | FD (SOR iterative) | 2D |
+| `AirfoilFlow` | Potential flow (Laplace) | Panel method (Hess-Smith) | 2D |
 ---
 
 ### Fluent API — SimulationType → SimulationBuilder → SimulationResult
@@ -209,6 +210,56 @@ Same Chorin fractional-step as `CylinderFlow`:
 3. **Correct** — $\mathbf{v}^{n+1} = \mathbf{v}^* - (\Delta t/\rho) \nabla p$
 
 CFL-limited adaptive time-stepping for stability.
+
+---
+
+### AirfoilFlow — 2D Potential Flow Past an Airfoil
+
+Solves inviscid, incompressible potential flow around a NACA airfoil using the Hess-Smith panel method. Computes surface pressure distribution, lift and moment coefficients, and optionally a full velocity field.
+
+$$\nabla^2 \phi = 0, \quad \mathbf{V} = \nabla\phi + \mathbf{U}_\infty$$
+
+```csharp
+using CSharpNumerics.Engines.Multiphysics;
+using CSharpNumerics.Engines.Multiphysics.Enums;
+using CSharpNumerics.Physics.Materials.Engineering;
+
+// Basic solve: NACA 0012 at 5° angle of attack
+var result = SimulationType.Create(MultiphysicsType.AirfoilFlow)
+    .WithMaterial(EngineeringLibrary.Air)
+    .WithAirfoil("0012")
+    .WithAngleOfAttack(5.0 * Math.PI / 180)
+    .WithFreestream(30.0)   // m/s
+    .Solve();
+
+double cl = result.LiftCoefficient;       // ≈ 0.55 (thin airfoil theory: 2πα)
+double cm = result.MomentCoefficient;     // about quarter-chord
+double[] cp = result.CpDistribution;      // surface Cp
+double[] vt = result.SurfaceVelocity;     // tangential velocity on panels
+
+// With velocity field grid (for flow visualization)
+var fieldResult = SimulationType.Create(MultiphysicsType.AirfoilFlow)
+    .WithMaterial(EngineeringLibrary.Air)
+    .WithAirfoil("2412", chord: 1.0, numPanels: 120)
+    .WithAngleOfAttack(3.0 * Math.PI / 180)
+    .WithFreestream(20.0)
+    .WithGeometry(4.0, 3.0, 80, 60)   // 4m × 3m domain, 80×60 grid
+    .Solve();
+
+double[,] vx = fieldResult.Vx;           // x-velocity field
+double[,] vy = fieldResult.Vy;           // y-velocity field
+double[,] pressure = fieldResult.Pressure; // pressure field
+```
+
+| Output | Description |
+|--------|-------------|
+| `LiftCoefficient` | $C_l$ integrated from panel Cp |
+| `MomentCoefficient` | $C_m$ about quarter-chord |
+| `CpDistribution` | Pressure coefficient on each panel |
+| `SurfaceVelocity` | Tangential velocity on each panel |
+| `AirfoilX`, `AirfoilY` | Panel midpoint coordinates |
+| `Circulation` | Vortex strength $\gamma$ |
+| `Vx`, `Vy`, `Pressure` | Optional 2D flow field (if `WithGeometry` set) |
 
 ---
 

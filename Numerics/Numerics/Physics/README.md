@@ -3367,6 +3367,75 @@ double tProp = prop.Thrust(throttle: 0.8, altitude: 1000, airspeed: 50);
 double tHigh = jet.Thrust(1.0, 10000, 200);  // < thrust at sea level
 ```
 
+### NACA Airfoil Geometry
+
+Generate 2D surface coordinates for NACA 4-digit series airfoils. Uses cosine spacing for leading-edge resolution.
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics.Aerodynamics;
+
+// Generate NACA 0012 with 100 panels
+var (x, y) = NACAGeometry.Generate("0012", numPanels: 100, chord: 1.0);
+
+// Cambered airfoil (2% camber at 40% chord, 12% thickness)
+var (xc, yc) = NACAGeometry.Generate("2412", numPanels: 80);
+
+// Symmetric shorthand
+var (xs, ys) = NACAGeometry.GenerateSymmetric(thicknessPercent: 15);
+
+// Rotate for angle of attack (about quarter-chord)
+double alpha = 5 * Math.PI / 180;
+var (xr, yr) = NACAGeometry.Rotate(x, y, alpha);
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| 1st digit | Max camber (% of chord) |
+| 2nd digit | Location of max camber (tenths of chord) |
+| 3rd–4th digits | Max thickness (% of chord) |
+
+### Panel Method (Hess-Smith)
+
+Solves 2D incompressible **potential flow** around arbitrary closed bodies using the Hess-Smith panel method with constant-strength source panels and uniform vortex distribution.
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics.Aerodynamics;
+
+// Generate airfoil and solve
+var (x, y) = NACAGeometry.Generate("0012", 100);
+double alpha = 5 * Math.PI / 180;
+var (xr, yr) = NACAGeometry.Rotate(x, y, alpha);
+
+var result = PanelMethod.Solve(xr, yr, alpha, freestream: 1.0);
+
+// Surface pressure coefficient
+double[] cp = result.Cp;         // Cp on each panel
+double cl   = result.Cl;         // Integrated lift coefficient
+double cm   = result.Cm;         // Quarter-chord moment coefficient
+double gamma = result.Gamma;     // Circulation strength
+
+// Velocity field at arbitrary points
+var queryX = new double[] { -2.0, 0.5, 2.0 };
+var queryY = new double[] { 0.5, 0.5, 0.5 };
+var (u, v) = PanelMethod.VelocityField(result, xr, yr, queryX, queryY);
+```
+
+**Algorithm:**
+1. Discretize airfoil into N flat panels with source strength $\sigma_i$ and uniform vortex $\gamma$
+2. Apply N no-penetration boundary conditions on panel midpoints
+3. Enforce Kutta condition at trailing edge (smooth flow departure)
+4. Solve $(N+1) \times (N+1)$ linear system for $\sigma_i$ and $\gamma$
+5. Compute tangential velocity $V_t$ and pressure coefficient $C_p = 1 - (V_t / U_\infty)^2$
+
+| Output | Description |
+|--------|-------------|
+| `Cp` | Surface pressure coefficient distribution |
+| `Vt` | Surface tangential velocity |
+| `Cl` | Lift coefficient (integrated) |
+| `Cm` | Moment coefficient about quarter-chord |
+| `Gamma` | Vortex strength (circulation) |
+| `Sigma` | Source strengths per panel |
+
 ---
 
 ## 🌪️ Turbulence Model (Smagorinsky SGS)

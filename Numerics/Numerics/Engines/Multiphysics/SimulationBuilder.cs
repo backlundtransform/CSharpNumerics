@@ -58,6 +58,13 @@ public class SimulationBuilder
     internal Func<double, double, double, (double, double, double)> VelocityField3D { get; private set; }
     internal bool HasVelocityField3D { get; private set; }
 
+    // ── AirfoilFlow ──────────────────────────────────────────────
+    internal string AirfoilNACA { get; private set; }
+    internal int AirfoilPanels { get; private set; } = 100;
+    internal double AirfoilChord { get; private set; } = 1.0;
+    internal double AngleOfAttack { get; private set; }
+    internal double Freestream { get; private set; } = 1.0;
+
     // ── Boundary conditions ──────────────────────────────────────
     internal double TopBC { get; private set; }
     internal double BottomBC { get; private set; }
@@ -255,6 +262,44 @@ public class SimulationBuilder
     public SimulationBuilder WithDiffusionCoefficient(double D)
     {
         DiffusionCoefficient = D;
+        return this;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Airfoil (AirfoilFlow)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Define the airfoil profile using a NACA 4-digit designation (e.g. "2412").
+    /// </summary>
+    /// <param name="naca">NACA 4-digit string.</param>
+    /// <param name="chord">Chord length in metres (default 1.0).</param>
+    /// <param name="numPanels">Number of surface panels (default 100, must be even).</param>
+    public SimulationBuilder WithAirfoil(string naca, double chord = 1.0, int numPanels = 100)
+    {
+        AirfoilNACA = naca;
+        AirfoilChord = chord;
+        AirfoilPanels = numPanels;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the angle of attack for the airfoil flow simulation.
+    /// </summary>
+    /// <param name="alphaRadians">Angle of attack in radians.</param>
+    public SimulationBuilder WithAngleOfAttack(double alphaRadians)
+    {
+        AngleOfAttack = alphaRadians;
+        return this;
+    }
+
+    /// <summary>
+    /// Set the freestream velocity magnitude for the airfoil flow simulation.
+    /// </summary>
+    /// <param name="velocity">Freestream speed in m/s (default 1.0).</param>
+    public SimulationBuilder WithFreestream(double velocity)
+    {
+        Freestream = velocity;
         return this;
     }
 
@@ -491,6 +536,7 @@ public class SimulationBuilder
             MultiphysicsType.HeatBlock3D => new HeatBlock3DSolver(new HeatTransferModel()),
             MultiphysicsType.FluidDiffusion3D => new FluidDiffusion3DSolver(),
             MultiphysicsType.CylinderFlow3D => new CylinderFlow3DSolver(),
+            MultiphysicsType.AirfoilFlow => new AirfoilFlowSolver(),
             _ => throw new NotSupportedException($"Unknown simulation type: {Type}")
         };
 
@@ -577,5 +623,13 @@ public class SimulationBuilder
 
         if (Type == MultiphysicsType.PlaneStress && Thickness <= 0)
             throw new InvalidOperationException("Thickness must be positive. Call WithThickness(thickness).");
+
+        if (Type == MultiphysicsType.AirfoilFlow)
+        {
+            if (string.IsNullOrEmpty(AirfoilNACA) || AirfoilNACA.Length != 4)
+                throw new InvalidOperationException("Airfoil not set. Call WithAirfoil(\"0012\").");
+            if (Freestream <= 0)
+                throw new InvalidOperationException("Freestream velocity must be positive. Call WithFreestream(u).");
+        }
     }
 }
