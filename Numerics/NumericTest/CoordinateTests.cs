@@ -2,6 +2,7 @@ using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Engines.GIS.Export;
 using CSharpNumerics.Engines.GIS.Grid;
 using CSharpNumerics.Numerics.Objects;
+using GeoCoordinate = CSharpNumerics.Engines.GIS.Coordinates.GeoCoordinate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 

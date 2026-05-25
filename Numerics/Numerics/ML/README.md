@@ -1933,6 +1933,59 @@ var action = new VectorN(new[] { 0.5, 0.3 });
 var (next, reward, done, _, _) = env.Step(action);
 ```
 
+**Rocket Landing (Game Engine)**
+
+Class: `RocketLandingEnv`
+
+RL environment for propulsive vertical landing (Falcon 9–style). The agent controls throttle and gimbal to land a rocket stage softly on a pad.
+
+| Property | Value |
+|---|---|
+| Constructor | `(dt?, maxSteps?, dryMass?, fuelMass?, maxThrust?, exhaustVelocity?, gravity?)` |
+| Observation | `VectorN([altitude, vx, vy, vz, pitch_angle, pitch_rate, fuel_remaining, speed])`, size 8 |
+| Actions | 2 (continuous: throttle, gimbal) |
+| Discrete | ❌ |
+
+Reward: shaped for soft touchdown — penalty for speed at contact, fuel usage, and deviation from vertical. Large bonus for successful landing.
+
+```csharp
+using CSharpNumerics.ML.ReinforcementLearning.Environments;
+
+var env = new RocketLandingEnv(dryMass: 25000, fuelMass: 5000, maxThrust: 800000);
+var (state, _) = env.Reset(seed: 42);
+
+// Continuous action: [throttle (0-1), gimbal (-1 to 1)]
+var action = new VectorN(new[] { 0.6, 0.0 });
+var (next, reward, done, _, _) = env.Step(action);
+```
+
+**Ascent Optimization (Game Engine)**
+
+Class: `AscentOptimizationEnv`
+
+RL environment for optimizing a rocket's ascent trajectory from launch to orbit insertion. The agent commands pitch rate to maximize orbital energy while respecting structural (MaxQ) and thermal constraints.
+
+| Property | Value |
+|---|---|
+| Constructor | `(dt?, maxSteps?, initialMass?, dryMassFraction?, thrust?, exhaustVelocity?, targetAltitude?)` |
+| Observation | `VectorN([alt_norm, speed_norm, fpa_norm, downrange_norm, mass_frac, Q_norm, time_frac, orbital_energy_norm])`, size 8 |
+| Actions | 1 (continuous: pitch_rate_cmd) |
+| Discrete | ❌ |
+
+Reward: shaped for efficient ascent — orbital energy gain, altitude progress, penalties for excessive Q or sub-orbital trajectories.
+
+```csharp
+using CSharpNumerics.ML.ReinforcementLearning.Environments;
+
+var env = new AscentOptimizationEnv(
+    initialMass: 500000, thrust: 7000000, targetAltitude: 200000);
+var (state, _) = env.Reset();
+
+// Continuous action: [pitch_rate_command]
+var action = new VectorN(new[] { -0.01 });
+var (next, reward, done, _, _) = env.Step(action);
+```
+
 ---
 
 ## 🔁 Replay Buffers
@@ -2064,7 +2117,9 @@ ReinforcementLearning/
 │   ├── ValueBased/      DQN, DoubleDQN, DuelingDQN
 │   ├── PolicyGradient/  REINFORCE, ActorCritic (A2C), PPO
 │   └── ContinuousControl/  DDPG
-├── Environments/        GridWorld, CartPole, MountainCar, Pendulum
+├── Environments/        GridWorld, CartPole, MountainCar, Pendulum,
+│                        RocketLandingEnv, AscentOptimizationEnv,
+│                        FlightEnv, DogfightEnv, FluidNavigationEnv
 ├── Policies/            EpsilonGreedy, SoftmaxPolicy, GaussianNoise, OrnsteinUhlenbeck
 ├── Buffers/             ReplayBuffer, PrioritizedReplayBuffer
 ├── Experiment/          RLExperiment, RLPipelineGrid, EpisodeEvaluator, Results

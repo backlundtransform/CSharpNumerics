@@ -804,6 +804,182 @@ FlightController.HUDData hud = controller.GetHUDData();
 // hud.Airspeed, hud.Altitude, hud.Heading, hud.Throttle, etc.
 ```
 
+---
+
+## 🚀 Rocket Simulation
+
+Full 6DOF rocket launch simulation with multi-stage vehicles, orbital mechanics, GNC, and Unity integration.
+
+**Namespace:** `CSharpNumerics.Engines.Game.Rocket`
+
+### Architecture
+
+```
+RocketSimulationEngine (ISimulationEngine)
+├── RocketVehicle (multi-stage stack)
+│   ├── RocketStage[] (dry mass, engines, tanks, separation triggers)
+│   └── Boosters (strap-on parallel stages)
+├── GuidanceComputer (selects guidance law per phase)
+│   ├── GravityTurnGuidance (atmospheric ascent)
+│   ├── PEGGuidance (powered explicit guidance for orbit insertion)
+│   └── AttitudeController (quaternion-feedback PID)
+├── ThrustVectorControl (gimbal deflection → torque)
+├── NavigationFilter (perfect or noisy state estimation)
+├── MissionProfile (sequenced phases with exit conditions)
+├── TelemetryRecorder (log states at configurable rate)
+├── TelemetryStream (60fps HUD data delivery)
+├── TrajectoryPredictor (fast Kepler propagation for orbit line)
+├── TimeWarp (1x–1000x with fixed physics dt)
+└── RocketUnityAdapter (NED/ECI → Unity Y-up coordinates)
+```
+
+### Quick Start
+
+```csharp
+// Build a two-stage rocket
+var engine1 = new RocketEngine(thrustSL: 845000, thrustVac: 914000, ispSL: 282, ispVac: 311);
+var tank1 = new PropellantTank(395700);
+var stage1 = new RocketStage(dryMass: 25600, engines: new[] { engine1 }, tanks: new[] { tank1 });
+stage1.SeparationTrigger = new StageSeparationTrigger(StageSeparationTriggerType.PropellantDepleted);
+
+var engine2 = new RocketEngine(0, 934000, 0, 348);
+var tank2 = new PropellantTank(92670);
+var stage2 = new RocketStage(dryMass: 4000, engines: new[] { engine2 }, tanks: new[] { tank2 });
+
+var vehicle = new RocketVehicle(new[] { stage1, stage2 }, payloadMass: 22800);
+var sim = new RocketSimulationEngine(vehicle);
+
+// Configure Earth model
+sim.UseEarthModel = true;
+sim.LaunchSite = GeoCoordinate.FromDegrees(28.5, -80.5, 0);
+sim.SetStateFromLaunchSite(sim.LaunchSite.Value);
+sim.Init();
+
+// Run simulation
+for (int i = 0; i < 10000; i++)
+    sim.Step(0.1);
+
+Console.WriteLine($"Altitude: {sim.State.Altitude:F0} m, Speed: {sim.State.Speed:F0} m/s");
+```
+
+### Guidance, Navigation & Control
+
+```csharp
+var gc = new GuidanceComputer();
+gc.GravityTurn.KickAltitude = 500;
+gc.GravityTurn.KickAngle = 3.0 * Math.PI / 180.0;
+gc.GravityTurn.TargetInclination = 28.5 * Math.PI / 180.0;
+gc.PEG.TargetSemiMajorAxis = 6378137 + 200000;
+gc.PEG.Mu = 3.986004418e14;
+gc.PEGActivationAltitude = 80000;
+gc.Mode = GuidanceMode.Auto;
+
+// Each simulation step:
+gc.Update(state, time, altitude, thrustAccel, exhaustVelocity, dt);
+Quaternion commanded = gc.CommandedAttitude;
+Vector torque = gc.TorqueCommand;
+```
+
+### Thrust Vector Control
+
+```csharp
+var tvc = new ThrustVectorControl
+{
+    MaxGimbalAngle = 5.0 * Math.PI / 180.0,
+    MaxGimbalRate = 10.0 * Math.PI / 180.0,
+    MomentArm = 20.0
+};
+
+// From desired torque:
+tvc.CommandFromTorque(desiredTorque, thrustMagnitude, dt);
+Vector gimbalTorque = tvc.ComputeTorque(thrustMagnitude);
+```
+
+### Time Warp
+
+```csharp
+var warp = new TimeWarp
+{
+    PhysicsTimestep = 0.01,     // 100 Hz physics
+    MaxWarpFactor = 1000
+};
+
+warp.WarpFactor = 10;           // 10x speed
+warp.IncreaseWarp();            // jumps to next level (1→2→5→10→50→100→500→1000)
+
+// Each render frame:
+warp.StepEngine(sim, renderDeltaTime);
+```
+
+### Telemetry Stream (HUD)
+
+```csharp
+var stream = new TelemetryStream { TargetFrameRate = 60 };
+
+// Each physics step:
+stream.Push(state, simTime, thrustMagnitude, fuelFraction);
+
+// Each render frame:
+if (stream.TryDeliver(simTime))
+{
+    double alt = stream.Current.Altitude;
+    double speed = stream.Current.Speed;
+    double apo = stream.Current.ApoapsisAltitude;
+    double peri = stream.Current.PeriapsisAltitude;
+    double fuel = stream.Current.FuelPercent;
+}
+```
+
+### Trajectory Prediction
+
+```csharp
+var predictor = new TrajectoryPredictor
+{
+    NumPoints = 200,
+    PredictionHorizon = 5400,  // 90 minutes
+    IncludeDrag = true
+};
+
+var points = predictor.Predict(position, velocity);
+var (apo, peri) = predictor.PredictApsides(position, velocity);
+
+// Render orbit line from points[i].Position
+```
+
+### Unity Adapter
+
+```csharp
+var adapter = new RocketUnityAdapter
+{
+    CoordinateMode = AdapterCoordinateMode.NEDToUnity,
+    PositionScale = 1.0
+};
+
+adapter.Update(rocketState);
+// Apply to Unity Transform:
+// transform.position = ToUnityVector3(adapter.UnityPosition);
+// transform.rotation = ToUnityQuaternion(adapter.UnityRotation);
+```
+
+### RL Environments
+
+Two reinforcement learning environments for autonomous rocket control:
+
+```csharp
+// Propulsive landing (SpaceX-style)
+var landingEnv = new RocketLandingEnv(dt: 0.1, maxSteps: 500);
+var (obs, info) = landingEnv.Reset(seed: 42);
+// obs: [altitude, vx, vy, vz, pitch, pitchRate, fuelFraction, speed]
+// action: [throttle(0-1), gimbal(-1 to 1)]
+
+// Ascent trajectory optimization
+var ascentEnv = new AscentOptimizationEnv(dt: 1.0, maxSteps: 600);
+var (obs2, info2) = ascentEnv.Reset();
+// obs: [altitude, speed, gamma, downrange, fuel, Q, time, orbitalEnergy]
+// action: [pitchRate(-1 to 1)]
+```
+```
+
 ### AI Bridge
 
 Feed Unity game state to ML agents:

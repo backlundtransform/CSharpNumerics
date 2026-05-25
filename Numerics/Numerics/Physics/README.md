@@ -3634,3 +3634,394 @@ double vol = vof.TotalVolume();
 |----------|-------------|
 | `CellSize` | Size of each grid cell |
 | `LiquidThreshold` | Minimum F to count as "liquid present" |
+
+---
+
+## 🚀 Rocket Propulsion
+
+The `Physics.Mechanics.Propulsion` namespace provides a complete rocket engine and guidance model — thrust, propellant management, variable-mass dynamics, center of mass tracking, and launch guidance algorithms.
+
+### RocketEngine
+
+Models a bipropellant rocket engine with throttle and gimbal control. ISP varies linearly between sea-level and vacuum values based on ambient pressure.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+// Merlin-1D-class engine
+var engine = new RocketEngine(
+    ispSeaLevel: 282,
+    ispVacuum: 311,
+    maxThrustVacuum: 845000,
+    minThrottle: 0.4,
+    maxGimbalAngle: 5.0 * Math.PI / 180);
+
+engine.SetThrottle(0.9);
+engine.SetGimbal(pitch: 0.02, yaw: -0.01);
+
+double thrust = engine.Thrust(pressureRatio: 0.5);    // N at 50% sea-level pressure
+double isp    = engine.EffectiveIsp(pressureRatio: 0); // Vacuum ISP
+double mdot   = engine.MassFlowRate(pressureRatio: 1); // kg/s at sea level
+```
+
+| Property | Description |
+|----------|-------------|
+| `IspSeaLevel` | Specific impulse at sea level (s) |
+| `IspVacuum` | Specific impulse in vacuum (s) |
+| `MaxThrustVacuum` | Maximum thrust at vacuum (N) |
+| `MinThrottle` | Minimum throttle fraction |
+| `MaxGimbalAngle` | Maximum gimbal deflection (rad) |
+| `Throttle` | Current throttle setting |
+| `IsActive` | Engine active state |
+
+### ThrustCurve
+
+Defines time-varying thrust profiles for solid boosters, throttle buckets, and custom profiles.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+// Constant thrust for 150s
+var constant = ThrustCurve.Constant(burnDuration: 150);
+
+// Solid booster with ramp-up and tail-off
+var srb = ThrustCurve.SolidBooster(burnDuration: 120, rampFraction: 0.05, tailFraction: 0.1);
+
+// MaxQ throttle bucket (reduce thrust between 60–80s)
+var bucket = ThrustCurve.ThrottleBucket(burnDuration: 180,
+    bucketStart: 60, bucketEnd: 80, bucketLevel: 0.7);
+
+// Evaluate at any time
+double fraction = srb.Evaluate(time: 10.0);  // 0.0–1.0
+```
+
+### PropellantTank
+
+Tracks fuel and oxidizer consumption with mixture-ratio-preserving depletion.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+var tank = new PropellantTank(fuelMass: 25000, oxidizerMass: 60000);
+
+double consumed = tank.Consume(massFlowRate: 250, dt: 1.0);
+double remaining = tank.PropellantMass;
+double fraction = tank.ConsumedFraction;
+bool empty = tank.IsEmpty;
+
+// Remaining ΔV via Tsiolkovsky equation
+double dv = tank.RemainingDeltaV(dryMass: 5000, isp: 311);
+
+tank.Reset(); // Refill for re-simulation
+```
+
+### VariableMassDynamics
+
+Static methods for rocket rigid-body dynamics with variable mass, including thrust torque.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+Vector accel = VariableMassDynamics.ComputeAcceleration(
+    totalMass: 500000, thrustForce: thrustVec, externalForces: gravity);
+
+Vector angAccel = VariableMassDynamics.ComputeAngularAcceleration(
+    inertiaTensor: inertia, torque: totalTorque, angularVelocity: omega);
+
+Vector thrustTorque = VariableMassDynamics.ComputeThrustTorque(
+    cgToEngine: armVector, thrustBody: thrustInBodyFrame);
+```
+
+### CenterOfMassTracker
+
+Computes center of mass position as propellant drains, enabling correct moment-arm calculations.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+var tracker = new CenterOfMassTracker(
+    dryMass: 5000, maxPropellantMass: 85000,
+    cgFull: 20.0, cgEmpty: 15.0);
+
+double cg = tracker.ComputeCg(currentPropellantMass: 42000);
+double arm = tracker.CgToEngineDistance(currentPropellantMass: 42000, enginePosition: 0);
+```
+
+### GravityTurnGuidance
+
+Open-loop guidance for the atmospheric ascent phase. Implements vertical ascent → pitch kick → gravity turn with azimuth targeting for desired orbital inclination.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+var guidance = new GravityTurnGuidance
+{
+    KickAltitude = 1000,
+    KickAngle = 5.0 * Math.PI / 180,
+    KickDuration = 10.0,
+    TargetInclination = 28.5 * Math.PI / 180,
+    LaunchLatitude = 28.6 * Math.PI / 180
+};
+
+double azimuth = guidance.LaunchAzimuth(); // Required heading
+
+Quaternion cmd = guidance.ComputeAttitude(altitude: 5000, velocity: vel, time: 60);
+// Phase progresses: VerticalAscent → PitchOver → GravityTurn
+```
+
+| Phase | Description |
+|-------|-------------|
+| `VerticalAscent` | Straight up until kick altitude |
+| `PitchOver` | Gradual pitch kick over kick duration |
+| `GravityTurn` | Velocity-aligned (prograde) |
+
+### PEGGuidance (Powered Explicit Guidance)
+
+Closed-loop terminal guidance that iteratively solves for the optimal thrust direction to achieve target orbital parameters. Based on the Space Shuttle's PEG algorithm.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+var peg = new PEGGuidance
+{
+    TargetSemiMajorAxis = 6571000,    // 200 km LEO
+    TargetEccentricity = 0.0,
+    TargetInclination = 28.5 * Math.PI / 180,
+    Mu = 3.986004418e14
+};
+
+Vector thrustDir = peg.ComputeThrustDirection(
+    position: posECI, velocity: velECI,
+    thrustAccel: 30.0, exhaustVelocity: 3000);
+
+bool converged = peg.HasConverged;
+double tgo = peg.TimeToCutoff;
+double dvRemaining = peg.VelocityToGain;
+```
+
+### AttitudeController
+
+Quaternion-feedback PID controller with rate limiting and integral windup protection.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics.Propulsion;
+
+var controller = new AttitudeController
+{
+    Kp = 2.0, Kd = 1.0, Ki = 0.01,
+    MaxRate = 5.0 * Math.PI / 180,
+    MaxTorque = 50000
+};
+
+Vector torque = controller.ComputeTorque(
+    currentAttitude: currentQuat,
+    commandedAttitude: targetQuat,
+    angularRate: omega,
+    dt: 0.02);
+
+Vector desiredRate = controller.ComputeDesiredRate(currentQuat, targetQuat);
+```
+
+---
+
+## 🌍 Earth & Gravity Models
+
+The `Physics.Mechanics` namespace provides WGS-84 Earth geometry and a J2-perturbed gravity model for accurate orbital and launch simulations.
+
+### EarthModel (WGS-84)
+
+```csharp
+using CSharpNumerics.Physics.Mechanics;
+
+double R = EarthModel.SemiMajorAxis;        // 6 378 137 m
+double b = EarthModel.SemiMinorAxis;        // 6 356 752.3 m
+double omega = EarthModel.RotationRate;     // 7.2921150e-5 rad/s
+double mu = EarthModel.GM;                  // 3.986004418e14 m³/s²
+double j2 = EarthModel.J2;                  // 1.08263e-3
+double g0 = EarthModel.G0;                  // 9.80665 m/s²
+
+// Geometry
+double N = EarthModel.PrimeVerticalRadius(latitude: 0.5);  // Radius of curvature
+double v = EarthModel.SurfaceVelocity(latitude: 0.5);      // m/s at surface
+```
+
+### GravityModel (J2 Zonal Harmonic)
+
+```csharp
+using CSharpNumerics.Physics.Mechanics;
+
+// Full J2 gravity acceleration (includes oblateness)
+Vector gJ2 = GravityModel.Acceleration(positionECI);
+
+// Point-mass only (for comparison)
+Vector gPM = GravityModel.PointMassAcceleration(positionECI);
+
+// Scalar magnitude at radius and latitude
+double g = GravityModel.Magnitude(radius: 6571000, latitude: 0.5);
+```
+
+### CoriolisForce
+
+Non-inertial frame corrections for ECEF-referenced simulations.
+
+```csharp
+using CSharpNumerics.Physics.Mechanics;
+
+Vector coriolis = CoriolisForce.Acceleration(velocityECEF);         // -2(ω × v)
+Vector centrifugal = CoriolisForce.CentrifugalAcceleration(posECEF); // ω²(x, y, 0)
+Vector total = CoriolisForce.TotalFictitiousAcceleration(posECEF, velECEF);
+```
+
+---
+
+## 🛰️ Orbital Mechanics
+
+The `Physics.OrbitalMechanics` namespace provides Keplerian elements, state-vector conversions, orbital propagation with J2 and drag perturbations, and impulsive maneuver planning.
+
+### OrbitalElements
+
+```csharp
+using CSharpNumerics.Physics.OrbitalMechanics;
+
+var elements = new OrbitalElements(
+    a: 6771000,           // Semi-major axis (m)
+    e: 0.001,             // Eccentricity
+    i: 0.9,              // Inclination (rad)
+    raan: 1.2,           // Right ascension of ascending node (rad)
+    omega: 0.5,          // Argument of periapsis (rad)
+    nu: 0.0,             // True anomaly (rad)
+    mu: 3.986004418e14);  // Gravitational parameter
+
+double period = elements.Period;              // Orbital period (s)
+double rp = elements.Periapsis;              // Periapsis radius (m)
+double ra = elements.Apoapsis;               // Apoapsis radius (m)
+double v = elements.VelocityAtTrueAnomaly;   // Speed at current ν
+bool bound = elements.IsBound;               // Negative energy?
+```
+
+| Property | Description |
+|----------|-------------|
+| `Period` | Orbital period ($2\pi\sqrt{a^3/\mu}$) |
+| `MeanMotion` | Mean angular rate (rad/s) |
+| `Periapsis` / `Apoapsis` | Apsidal radii (m) |
+| `SpecificEnergy` | $-\mu / 2a$ |
+| `SpecificAngularMomentum` | $h = \sqrt{\mu a(1-e^2)}$ |
+| `IsCircular` | $e < 10^{-6}$ |
+
+### State ↔ Elements Conversion
+
+```csharp
+using CSharpNumerics.Physics.OrbitalMechanics;
+
+// State → Keplerian elements
+OrbitalElements el = StateToElements.FromStateVector(position, velocity, mu);
+
+// Elements → Cartesian state
+var (pos, vel) = ElementsToState.ToStateVector(el);
+```
+
+### OrbitalPropagator
+
+Velocity-Verlet integrator with optional J2 oblateness and atmospheric drag perturbations.
+
+```csharp
+using CSharpNumerics.Physics.OrbitalMechanics;
+
+var prop = new OrbitalPropagator
+{
+    Mu = 3.986004418e14,
+    IncludeJ2 = true,
+    IncludeAtmosphericDrag = true,
+    DragAltitudeThreshold = 600000,
+    BallisticCoefficient = 50.0
+};
+
+prop.SetState(position, velocity);
+prop.Propagate(duration: 5400, dt: 1.0);
+
+Vector finalPos = prop.Position;
+Vector finalVel = prop.Velocity;
+OrbitalElements finalElements = prop.Elements;
+```
+
+### HohmannTransfer
+
+Minimum-energy two-impulse transfer between circular orbits.
+
+```csharp
+using CSharpNumerics.Physics.OrbitalMechanics;
+
+// Transfer from 200 km to 400 km orbit
+var result = HohmannTransfer.FromAltitudes(alt1: 200000, alt2: 400000);
+
+double dv1 = result.DeltaV1;          // First burn (m/s)
+double dv2 = result.DeltaV2;          // Second burn (m/s)
+double total = result.TotalDeltaV;     // Total ΔV
+double tof = result.TransferTime;      // Coast duration (s)
+```
+
+### OrbitalManeuver & Circularization
+
+```csharp
+using CSharpNumerics.Physics.OrbitalMechanics;
+
+// Prograde burn at specific time
+var burn = OrbitalManeuver.Prograde(deltaV: 50, currentVelocity: vel, time: 1000);
+Vector newVel = burn.Apply(vel);
+
+// Circularization ΔV
+double dvCirc = CircularizationBurn.Compute(position, velocity, mu);
+double dvApo = CircularizationBurn.AtApoapsis(elements);
+double dvPeri = CircularizationBurn.AtPeriapsis(elements);
+```
+
+---
+
+## 🌡️ Compressible Aerodynamics
+
+The `Physics.FluidDynamics.Aerodynamics` namespace includes compressible-flow models for high-speed vehicles — Mach-dependent drag, regime classification, and aerothermal heating.
+
+### CompressibleDragModel
+
+Mach-dependent drag coefficient with transonic rise and supersonic decline.
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics.Aerodynamics;
+
+var drag = new CompressibleDragModel(cd0: 0.3, cdPeak: 0.8, machPeak: 1.1);
+double cd = drag.Evaluate(mach: 0.9);  // Transonic regime
+
+// Presets
+var rocket = CompressibleDragModel.SlenderRocket();   // Low Cd0
+var capsule = CompressibleDragModel.BluntCapsule();   // High Cd0
+```
+
+### MachNumber
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics.Aerodynamics;
+
+double mach = MachNumber.Compute(velocity: 340, altitude: 0);  // ~1.0
+bool sub = MachNumber.IsSubsonic(mach);      // M < 0.8
+bool trans = MachNumber.IsTransonic(mach);   // 0.8–1.2
+bool sup = MachNumber.IsSupersonic(mach);    // 1.2–5.0
+bool hyp = MachNumber.IsHypersonic(mach);    // M > 5.0
+```
+
+### HeatFlux (Sutton-Graves)
+
+Stagnation-point convective heating for atmospheric re-entry and high-speed ascent.
+
+```csharp
+using CSharpNumerics.Physics.FluidDynamics.Aerodynamics;
+
+// Direct computation from density and velocity
+double q = HeatFlux.StagnationPoint(
+    density: 0.001, velocity: 7000, noseRadius: 1.0);  // W/m²
+
+// From altitude and velocity (uses ISA atmosphere)
+double qAlt = HeatFlux.FromAltitudeAndVelocity(
+    altitude: 60000, velocity: 6000, noseRadius: 0.5);
+
+double h0 = HeatFlux.StagnationEnthalpy(velocity: 7000);  // J/kg
+```

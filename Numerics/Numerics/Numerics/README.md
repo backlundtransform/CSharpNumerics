@@ -1588,3 +1588,66 @@ Matrix dcm = FrameTransforms.DCM(attitude);  // 3×3 rotation matrix from quater
 | `AngleOfAttack(v)` | Compute α from body-frame velocity |
 | `SideslipAngle(v)` | Compute β from body-frame velocity |
 | `DCM(q)` | Quaternion → 3×3 rotation matrix |
+
+---
+
+## 🌐 Geodetic & Celestial Coordinates
+
+The `Numerics.Objects` namespace provides coordinate types and conversions for geodetic (WGS-84), ECEF, and ECI reference frames — used by orbital mechanics and launch simulations.
+
+### Coordinate Types
+
+```csharp
+using CSharpNumerics.Numerics.Objects;
+
+// Geodetic (latitude, longitude in radians; altitude in meters)
+var geo = GeoCoordinate.FromDegrees(latDeg: 28.6, lonDeg: -80.6, altMeters: 0);
+double latRad = geo.Latitude;
+double lonDeg = geo.LongitudeDegrees;
+
+// Earth-Centered Earth-Fixed
+var ecef = new ECEFPosition(x: 920000, y: -5530000, z: 3040000);
+double r = ecef.Radius;
+Vector v = ecef.ToVector();
+
+// Earth-Centered Inertial
+var eci = new ECIPosition(x: 6771000, y: 0, z: 0);
+var back = ECIPosition.FromVector(someVector);
+```
+
+| Type | Fields | Key Properties |
+|------|--------|----------------|
+| `GeoCoordinate` | `Latitude`, `Longitude`, `Altitude` | `LatitudeDegrees`, `LongitudeDegrees` |
+| `ECEFPosition` | `X`, `Y`, `Z` | `Radius`, operators `+`, `-`, `*` |
+| `ECIPosition` | `X`, `Y`, `Z` | `Radius`, operators `+`, `-`, `*` |
+
+### CoordinateConversions
+
+Full chain of conversions between geodetic, ECEF, and ECI frames. ECEF↔ECI requires Greenwich Mean Sidereal Time (GMST) to account for Earth rotation.
+
+```csharp
+using CSharpNumerics.Numerics.Objects;
+
+// Geodetic → ECEF → ECI
+var geo = GeoCoordinate.FromDegrees(28.6, -80.6, 0);
+ECEFPosition ecef = CoordinateConversions.GeodeticToECEF(geo);
+ECIPosition eci = CoordinateConversions.ECEFToECI(ecef, gmstRadians: 1.5);
+
+// ECI → Geodetic (round-trip)
+GeoCoordinate geoBack = CoordinateConversions.ECIToGeodetic(eci, gmstRadians: 1.5);
+
+// Velocity conversion (includes Earth rotation term)
+Vector velECI = CoordinateConversions.ECEFVelocityToECI(velECEF, posECEF, gmst);
+Vector velECEF = CoordinateConversions.ECIVelocityToECEF(velECI, posECI, gmst);
+```
+
+| Method | Description |
+|--------|-------------|
+| `GeodeticToECEF(geo)` | WGS-84 ellipsoid projection |
+| `ECEFToGeodetic(ecef)` | Bowring iterative inversion |
+| `ECEFToECI(ecef, gmst)` | Rotate by sidereal angle |
+| `ECIToECEF(eci, gmst)` | Inverse rotation |
+| `GeodeticToECI(geo, gmst)` | Shorthand (Geodetic→ECEF→ECI) |
+| `ECIToGeodetic(eci, gmst)` | Shorthand (ECI→ECEF→Geodetic) |
+| `ECEFVelocityToECI(...)` | Velocity + ω×r correction |
+| `ECIVelocityToECEF(...)` | Inverse velocity transform |

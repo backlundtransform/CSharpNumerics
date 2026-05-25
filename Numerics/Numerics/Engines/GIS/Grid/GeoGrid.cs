@@ -1,5 +1,6 @@
 using CSharpNumerics.Engines.GIS.Coordinates;
 using CSharpNumerics.Numerics.Objects;
+using GeoCoordinate = CSharpNumerics.Engines.GIS.Coordinates.GeoCoordinate;
 using System;
 using System.Collections;
 using System.Collections.Generic;
