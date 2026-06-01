@@ -64,17 +64,17 @@ Grundläggande DSP-infrastruktur som krävs för pre-processing och feature engi
 
 **Namespace:** `CSharpNumerics.Numerics.SignalProcessing`
 
-- [ ] `SavitzkyGolayFilter` — polynomutjämning med konfigurerbar ordning och fönsterbredd, bevarar peak-form
-- [ ] `ButterworthFilter` — IIR lågpass/högpass/bandpass design (ordning N, brytfrekvens), `Apply(double[] signal)` via biquad-kaskad
-- [ ] `FIRFilter` — finit impulsrespons-filter med godtyckliga koefficienter, `Apply(double[] signal)`
-- [ ] `FilterDesign` — statisk klass: `DesignLowpass(order, cutoff, sampleRate)`, `DesignHighpass(...)`, `DesignBandpass(...)`
-- [ ] `ZeroPhaseFiltFilt` — nollfasfiltrering (framåt + bakåt) för offline-analys
+- [x] `SavitzkyGolayFilter` — polynomutjämning med konfigurerbar ordning och fönsterbredd, bevarar peak-form
+- [x] `ButterworthFilter` — IIR lågpass/högpass/bandpass design (ordning N, brytfrekvens), `Apply(double[] signal)` via biquad-kaskad
+- [x] `FIRFilter` — finit impulsrespons-filter med godtyckliga koefficienter, `Apply(double[] signal)`
+- [x] `FilterDesign` — statisk klass: `DesignLowpass(order, cutoff, sampleRate)`, `DesignHighpass(...)`, `DesignBandpass(...)`
+- [x] `ZeroPhaseFiltFilt` — nollfasfiltrering (framåt + bakåt) för offline-analys
 
 ### Tests
-- [ ] Savitzky-Golay med ordning 0 motsvarar glidande medelvärde
-- [ ] Butterworth lågpass dämpar signal vid 2× brytfrekvens med > 12 dB/oktav
-- [ ] FiltFilt ger nollfasförskjutning (peak-position bevarad)
-- [ ] Butterworth högpass + lågpass på samma signal → rekonstruktion inom tolerans
+- [x] Savitzky-Golay med ordning 0 motsvarar glidande medelvärde
+- [x] Butterworth lågpass dämpar signal vid 2× brytfrekvens med > 12 dB/oktav
+- [x] FiltFilt ger nollfasförskjutning (peak-position bevarad)
+- [x] Butterworth högpass + lågpass på samma signal → rekonstruktion inom tolerans
 
 ---
 

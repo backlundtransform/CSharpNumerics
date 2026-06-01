@@ -98,7 +98,7 @@ public class ButterworthFilter
     /// <summary>
     /// Computes the magnitude response at the specified normalized frequencies.
     /// </summary>
-    /// <param name="normalizedFrequencies">Frequencies in range [0, 0.5] (fraction of Nyquist).</param>
+    /// <param name="normalizedFrequencies">Frequencies in range [0, 1] where 1 = Nyquist frequency.</param>
     /// <returns>Magnitude response in linear scale.</returns>
     public double[] FrequencyResponse(double[] normalizedFrequencies)
     {
@@ -108,7 +108,7 @@ public class ButterworthFilter
 
         for (int f = 0; f < normalizedFrequencies.Length; f++)
         {
-            double omega = 2.0 * Math.PI * normalizedFrequencies[f];
+            double omega = Math.PI * normalizedFrequencies[f];
             double cosW = Math.Cos(omega);
             double cos2W = Math.Cos(2.0 * omega);
             double sinW = Math.Sin(omega);

@@ -99,7 +99,7 @@ public class FIRFilter
     /// <summary>
     /// Computes the magnitude response at the specified normalized frequencies.
     /// </summary>
-    /// <param name="normalizedFrequencies">Frequencies in [0, 0.5] (fraction of Nyquist).</param>
+    /// <param name="normalizedFrequencies">Frequencies in [0, 1] where 1 = Nyquist frequency.</param>
     /// <returns>Magnitude response in linear scale.</returns>
     public double[] FrequencyResponse(double[] normalizedFrequencies)
     {
@@ -110,7 +110,7 @@ public class FIRFilter
 
         for (int f = 0; f < normalizedFrequencies.Length; f++)
         {
-            double omega = 2.0 * Math.PI * normalizedFrequencies[f];
+            double omega = Math.PI * normalizedFrequencies[f];
             double real = 0.0, imag = 0.0;
 
             for (int k = 0; k < m; k++)
