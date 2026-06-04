@@ -1198,6 +1198,67 @@ double eTime     = fs.TimeDomainEnergy(square, nSamples: 4096);
 // eParseval ≈ eTime
 ```
 
+### Filtering
+
+Digital filters for smoothing, de-noising, and frequency separation. All filters expose `Apply(double[] signal)` and return an output of the same length. Design helpers in `FilterDesign` build IIR/FIR filters from cutoff frequencies; `ZeroPhaseFiltFilt` runs any filter forward + backward for distortion-free offline analysis.
+
+**Savitzky–Golay** — local polynomial least-squares smoothing that preserves peak shape and higher moments far better than a moving average. Order 0 reduces to a moving average; order ≥ 1 preserves polynomial trends of that degree exactly.
+
+```csharp
+using CSharpNumerics.Numerics.SignalProcessing;
+
+var sg = new SavitzkyGolayFilter(windowSize: 7, polynomialOrder: 2);  // window must be odd
+double[] smoothed = sg.Apply(noisySignal);
+
+// Smoothed first derivative (e.g. dQ/dt), with sample spacing dt
+double[] dydt = sg.ApplyDerivative(noisySignal, spacing: 0.1);
+
+double[] coeffs = sg.Coefficients;   // convolution kernel
+```
+
+**Butterworth (IIR)** — maximally flat passband, implemented as a cascade of second-order sections (biquads, Direct Form II Transposed). Design via `FilterDesign`; cutoffs are in Hz relative to `sampleRate`.
+
+```csharp
+double sampleRate = 100.0;  // Hz
+
+// Lowpass / highpass (order = number of poles)
+ButterworthFilter lp = FilterDesign.DesignLowpass(order: 4, cutoffFrequency: 5.0, sampleRate);
+ButterworthFilter hp = FilterDesign.DesignHighpass(order: 4, cutoffFrequency: 0.5, sampleRate);
+
+// Bandpass (resulting order is 2× the per-edge order)
+ButterworthFilter bp = FilterDesign.DesignBandpass(order: 2, lowCutoff: 0.5, highCutoff: 5.0, sampleRate);
+
+double[] low  = lp.Apply(signal);   // causal, forward-only (introduces phase delay)
+double[] high = hp.Apply(signal);
+
+// Inspect the response: magnitude at normalized frequencies (1.0 = Nyquist)
+double[] mag = lp.FrequencyResponse(new[] { 0.05, 0.1, 0.2, 0.5 });
+int order    = lp.Order;
+```
+
+**FIR** — finite impulse response via linear convolution; inherently stable with exact linear phase. Supply arbitrary taps directly, or design a windowed-sinc (Hamming) lowpass/highpass.
+
+```csharp
+// Arbitrary coefficients
+var fir = new FIRFilter(new[] { 0.25, 0.5, 0.25 });
+double[] y = fir.Apply(signal);              // zero-padded at boundaries
+double[] yMirror = fir.ApplySymmetric(signal); // mirror extension (fewer edge artifacts)
+
+// Windowed-sinc design (numTaps forced odd for a Type-I symmetric filter)
+FIRFilter firLp = FilterDesign.DesignFIRLowpass(numTaps: 51, cutoffFrequency: 5.0, sampleRate);
+FIRFilter firHp = FilterDesign.DesignFIRHighpass(numTaps: 51, cutoffFrequency: 0.5, sampleRate);
+```
+
+**Zero-phase (filtfilt)** — eliminates phase distortion by filtering forward then backward, so peak positions are preserved (effective order is doubled). Offline use only. Works with both Butterworth and FIR filters.
+
+```csharp
+// Peak positions stay put — no group delay
+double[] zeroPhase = ZeroPhaseFiltFilt.Apply(lp, signal);     // ButterworthFilter overload
+double[] zeroPhaseFir = ZeroPhaseFiltFilt.Apply(firLp, signal); // FIRFilter overload
+```
+
+> **Highpass + lowpass reconstruction:** splitting a signal with a complementary `DesignLowpass` / `DesignHighpass` pair and summing the zero-phase outputs reconstructs the original within tolerance — the basis for separating slow (SRC) from fast (FRC) flow components.
+
 ---
 
 ## 🎯 Optimization
