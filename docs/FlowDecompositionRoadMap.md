@@ -1,12 +1,22 @@
-# Flow Decomposition (RAST.Decomp) — CSharpNumerics Roadmap
+# Flow Decomposition — CSharpNumerics byggstenar (för RAST.Decomp)
 
 ## Mål
 
-Bygga ut `CSharpNumerics` med alla komponenter som krävs för att implementera ett ML-drivet flödesdekompositionssystem (RAST.Decomp) **utan externa Python-bibliotek**. Systemet ska kunna separera totalflöde $Q_{total}(t)$ i delkomponenter:
+Bygga ut `CSharpNumerics` med de **återanvändbara numeriska byggstenarna** (filter, state-estimation, TCN-lager, loss-funktioner, wavelets) som krävs för ett ML-drivet flödesdekompositionssystem — **utan externa Python-bibliotek**.
+
+Själva **systemet `RAST.Decomp` byggs i RAST-repot**, inte här. RAST står för all orkestrering och konsumerar byggstenarna från denna roadmap. Systemet separerar totalflöde $Q_{total}(t)$ i delkomponenter:
 
 $$Q_{total}(t) = Q_{WW}(t) + Q_{SRC}(t) + Q_{FRC}(t) + Q_{Spill}(t)$$
 
-Arkitekturen är hybrid: deterministisk spillextrahering → statistisk WW-baseline → ML-separation av residual (FRC + SRC).
+Arkitekturen är hybrid: deterministisk spillextrahering → statistisk WW-baseline → ML-separation av residual (FRC + SRC). Denna roadmap omfattar enbart byggstenarna i Phase 1–5; pipelinen som binder samman dem (Phase 6–7) hör till RAST.
+
+> ### 🧭 Scope — CSharpNumerics vs RAST
+>
+> **All orkestrering sköts från RAST.** Denna roadmap omfattar enbart de *återanvändbara byggstenarna* (filter, state-estimation, TCN-lager, loss-funktioner, wavelets) som ska implementeras i `CSharpNumerics` som ett generellt numeriskt bibliotek.
+>
+> Den applikationsspecifika **dekompositionspipelinen** (allt under namespacet `CSharpNumerics.ML.FlowDecomposition` — `FlowDecomposer`, `WWBaselineExtractor`, `DecompositionTrainer`, m.fl.) byggs **INTE i denna kodbas**. Den hör hemma i RAST-repot och konsumerar CSharpNumerics-byggstenarna. Phase 6 och Phase 7 nedan är därför markerade **🚫 RAST** och behålls endast som referens.
+>
+> **Dokumentation:** varje fas som levererar byggstenar (Phase 1–5) ska även uppdatera modulens README (`Numerics`, `Statistics`, `ML`) — se `### Dokumentation`-listan per fas.
 
 ---
 
@@ -76,6 +86,11 @@ Grundläggande DSP-infrastruktur som krävs för pre-processing och feature engi
 - [x] FiltFilt ger nollfasförskjutning (peak-position bevarad)
 - [x] Butterworth högpass + lågpass på samma signal → rekonstruktion inom tolerans
 
+### Dokumentation
+Uppdatera **`Numerics/Numerics/Numerics/README.md`** (sektionen *Signal Processing*):
+- [x] Lägg till sektion `Filtering` med `SavitzkyGolayFilter`, `ButterworthFilter`, `FIRFilter` (kodexempel: `Apply(double[])`)
+- [x] Dokumentera `FilterDesign` (`DesignLowpass/Highpass/Bandpass`) och `ZeroPhaseFiltFilt` med ett before/after-exempel
+
 ---
 
 ## Phase 2 — Kalman Filter & Exponentiell Utjämning
@@ -84,17 +99,22 @@ State-space-modeller för adaptiv WW-baselinespårning.
 
 **Namespace:** `CSharpNumerics.Statistics.StateEstimation`
 
-- [ ] `KalmanFilter` — linjärt state-space: Predict(F, Q) → Update(H, R, z), accessors för state `x̂` och kovarians `P`
-- [ ] `ExtendedKalmanFilter` — icke-linjär variant med Jacobian-funktioner `f(x)`, `h(x)`, `F(x)`, `H(x)`
-- [ ] `KalmanSmoother` — Rauch-Tung-Striebel bakåtpass för offline-utjämning
-- [ ] `HoltWintersSmoothing` — triple exponential smoothing: level + trend + säsongskomponent (additiv/multiplikativ), auto-initiering
+- [x] `KalmanFilter` — linjärt state-space: Predict(F, Q) → Update(H, R, z), accessors för state `x̂` och kovarians `P`
+- [x] `ExtendedKalmanFilter` — icke-linjär variant med Jacobian-funktioner `f(x)`, `h(x)`, `F(x)`, `H(x)`
+- [x] `KalmanSmoother` — Rauch-Tung-Striebel bakåtpass för offline-utjämning
+- [x] `HoltWintersSmoothing` — triple exponential smoothing: level + trend + säsongskomponent (additiv/multiplikativ), auto-initiering
 
 ### Tests
-- [ ] KalmanFilter på konstant signal med brus → konvergerar till sann nivå
-- [ ] KalmanFilter spårar linjär ramp med korrekt hastighet
-- [ ] ExtendedKalmanFilter estimerar sinusformad signal med känd modell
-- [ ] HoltWinters fångar 24h-säsong i syntetisk WW-serie, prediktionsfel < 5%
-- [ ] KalmanSmoother ger lägre varians än forward-only Kalman
+- [x] KalmanFilter på konstant signal med brus → konvergerar till sann nivå
+- [x] KalmanFilter spårar linjär ramp med korrekt hastighet
+- [x] ExtendedKalmanFilter estimerar sinusformad signal med känd modell
+- [x] HoltWinters fångar 24h-säsong i syntetisk WW-serie, prediktionsfel < 5%
+- [x] KalmanSmoother ger lägre varians än forward-only Kalman
+
+### Dokumentation
+Uppdatera **`Numerics/Numerics/Statistics/README.md`**:
+- [x] Ny sektion `State Estimation` (`CSharpNumerics.Statistics.StateEstimation`) med `KalmanFilter`, `ExtendedKalmanFilter`, `KalmanSmoother` — Predict/Update-exempel
+- [x] Lägg `HoltWintersSmoothing` under sektionen *Time Series Analysis* (additiv/multiplikativ, säsong)
 
 ---
 
@@ -123,6 +143,12 @@ Utöka befintlig `Conv1DLayer` med stöd för TCN-arkitekturen.
 - [ ] ResidualBlock: gradient flödar genom skip-connection (ej vanishing)
 - [ ] TCNRegressor: full forward+backward pass med dilation-stack utan krasch
 
+### Dokumentation
+Uppdatera **`Numerics/Numerics/ML/README.md`** (sektionerna *Sequence Models* / *Neural Network Building Blocks*):
+- [ ] Dokumentera `Conv1DLayer`-utökningarna (`PaddingMode.Causal`, `dilation`)
+- [ ] Lägg till `DropoutLayer`, `BatchNorm1DLayer`, `ResidualBlock`, `TCNBlock` i layer-listan
+- [ ] Ny sektion `TCN Architecture` med `TCNRegressor` / `TCNClassifier` (hyperparametrar + `SupervisedExperiment`-exempel)
+
 ---
 
 ## Phase 4 — Constrained Training & Loss-funktioner
@@ -145,6 +171,11 @@ Fysik-informerad träning med bevarandelagar.
 - [ ] ConstrainedTrainer med conservation → slutmodell ger summa inom 1% av total
 - [ ] SoftmaxConstraintHead producerar output ∈ [0,1] och summa ≤ 1.0
 
+### Dokumentation
+Uppdatera **`Numerics/Numerics/ML/README.md`**:
+- [ ] Ny sektion `Constrained Training` (`CSharpNumerics.ML.Training`) med `NonNegativityLoss`, `ConservationLoss`, `SmoothnessLoss`, `CompositeLoss`
+- [ ] Dokumentera `ConstrainedTrainer` (curriculum learning) och `SoftmaxConstraintHead`
+
 ---
 
 ## Phase 5 — Wavelet Transform
@@ -166,71 +197,85 @@ Multi-resolution tidsfrekvens-dekomposition.
 - [ ] WaveletDenoising minskar RMSE på brusig signal med > 50%
 - [ ] MODWT-koefficienter är tidsinvariant (shiftad input → shiftad output)
 
+### Dokumentation
+Uppdatera **`Numerics/Numerics/Numerics/README.md`** (sektionen *Signal Processing*):
+- [ ] Ny undersektion `Wavelets` (`CSharpNumerics.Numerics.SignalProcessing.Wavelets`) med `DiscreteWaveletTransform`, `WaveletFamily`, `InverseWaveletTransform`
+- [ ] Dokumentera `WaveletDenoising` (soft/hard thresholding) och `MaximalOverlapDWT` (MODWT) — DWT→IDWT round-trip-exempel
+
 ---
 
-## Phase 6 — Dekompositionspipeline & Modell
+## Phase 6 — Dekompositionspipeline & Modell &nbsp; 🚫 RAST
 
 Sammanfoga alla delar till en komplett dekompositionsmodell.
 
-**Namespace:** `CSharpNumerics.ML.FlowDecomposition`
+> 🚫 **Byggs i RAST, inte i CSharpNumerics.** Hela detta namespace (`CSharpNumerics.ML.FlowDecomposition`) är applikationsspecifik orkestrering och implementeras i RAST-repot, som konsumerar byggstenarna från Phase 1–5. Listan nedan behålls endast som referens för RAST-arbetet. Inga README-tasks för CSharpNumerics.
 
-- [ ] `FlowDecomposer` — orkestreringsklass: konfigurerar pipeline (spill → WW → residual → ML → output)
-- [ ] `WWBaselineExtractor` — Fourier-harmonisk modell (N harmonics) + Kalman-spårning av drift
-- [ ] `ResidualComputer` — beräknar $Q_{res} = Q_{total} - Q_{spill} - Q_{WW}$
-- [ ] `TCNDecompositionModel` — tränad TCN som ger FRC/SRC-ratio givet residual + features
-- [ ] `DecompositionResult` — struct: WW, FRC, SRC, Spill som `double[]`, med kvalitetsmetrik
-- [ ] `DecompositionMetrics` — konserveringsfel, icke-negativitetscount, SRC-smoothness, recessionpassning
-- [ ] `RecessionAnalyzer` — identifiera och anpassa exponentiell recession $Q_0 e^{-t/\tau}$ på FRC/SRC
-- [ ] `FeatureEngineering` — extrahera temporal features: $dQ/dt$, rullande stats, hour_sin/cos, DOW-encoding
+**Namespace:** `RAST.Decomp` (tidigare planerat som `CSharpNumerics.ML.FlowDecomposition`)
 
-### Tests
-- [ ] FlowDecomposer på syntetisk data (känt WW + FRC + SRC) → rekonstruktion inom 2%
-- [ ] Conservation: $|Q_{total} - (WW + FRC + SRC + Spill)| < 0.01$ vid varje tidssteg
-- [ ] Alla komponenter icke-negativa
-- [ ] FRC-recession matchar exponentiell profil med $R^2 > 0.95$
-- [ ] SRC har bounded second derivative (smoothness-villkor)
-- [ ] DecompositionMetrics korrekt beräknade på kända testvektorer
+- 🚫 `FlowDecomposer` — orkestreringsklass: konfigurerar pipeline (spill → WW → residual → ML → output)
+- 🚫 `WWBaselineExtractor` — Fourier-harmonisk modell (N harmonics) + Kalman-spårning av drift
+- 🚫 `ResidualComputer` — beräknar $Q_{res} = Q_{total} - Q_{spill} - Q_{WW}$
+- 🚫 `TCNDecompositionModel` — tränad TCN som ger FRC/SRC-ratio givet residual + features
+- 🚫 `DecompositionResult` — struct: WW, FRC, SRC, Spill som `double[]`, med kvalitetsmetrik
+- 🚫 `DecompositionMetrics` — konserveringsfel, icke-negativitetscount, SRC-smoothness, recessionpassning
+- 🚫 `RecessionAnalyzer` — identifiera och anpassa exponentiell recession $Q_0 e^{-t/\tau}$ på FRC/SRC
+- 🚫 `FeatureEngineering` — extrahera temporal features: $dQ/dt$, rullande stats, hour_sin/cos, DOW-encoding
+
+### Tests (i RAST)
+- 🚫 FlowDecomposer på syntetisk data (känt WW + FRC + SRC) → rekonstruktion inom 2%
+- 🚫 Conservation: $|Q_{total} - (WW + FRC + SRC + Spill)| < 0.01$ vid varje tidssteg
+- 🚫 Alla komponenter icke-negativa
+- 🚫 FRC-recession matchar exponentiell profil med $R^2 > 0.95$
+- 🚫 SRC har bounded second derivative (smoothness-villkor)
+- 🚫 DecompositionMetrics korrekt beräknade på kända testvektorer
 
 ---
 
-## Phase 7 — Träning & Validering
+## Phase 7 — Träning & Validering &nbsp; 🚫 RAST
 
 Fullständig träningspipeline med DHI Sewdec som svag supervision.
 
-**Namespace:** `CSharpNumerics.ML.FlowDecomposition`
+> 🚫 **Byggs i RAST, inte i CSharpNumerics.** Träningsorkestreringen lever i RAST-repot. `HyperparameterSearch` återanvänder dock CSharpNumerics-primitiv (`PipelineGrid`, `RollingCrossValidator`) som redan finns. Listan nedan behålls endast som referens.
 
-- [ ] `DecompositionTrainer` — curriculum learning: Fas A (Sewdec-labels) → Fas B (+ fysik-constraints) → Fas C (self-supervised refinement)
-- [ ] `TrainingDataLoader` — läser parad data (totalflöde + Sewdec-output) från CSV, tidsjusterar, normaliserar
-- [ ] `CurriculumSchedule` — schema för constraint-vikter $\lambda_i(epoch)$: lineär/exponentiell upptrappning
-- [ ] `ModelSerializer` — spara/ladda TCN-vikter till binärfil (egna format, inga externa beroenden)
-- [ ] `HyperparameterSearch` — integrera med `PipelineGrid` + `RollingCrossValidator` för optimal TCN-arkitektur
-- [ ] `AblationRunner` — jämför TCN vs LSTM vs matematisk baseline vs Sewdec på samma data
+**Namespace:** `RAST.Decomp` (tidigare planerat som `CSharpNumerics.ML.FlowDecomposition`)
 
-### Tests
-- [ ] ModelSerializer save → load round-trip: identisk inferens
-- [ ] CurriculumSchedule producerar monotont ökande vikter
-- [ ] Tränad modell överpresterar naive baseline (all residual → FRC) på hållet-out-data
-- [ ] RollingCrossValidator undviker dataläckage (test alltid efter train i tid)
+- 🚫 `DecompositionTrainer` — curriculum learning: Fas A (Sewdec-labels) → Fas B (+ fysik-constraints) → Fas C (self-supervised refinement)
+- 🚫 `TrainingDataLoader` — läser parad data (totalflöde + Sewdec-output) från CSV, tidsjusterar, normaliserar
+- 🚫 `CurriculumSchedule` — schema för constraint-vikter $\lambda_i(epoch)$: lineär/exponentiell upptrappning
+- 🚫 `ModelSerializer` — spara/ladda TCN-vikter till binärfil (egna format, inga externa beroenden)
+- 🚫 `HyperparameterSearch` — integrera med `PipelineGrid` + `RollingCrossValidator` för optimal TCN-arkitektur
+- 🚫 `AblationRunner` — jämför TCN vs LSTM vs matematisk baseline vs Sewdec på samma data
+
+### Tests (i RAST)
+- 🚫 ModelSerializer save → load round-trip: identisk inferens
+- 🚫 CurriculumSchedule producerar monotont ökande vikter
+- 🚫 Tränad modell överpresterar naive baseline (all residual → FRC) på hållet-out-data
+- 🚫 RollingCrossValidator undviker dataläckage (test alltid efter train i tid)
 
 ---
 
 ## Sammanfattning — Beroendegraf
 
 ```
-Phase 7 (Träning)
-    ↓
-Phase 6 (Pipeline)
-    ↓         ↓
-Phase 4    Phase 5
-(Constraints) (Wavelets)
-    ↓
-Phase 3 (TCN)
-    ↓
-Phase 1 ← Phase 2
-(DSP)    (Kalman)
+╔════════════════════════════════╗
+║  RAST-repot (orkestrering)      ║
+║   Phase 7 (Träning)            ║
+║       ↓                         ║
+║   Phase 6 (Pipeline)           ║
+╚════════════════════════════════╝
+            ↑  konsumerar byggstenar
+─────────────────────────────────────
+  CSharpNumerics (byggstenar — denna roadmap)
+    Phase 4        Phase 5
+    (Constraints)  (Wavelets)
+        ↓
+    Phase 3 (TCN)
+        ↓
+    Phase 1 ← Phase 2
+    (DSP)    (Kalman)
 ```
 
-Phase 1 och 2 kan köras parallellt. Phase 3 kräver Phase 1 (filterinfrastruktur). Phase 4 och 5 kan köras parallellt efter Phase 3. Phase 6 kräver allt ovan. Phase 7 kräver Phase 6.
+Phase 1 och 2 kan köras parallellt. Phase 3 kräver Phase 1 (filterinfrastruktur). Phase 4 och 5 kan köras parallellt efter Phase 3. **Phase 6 och 7 byggs i RAST** och kräver att Phase 1–5 är levererade som byggstenar i CSharpNumerics.
 
 ---
 
@@ -248,5 +293,5 @@ Phase 1 och 2 kan köras parallellt. Phase 3 kräver Phase 1 (filterinfrastruktu
 | NonNegativityLoss, CompositeLoss | `ML.Training` | Träningsinfrastruktur |
 | ConstrainedTrainer | `ML.Training` | Träningsloop |
 | DiscreteWaveletTransform, MODWT | `Numerics.SignalProcessing.Wavelets` | Wavelet-matematik |
-| FlowDecomposer, WWBaseline, etc. | `ML.FlowDecomposition` | Applikationsspecifik pipeline |
-| DecompositionMetrics | `ML.FlowDecomposition` | Kvalitetsmätning |
+| ~~FlowDecomposer, WWBaseline, etc.~~ | 🚫 `RAST.Decomp` | Applikationsspecifik pipeline — **byggs i RAST** |
+| ~~DecompositionMetrics~~ | 🚫 `RAST.Decomp` | Kvalitetsmätning — **byggs i RAST** |
