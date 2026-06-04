@@ -157,24 +157,24 @@ Fysik-informerad träning med bevarandelagar.
 
 **Namespace:** `CSharpNumerics.ML.Training`
 
-- [ ] `NonNegativityLoss` — $\lambda \sum \max(-y_i, 0)^2$, differentiabel penalty
-- [ ] `ConservationLoss` — $\lambda \|Q_{total} - \sum y_i\|^2$, säkerställer dekomposition summerar
-- [ ] `SmoothnessLoss` — $\lambda \|\nabla^2 y\|^2$, penaliserar icke-smooth SRC
-- [ ] `CompositeLoss` — kombinerar multipla förlustfunktioner med vikter: `Add(ILoss, weight)`
-- [ ] `ConstrainedTrainer` — träningsloop som applicerar `CompositeLoss` och stödjer curriculum learning (successivt ökande constraint-vikter)
-- [ ] `SoftmaxConstraintHead` — output-lager som ger ratio ∈ [0,1] med summavillkor via softmax
+- [x] `NonNegativityLoss` — $\lambda \sum \max(-y_i, 0)^2$, differentiabel penalty
+- [x] `ConservationLoss` — $\lambda \|Q_{total} - \sum y_i\|^2$, säkerställer dekomposition summerar
+- [x] `SmoothnessLoss` — $\lambda \|\nabla^2 y\|^2$, penaliserar icke-smooth SRC
+- [x] `CompositeLoss` — kombinerar multipla förlustfunktioner med vikter: `Add(ILoss, weight)`
+- [x] `ConstrainedTrainer` — träningsloop som applicerar `CompositeLoss` och stödjer curriculum learning (successivt ökande constraint-vikter)
+- [x] `SoftmaxConstraintHead` — output-lager som ger ratio ∈ [0,1] med summavillkor via softmax
 
 ### Tests
-- [ ] NonNegativityLoss = 0 om alla predictions ≥ 0
-- [ ] ConservationLoss = 0 om summan av komponenter == total
-- [ ] CompositeLoss gradient = summa av viktade delgradienter
-- [ ] ConstrainedTrainer med conservation → slutmodell ger summa inom 1% av total
-- [ ] SoftmaxConstraintHead producerar output ∈ [0,1] och summa ≤ 1.0
+- [x] NonNegativityLoss = 0 om alla predictions ≥ 0
+- [x] ConservationLoss = 0 om summan av komponenter == total
+- [x] CompositeLoss gradient = summa av viktade delgradienter
+- [x] ConstrainedTrainer med conservation → slutmodell ger summa inom 1% av total
+- [x] SoftmaxConstraintHead producerar output ∈ [0,1] och summa ≤ 1.0
 
 ### Dokumentation
 Uppdatera **`Numerics/Numerics/ML/README.md`**:
-- [ ] Ny sektion `Constrained Training` (`CSharpNumerics.ML.Training`) med `NonNegativityLoss`, `ConservationLoss`, `SmoothnessLoss`, `CompositeLoss`
-- [ ] Dokumentera `ConstrainedTrainer` (curriculum learning) och `SoftmaxConstraintHead`
+- [x] Ny sektion `Constrained Training` (`CSharpNumerics.ML.Training`) med `NonNegativityLoss`, `ConservationLoss`, `SmoothnessLoss`, `CompositeLoss`
+- [x] Dokumentera `ConstrainedTrainer` (curriculum learning) och `SoftmaxConstraintHead`
 
 ---
 
