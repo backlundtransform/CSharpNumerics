@@ -124,30 +124,30 @@ Utöka befintlig `Conv1DLayer` med stöd för TCN-arkitekturen.
 
 **Namespace:** `CSharpNumerics.ML.Sequence`
 
-- [ ] Utöka `Conv1DLayer` med `PaddingMode.Causal` — left-padding = (kernelSize - 1) × dilation
-- [ ] Utöka `Conv1DLayer` med `dilation`-parameter — dilated faltning i forward/backward
-- [ ] `DropoutLayer` — stokastiskt nollställer element under träning (rate), passthrough vid inferens
-- [ ] `BatchNorm1DLayer` — kanal-vis normalisering för sekvensdata, running mean/var vid inferens
-- [ ] `ResidualBlock` — wrapper: Conv1D(causal, dilated) → BatchNorm → ReLU → Dropout → Conv1D → residual add (med 1×1 conv om kanaler ändras)
-- [ ] `TCNBlock` — stack av `ResidualBlock` med exponentiellt ökande dilation [1, 2, 4, 8, 16, ...]
-- [ ] `TCNRegressor` — TCN → Global pooling → Dense → output; implementerar `ISequenceModel`
-- [ ] `TCNClassifier` — TCN → Global pooling → Dense → Softmax; implementerar `ISequenceModel`
+- [x] Utöka `Conv1DLayer` med `PaddingMode.Causal` — left-padding = (kernelSize - 1) × dilation
+- [x] Utöka `Conv1DLayer` med `dilation`-parameter — dilated faltning i forward/backward
+- [x] `DropoutLayer` — stokastiskt nollställer element under träning (rate), passthrough vid inferens
+- [x] `BatchNorm1DLayer` — kanal-vis normalisering för sekvensdata, running mean/var vid inferens
+- [x] `ResidualBlock` — wrapper: Conv1D(causal, dilated) → BatchNorm → ReLU → Dropout → Conv1D → residual add (med 1×1 conv om kanaler ändras)
+- [x] `TCNBlock` — stack av `ResidualBlock` med exponentiellt ökande dilation [1, 2, 4, 8, 16, ...]
+- [x] `TCNRegressor` — TCN → Global pooling → Dense → output; implementerar `ISequenceModel`
+- [x] `TCNClassifier` — TCN → Global pooling → Dense → Softmax; implementerar `ISequenceModel`
 
 ### Tests
-- [ ] Causal Conv1D: output beror inte på framtida tidssteg (strixt kausal)
-- [ ] Dilated conv med dilation=4, kernel=3 har receptive field = 9
-- [ ] TCNBlock med 8 lager (dilation 1→128) har receptive field ≥ 512 tidssteg
-- [ ] Dropout sätter ~rate-andel av element till noll under träning
-- [ ] BatchNorm normaliserar per kanal, running stats konvergerar
-- [ ] TCNRegressor tränar och konvergerar på syntetisk sinusvåg
-- [ ] ResidualBlock: gradient flödar genom skip-connection (ej vanishing)
-- [ ] TCNRegressor: full forward+backward pass med dilation-stack utan krasch
+- [x] Causal Conv1D: output beror inte på framtida tidssteg (strixt kausal)
+- [x] Dilated conv med dilation=4, kernel=3 har receptive field = 9
+- [x] TCNBlock med 8 lager (dilation 1→128) har receptive field ≥ 512 tidssteg
+- [x] Dropout sätter ~rate-andel av element till noll under träning
+- [x] BatchNorm normaliserar per kanal, running stats konvergerar
+- [x] TCNRegressor tränar och konvergerar på syntetisk sinusvåg
+- [x] ResidualBlock: gradient flödar genom skip-connection (ej vanishing)
+- [x] TCNRegressor: full forward+backward pass med dilation-stack utan krasch
 
 ### Dokumentation
 Uppdatera **`Numerics/Numerics/ML/README.md`** (sektionerna *Sequence Models* / *Neural Network Building Blocks*):
-- [ ] Dokumentera `Conv1DLayer`-utökningarna (`PaddingMode.Causal`, `dilation`)
-- [ ] Lägg till `DropoutLayer`, `BatchNorm1DLayer`, `ResidualBlock`, `TCNBlock` i layer-listan
-- [ ] Ny sektion `TCN Architecture` med `TCNRegressor` / `TCNClassifier` (hyperparametrar + `SupervisedExperiment`-exempel)
+- [x] Dokumentera `Conv1DLayer`-utökningarna (`PaddingMode.Causal`, `dilation`)
+- [x] Lägg till `DropoutLayer`, `BatchNorm1DLayer`, `ResidualBlock`, `TCNBlock` i layer-listan
+- [x] Ny sektion `TCN Architecture` med `TCNRegressor` / `TCNClassifier` (hyperparametrar + `SupervisedExperiment`-exempel)
 
 ---
 

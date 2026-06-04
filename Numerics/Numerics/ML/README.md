@@ -763,17 +763,24 @@ Currently available models:
 * `LSTMRegressor` in `CSharpNumerics.ML.Sequence.Models.Regression`
 * `BiLSTMClassifier` in `CSharpNumerics.ML.Sequence.Models.Classification`
 * `BiLSTMRegressor` in `CSharpNumerics.ML.Sequence.Models.Regression`
+* `TCNClassifier` in `CSharpNumerics.ML.Sequence.Models.Classification`
+* `TCNRegressor` in `CSharpNumerics.ML.Sequence.Models.Regression`
 
 Current sequence infrastructure:
 
 * `ISequenceModel` in `CSharpNumerics.ML.Sequence.Interfaces`
-* `ConvolutionPaddingMode` in `CSharpNumerics.ML.Sequence.Enums`
-* `Conv1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
+* `ConvolutionPaddingMode` in `CSharpNumerics.ML.Sequence.Enums` — `Valid`, `Same`, `Causal`
+* `Conv1DLayer` in `CSharpNumerics.ML.Sequence.Layers` — supports causal padding and dilation
 * `MaxPool1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
 * `GlobalAvgPool1DLayer` in `CSharpNumerics.ML.Sequence.Layers`
 * `FlattenLayer` in `CSharpNumerics.ML.Sequence.Layers`
 * `LSTMLayer` in `CSharpNumerics.ML.Sequence.Layers`
 * `BiLSTMLayer` in `CSharpNumerics.ML.Sequence.Layers`
+* `ActivationLayer` in `CSharpNumerics.ML.Sequence.Layers` — parameter-free pointwise activation
+* `DropoutLayer` in `CSharpNumerics.ML.Sequence.Layers` — inverted dropout (train only)
+* `BatchNorm1DLayer` in `CSharpNumerics.ML.Sequence.Layers` — channel-wise normalisation
+* `ResidualBlock` in `CSharpNumerics.ML.Sequence.Layers` — TCN residual block (causal + dilated)
+* `TCNBlock` in `CSharpNumerics.ML.Sequence.Layers` — exponentially dilated residual stack
 
 ### CNN1D Architecture
 
@@ -851,6 +858,83 @@ The Bi-LSTM layer composes two LSTMLayer instances — one processing the input 
 When `returnSequences=false`, the output is `[h_fwd_T ∥ h_bwd_1]`.
 
 Bi-LSTM hyperparameters are identical to LSTM (same `HiddenSize`, `ClipNorm`, etc.). The dense layer automatically adapts to the `2 × HiddenSize` input width.
+
+### TCN Architecture
+
+A **Temporal Convolutional Network** stacks dilated **causal** convolutions inside residual blocks, giving an exponentially growing receptive field while preserving sequence length. Unlike an RNN it processes all timesteps in parallel, and unlike a plain CNN its causal padding guarantees no leakage from future timesteps.
+
+Default TCN architecture:
+
+```text
+TCNBlock -> GlobalAvgPool -> Dense(hidden) -> Dense(output)
+```
+
+Each `TCNBlock` is a stack of `ResidualBlock`s whose dilation doubles per level (1, 2, 4, 8, …). A residual block is:
+
+```text
+Conv1D(causal, dilated) -> BatchNorm -> ReLU -> Dropout
+  -> Conv1D(causal, dilated) -> BatchNorm -> Dropout -> (+ skip) -> ReLU
+```
+
+The skip connection uses a 1×1 convolution when the channel count changes, otherwise an identity. The receptive field of an `L`-level block with kernel `k` is `1 + 2(k-1)·(2^L − 1)` timesteps — e.g. 8 levels with `k = 3` cover **1021** timesteps.
+
+TCN hyperparameters:
+
+* `TimeSteps`
+* `Features`
+* `Channels` — channel width of every residual block
+* `KernelSize`
+* `Levels` — number of residual blocks (dilation doubles each level)
+* `DropoutRate`
+* `HiddenUnits` — optional dense layer after global pooling
+* `Activation`
+* `LearningRate`
+* `Epochs`
+* `BatchSize`
+* `L2`
+
+Example with `SupervisedExperiment` (TCN regressor):
+
+```csharp
+using CSharpNumerics.ML;
+using CSharpNumerics.ML.Enums;
+using CSharpNumerics.ML.Experiment;
+using CSharpNumerics.ML.Sequence.Models.Regression;
+
+var result = SupervisedExperiment
+    .For(X, y)
+    .WithGrid(new PipelineGrid()
+        .AddModel<TCNRegressor>(g => g
+            .Add("TimeSteps", 128)
+            .Add("Features", 1)
+            .Add("Channels", 16)
+            .Add("KernelSize", 3)
+            .Add("Levels", 4)            // dilations 1, 2, 4, 8
+            .Add("DropoutRate", 0.1)
+            .Add("HiddenUnits", 16)
+            .Add("LearningRate", 0.01)
+            .Add("Epochs", 200)
+            .Add("BatchSize", 16)))
+    .WithCrossValidator(CrossValidatorConfig.KFold(folds: 5))
+    .Run();
+```
+
+The dilated/causal layers are also usable standalone for custom architectures:
+
+```csharp
+using CSharpNumerics.ML.Sequence.Layers;
+using CSharpNumerics.ML.Sequence.Enums;
+using CSharpNumerics.ML.Enums;
+
+// Causal, dilated convolution — output[t] sees only inputs at or before t
+var conv = new Conv1DLayer(
+    inputChannels: 1, filters: 8, kernelSize: 3, stride: 1,
+    padding: ConvolutionPaddingMode.Causal, activation: ActivationType.Linear, seed: 1, dilation: 4);
+int rf = conv.ReceptiveField;     // (3-1)*4 + 1 = 9
+
+var tcn = new TCNBlock(inputChannels: 1, channels: 16, kernelSize: 3, levels: 8);
+int reach = tcn.ReceptiveField;   // 1021 timesteps
+```
 
 Example with `SupervisedExperiment` (CNN1D):
 

@@ -14,6 +14,7 @@ public class Conv1DLayer : ILayer
     private readonly int _filters;
     private readonly int _kernelSize;
     private readonly int _stride;
+    private readonly int _dilation;
     private readonly ConvolutionPaddingMode _padding;
     private readonly ActivationType _activation;
 
@@ -36,7 +37,8 @@ public class Conv1DLayer : ILayer
         int stride = 1,
         ConvolutionPaddingMode padding = ConvolutionPaddingMode.Same,
         ActivationType activation = ActivationType.ReLU,
-        int seed = 123)
+        int seed = 123,
+        int dilation = 1)
     {
         if (inputChannels <= 0)
             throw new ArgumentOutOfRangeException(nameof(inputChannels), "Input channels must be positive.");
@@ -46,11 +48,14 @@ public class Conv1DLayer : ILayer
             throw new ArgumentOutOfRangeException(nameof(kernelSize), "Kernel size must be positive.");
         if (stride <= 0)
             throw new ArgumentOutOfRangeException(nameof(stride), "Stride must be positive.");
+        if (dilation <= 0)
+            throw new ArgumentOutOfRangeException(nameof(dilation), "Dilation must be positive.");
 
         _inputChannels = inputChannels;
         _filters = filters;
         _kernelSize = kernelSize;
         _stride = stride;
+        _dilation = dilation;
         _padding = padding;
         _activation = activation;
 
@@ -67,7 +72,8 @@ public class Conv1DLayer : ILayer
         int kernelSize,
         int stride = 1,
         ConvolutionPaddingMode padding = ConvolutionPaddingMode.Same,
-        ActivationType activation = ActivationType.ReLU)
+        ActivationType activation = ActivationType.ReLU,
+        int dilation = 1)
     {
         if (inputChannels <= 0)
             throw new ArgumentOutOfRangeException(nameof(inputChannels), "Input channels must be positive.");
@@ -75,6 +81,8 @@ public class Conv1DLayer : ILayer
             throw new ArgumentOutOfRangeException(nameof(kernelSize), "Kernel size must be positive.");
         if (stride <= 0)
             throw new ArgumentOutOfRangeException(nameof(stride), "Stride must be positive.");
+        if (dilation <= 0)
+            throw new ArgumentOutOfRangeException(nameof(dilation), "Dilation must be positive.");
         if (weights.rowLength != kernelSize * inputChannels)
             throw new ArgumentException("Weight rows must equal kernelSize * inputChannels.", nameof(weights));
         if (weights.columnLength != biases.Length)
@@ -84,6 +92,7 @@ public class Conv1DLayer : ILayer
         _filters = biases.Length;
         _kernelSize = kernelSize;
         _stride = stride;
+        _dilation = dilation;
         _padding = padding;
         _activation = activation;
         _weights = new Matrix((double[,])weights.values.Clone());
@@ -93,6 +102,15 @@ public class Conv1DLayer : ILayer
     }
 
     public int ParameterCount => (_weights.rowLength * _weights.columnLength) + _biases.Length;
+
+    /// <summary>Dilation factor (1 = standard convolution).</summary>
+    public int Dilation => _dilation;
+
+    /// <summary>
+    /// Number of input timesteps a single output element can see:
+    /// <c>(kernelSize - 1) × dilation + 1</c>.
+    /// </summary>
+    public int ReceptiveField => ((_kernelSize - 1) * _dilation) + 1;
 
     public VectorN[] Forward(VectorN[] input, bool training = true)
     {
@@ -145,7 +163,7 @@ public class Conv1DLayer : ILayer
             {
                 for (int channel = 0; channel < _inputChannels; channel++)
                 {
-                    gradPadded[start + kernelOffset, channel] += gradWindow[index++];
+                    gradPadded[start + (kernelOffset * _dilation), channel] += gradWindow[index++];
                 }
             }
         }
@@ -206,17 +224,28 @@ public class Conv1DLayer : ILayer
 
     private (int padLeft, int padRight, int outputLength) ComputePadding(int inputLength)
     {
+        // Effective span of the (possibly dilated) kernel along the sequence axis.
+        int effectiveKernel = ((_kernelSize - 1) * _dilation) + 1;
+
         if (_padding == ConvolutionPaddingMode.Valid)
         {
-            int numerator = inputLength - _kernelSize;
+            int numerator = inputLength - effectiveKernel;
             if (numerator < 0)
-                throw new InvalidOperationException("Kernel size cannot exceed sequence length when using valid padding.");
+                throw new InvalidOperationException("Dilated kernel cannot exceed sequence length when using valid padding.");
 
             return (0, 0, (numerator / _stride) + 1);
         }
 
+        if (_padding == ConvolutionPaddingMode.Causal)
+        {
+            // Left-pad only, so output[t] never sees inputs after t.
+            int padLeftCausal = (_kernelSize - 1) * _dilation;
+            int outputLengthCausal = ((inputLength + padLeftCausal - effectiveKernel) / _stride) + 1;
+            return (padLeftCausal, 0, outputLengthCausal);
+        }
+
         int outputLength = (inputLength + _stride - 1) / _stride;
-        int totalPadding = Math.Max(((outputLength - 1) * _stride) + _kernelSize - inputLength, 0);
+        int totalPadding = Math.Max(((outputLength - 1) * _stride) + effectiveKernel - inputLength, 0);
         int padLeft = totalPadding / 2;
         return (padLeft, totalPadding - padLeft, outputLength);
     }
@@ -244,7 +273,7 @@ public class Conv1DLayer : ILayer
 
         for (int kernelOffset = 0; kernelOffset < _kernelSize; kernelOffset++)
         {
-            var timestep = input[start + kernelOffset];
+            var timestep = input[start + (kernelOffset * _dilation)];
             for (int channel = 0; channel < _inputChannels; channel++)
             {
                 values[index++] = timestep[channel];
