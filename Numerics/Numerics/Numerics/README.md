@@ -1259,6 +1259,54 @@ double[] zeroPhaseFir = ZeroPhaseFiltFilt.Apply(firLp, signal); // FIRFilter ove
 
 > **Highpass + lowpass reconstruction:** splitting a signal with a complementary `DesignLowpass` / `DesignHighpass` pair and summing the zero-phase outputs reconstructs the original within tolerance — the basis for separating slow (SRC) from fast (FRC) flow components.
 
+### Wavelets
+
+The `CSharpNumerics.Numerics.SignalProcessing.Wavelets` namespace provides orthonormal wavelet transforms for multi-resolution time–frequency decomposition: a signal is split across scales into a coarse **approximation** and per-level **detail** bands. Because the periodic filter bank is orthonormal, reconstruction is exact (machine precision).
+
+**Wavelet families** — `WaveletFamily.Haar`, `Daubechies4`, `Daubechies8`, `Symlet4`. Each exposes its decomposition low-pass (scaling) and high-pass (wavelet) filters.
+
+**Discrete Wavelet Transform (DWT)** — critically sampled, halving the length at each level. Signal length must be divisible by 2^levels.
+
+```csharp
+using CSharpNumerics.Numerics.SignalProcessing.Wavelets;
+
+var dwt = new DiscreteWaveletTransform(WaveletFamily.Daubechies4);
+
+// Single level → approximation + detail (each length N/2)
+var (approximation, detail) = dwt.SingleLevel(signal);
+
+// N-level decomposition (details finest-first)
+WaveletDecomposition decomposition = dwt.Decompose(signal, levels: 4);
+double[] coarse   = decomposition.Approximation;
+double[] finest   = decomposition.Details[0];
+
+// Exact reconstruction
+var idwt = new InverseWaveletTransform(WaveletFamily.Daubechies4);
+double[] reconstructed = idwt.Reconstruct(decomposition);
+```
+
+By Parseval's theorem the orthonormal transform preserves energy: `Σx² = Σapprox² + Σ(all details)²`, so a low-frequency signal concentrates its energy in the approximation band.
+
+**Wavelet de-noising** — decompose, threshold the detail coefficients (noise spreads thinly across coefficients; signal concentrates into a few large ones), and reconstruct. The noise level is estimated robustly from the finest detail band (MAD).
+
+```csharp
+double[] clean = WaveletDenoising.Denoise(
+    noisy, WaveletFamily.Symlet4, levels: 6,
+    type: ThresholdType.Soft,          // or Hard
+    rule: ThresholdRule.VisuShrink);   // or BayesShrink
+```
+
+**MODWT (Maximal Overlap DWT)** — an undecimated, **shift-invariant** variant: no downsampling, so every band keeps the full signal length and a circular shift of the input produces the same shift of every coefficient. Works for any signal length and is well suited to time-series alignment.
+
+```csharp
+var modwt = new MaximalOverlapDWT(WaveletFamily.Daubechies4);
+ModwtDecomposition md = modwt.Forward(signal, levels: 4);
+double[] level1Detail = md.Details[0];
+double[] smooth       = md.Smooth;
+
+double[] reconstructed = modwt.Inverse(md);   // exact
+```
+
 ---
 
 ## 🎯 Optimization

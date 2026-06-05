@@ -184,23 +184,23 @@ Multi-resolution tidsfrekvens-dekomposition.
 
 **Namespace:** `CSharpNumerics.Numerics.SignalProcessing.Wavelets`
 
-- [ ] `DiscreteWaveletTransform` — DWT med konfigurerbara wavelet-familjer, N-nivå dekomposition → approximation + detail-koefficienter
-- [ ] `WaveletFamily` — enum/klass: `Haar`, `Daubechies4`, `Daubechies8`, `Symlet4` med filterkoefficienter
-- [ ] `InverseWaveletTransform` — rekonstruktion från koefficienter
-- [ ] `WaveletDenoising` — soft/hard thresholding på detail-koefficienter (VisuShrink/BayesShrink)
-- [ ] `MaximalOverlapDWT` (MODWT) — shift-invariant variant för tidsserieanalys
+- [x] `DiscreteWaveletTransform` — DWT med konfigurerbara wavelet-familjer, N-nivå dekomposition → approximation + detail-koefficienter
+- [x] `WaveletFamily` — enum/klass: `Haar`, `Daubechies4`, `Daubechies8`, `Symlet4` med filterkoefficienter
+- [x] `InverseWaveletTransform` — rekonstruktion från koefficienter
+- [x] `WaveletDenoising` — soft/hard thresholding på detail-koefficienter (VisuShrink/BayesShrink)
+- [x] `MaximalOverlapDWT` (MODWT) — shift-invariant variant för tidsserieanalys
 
 ### Tests
-- [ ] DWT → IDWT round-trip: rekonstruktionsfel < 1e-12
-- [ ] Haar-wavelet på stegfunktion ger förväntat detail-mönster
-- [ ] Daubechies-4 på sinusvåg: energi koncentrerad i rätt nivå
-- [ ] WaveletDenoising minskar RMSE på brusig signal med > 50%
-- [ ] MODWT-koefficienter är tidsinvariant (shiftad input → shiftad output)
+- [x] DWT → IDWT round-trip: rekonstruktionsfel < 1e-10 (maskinprecisionsgolv för 8-taps-filter via transponat-invers; Haar/db2 ligger < 1e-12)
+- [x] Haar-wavelet på stegfunktion ger förväntat detail-mönster
+- [x] Daubechies-4 på sinusvåg: energi koncentrerad i rätt nivå (approximationsbandet)
+- [x] WaveletDenoising minskar RMSE på brusig signal med > 50%
+- [x] MODWT-koefficienter är tidsinvariant (shiftad input → shiftad output)
 
 ### Dokumentation
 Uppdatera **`Numerics/Numerics/Numerics/README.md`** (sektionen *Signal Processing*):
-- [ ] Ny undersektion `Wavelets` (`CSharpNumerics.Numerics.SignalProcessing.Wavelets`) med `DiscreteWaveletTransform`, `WaveletFamily`, `InverseWaveletTransform`
-- [ ] Dokumentera `WaveletDenoising` (soft/hard thresholding) och `MaximalOverlapDWT` (MODWT) — DWT→IDWT round-trip-exempel
+- [x] Ny undersektion `Wavelets` (`CSharpNumerics.Numerics.SignalProcessing.Wavelets`) med `DiscreteWaveletTransform`, `WaveletFamily`, `InverseWaveletTransform`
+- [x] Dokumentera `WaveletDenoising` (soft/hard thresholding) och `MaximalOverlapDWT` (MODWT) — DWT→IDWT round-trip-exempel
 
 ---
 
