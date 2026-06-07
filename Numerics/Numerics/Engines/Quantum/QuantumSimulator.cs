@@ -1,4 +1,5 @@
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Physics.Quantum;
 
 namespace CSharpNumerics.Engines.Quantum;
 

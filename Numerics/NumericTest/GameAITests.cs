@@ -3,7 +3,7 @@ using CSharpNumerics.Engines.Game.Flight;
 using CSharpNumerics.ML.ReinforcementLearning.Algorithms.ContinuousControl;
 using CSharpNumerics.ML.ReinforcementLearning.Algorithms.PolicyGradient;
 using CSharpNumerics.ML.ReinforcementLearning.Core;
-using CSharpNumerics.ML.ReinforcementLearning.Environments;
+using CSharpNumerics.Engines.Game.RL;
 using CSharpNumerics.ML.ReinforcementLearning.Policies;
 using CSharpNumerics.Numerics.Objects;
 using System;

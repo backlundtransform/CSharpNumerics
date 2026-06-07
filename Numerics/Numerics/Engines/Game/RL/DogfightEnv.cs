@@ -4,7 +4,7 @@ using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.ML.ReinforcementLearning.Environments;
+namespace CSharpNumerics.Engines.Game.RL;
 
 /// <summary>
 /// Multi-agent pursuit-evasion RL environment using the flight dynamics engine.

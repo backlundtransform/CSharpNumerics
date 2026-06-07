@@ -1,3 +1,4 @@
+using CSharpNumerics.Engines.Exoplanet;
 using CSharpNumerics.Engines.Exoplanet.Data;
 using CSharpNumerics.Engines.Exoplanet.Enums;
 using CSharpNumerics.Physics.Astro;

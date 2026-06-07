@@ -1,9 +1,8 @@
 using CSharpNumerics.Numerics.Objects;
-using CSharpNumerics.Physics.Quantum;
 using System;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.Engines.Quantum;
+namespace CSharpNumerics.Physics.Quantum;
 
 /// <summary>
 /// Represents the quantum state of a multi-qubit system as a vector of complex amplitudes.

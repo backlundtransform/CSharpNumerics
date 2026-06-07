@@ -4,7 +4,7 @@ using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 
-namespace CSharpNumerics.ML.ReinforcementLearning.Environments;
+namespace CSharpNumerics.Engines.Game.RL;
 
 /// <summary>
 /// RL environment wrapping the 6DOF flight dynamics engine.
