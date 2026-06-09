@@ -3261,6 +3261,91 @@ var map    = steane.GetCorrectionMap();  // 64 syndrome entries
 
 ---
 
+## 🌀 Quantum Mechanics (Schrödinger Equation)
+
+The `CSharpNumerics.Physics.Quantum` namespace provides extension methods for the one-dimensional **Schrödinger equation** — the wave-mechanics counterpart to the gate-based Quantum Gates engine. It covers stationary states (the time-independent eigenvalue problem), wavefunction observables, time evolution, tunnelling, and de Broglie relations. Defaults use **natural units** (ħ = 1, m = 1); pass explicit constants for SI calculations.
+
+$$-\frac{\hbar^2}{2m}\frac{d^2\psi}{dx^2} + V(x)\psi = E\psi \qquad\qquad i\hbar\frac{\partial\Psi}{\partial t} = \hat{H}\Psi$$
+
+### Stationary States (Time-Independent Schrödinger Equation)
+
+`SolveStationaryStates` discretises the Hamiltonian on a uniform grid with a three-point Laplacian (Dirichlet walls) and diagonalises it with a dedicated symmetric (Jacobi) eigensolver — returning the lowest energy levels and their normalised wavefunctions.
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+
+// Harmonic oscillator V(x) = ½x² (ħ = m = ω = 1) → Eₙ = n + ½
+Func<double, double> potential = x => 0.5 * x * x;
+StationaryStates states = potential.SolveStationaryStates(
+    xMin: -8, xMax: 8, points: 200, mass: 1, hbar: 1, states: 3);
+
+double e0 = states.GroundStateEnergy;     // ≈ 0.5
+double[] phi0 = states.WaveFunctions[0];  // normalised ground-state wavefunction
+double[] x = states.Grid;
+```
+
+Closed-form energy levels are available directly:
+
+```csharp
+double box = 1.InfiniteSquareWellEnergy(width: 1.0);          // E₁ = n²π²ħ²/(2mL²)
+double sho = 0.HarmonicOscillatorEnergy(angularFrequency: 1); // Eₙ = ħω(n + ½)
+```
+
+### Wavefunction Observables
+
+Operate on a complex wavefunction sampled on a grid (`ComplexNumber[]` + spacing Δx):
+
+```csharp
+ComplexNumber[] psi = phi0.ToComplexWaveFunction();   // lift a real state to complex
+
+double total = psi.NormSquared(dx);                   // ∫|ψ|² dx
+ComplexNumber[] unit = psi.Normalize(dx);             // ∫|ψ|² dx = 1
+double[] density = psi.ProbabilityDensity();          // |ψ(x)|²
+
+double meanX  = psi.ExpectationPosition(x, dx);       // ⟨x⟩
+double spread = psi.PositionUncertainty(x, dx);       // Δx
+double meanP  = psi.ExpectationMomentum(dx);          // ⟨p⟩ = ∫ψ*(−iħ∂ₓ)ψ dx
+```
+
+### Time Evolution (Spectral Method)
+
+A superposition of stationary states evolves exactly as $\Psi(x,t) = \sum_n c_n \phi_n(x)\,e^{-iE_n t/\hbar}$. The norm is conserved and a single eigenstate keeps a stationary probability density (it only accrues a global phase).
+
+```csharp
+double inv = 1.0 / Math.Sqrt(2.0);
+ComplexNumber[] psiT = states.Evolve(new[] { inv, inv, 0.0 }, time: 5.0);
+double norm = psiT.NormSquared(states.GridSpacing);   // ≈ 1 for all t
+```
+
+### Quantum Tunnelling
+
+Closed-form transmission/reflection through a rectangular barrier of height V₀ and width a, covering the tunnelling (E < V₀), over-barrier (E > V₀, with resonances) and E = V₀ regimes.
+
+```csharp
+double e = 1.0, v0 = 2.0;
+double T = e.RectangularBarrierTransmission(v0, barrierWidth: 1.0);   // ∈ (0, 1)
+double R = e.RectangularBarrierReflection(v0, barrierWidth: 1.0);     // = 1 − T
+```
+
+### de Broglie Relations
+
+```csharp
+double lambda  = momentum.DeBroglieWavelength();                       // λ = h/p
+double lambdaE = energy.DeBroglieWavelengthFromEnergy(mass);           // λ = h/√(2mE)
+```
+
+| Method | Description |
+|--------|-------------|
+| `SolveStationaryStates` | Finite-difference Hamiltonian → energy levels + wavefunctions |
+| `InfiniteSquareWellEnergy` / `HarmonicOscillatorEnergy` | Analytic energy levels |
+| `Evolve` | Spectral time evolution of a stationary-state superposition |
+| `NormSquared` / `Normalize` / `ProbabilityDensity` | Wavefunction probability |
+| `ExpectationPosition` / `ExpectationMomentum` / `PositionUncertainty` | Observables |
+| `RectangularBarrierTransmission` / `…Reflection` | Tunnelling coefficients |
+| `DeBroglieWavelength` / `DeBroglieWavelengthFromEnergy` | Wave–particle relations |
+
+---
+
 ## ✈️ Aerodynamics
 
 The `Physics.FluidDynamics.Aerodynamics` namespace provides models for atmospheric flight — ISA atmosphere, airfoil lift/drag, control surfaces, and propulsion. These classes are used by the Game Engine's flight dynamics system but are pure physics with no engine dependency.

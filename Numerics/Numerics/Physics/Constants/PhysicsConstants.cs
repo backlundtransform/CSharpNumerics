@@ -21,6 +21,7 @@ public static class PhysicsConstants
 
     // Quantum / Atomic / Particle
     public const double PlancksConstant = 6.62607015e-34; // J·s
+    public const double ReducedPlanckConstant = 1.054571817e-34; // J·s (ħ = h/2π)
     public const double FineStructureConstant = 7.2973525693e-3; // dimensionless
     public const double RydbergConstant = 10973731.568160; // 1/m
     public const double RydbergEnergy = 2.1798723611035e-18; // J
