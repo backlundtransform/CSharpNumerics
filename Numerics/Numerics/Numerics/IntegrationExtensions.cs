@@ -251,11 +251,12 @@ public static class IntegrationExtensions
     public static double Integrate(
         this Func<(double x, double y), double> func,
         (double lowerLimit, double upperLimit) xlimit,
-        (double lowerLimit, double upperLimit) ylimit)
+        (double lowerLimit, double upperLimit) ylimit,
+        int? seed = null)
     {
         Func<Vector, double> funcv = (Vector v) => func((v.x, v.y));
 
-        return funcv.Integrate(new Vector(xlimit.lowerLimit, ylimit.lowerLimit, 1), new Vector(xlimit.upperLimit, ylimit.upperLimit, 2));
+        return funcv.Integrate(new Vector(xlimit.lowerLimit, ylimit.lowerLimit, 1), new Vector(xlimit.upperLimit, ylimit.upperLimit, 2), seed);
     }
 
     /// <summary>
@@ -264,10 +265,11 @@ public static class IntegrationExtensions
     /// <param name="func">The function to integrate.</param>
     /// <param name="lowerLimit">Lower bounds (x,y,z).</param>
     /// <param name="upperLimit">Upper bounds (x,y,z).</param>
+    /// <param name="seed">Optional random seed for reproducible results; omit for non-deterministic sampling.</param>
     /// <returns>An approximation of the triple integral over the box.</returns>
-    public static double Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit)
+    public static double Integrate(this Func<Vector, double> func, Vector lowerLimit, Vector upperLimit, int? seed = null)
     {
-        var rnd = new Random();
+        var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
 
         var result = 0.0;
         var throws = 999999;

@@ -528,7 +528,8 @@ namespace NumericTest
             a.Velocity = new Vector(5, 0, 0);
 
             var b = RigidBody.CreateSolidSphere(1, 1);
-            b.Position = new Vector(3, 0, 0);
+            // Place b so the two unit-radius spheres actually overlap (centre distance 1.5 < r₁+r₂ = 2).
+            b.Position = new Vector(1.5, 0, 0);
             b.Velocity = new Vector(-3, 0, 0);
 
             var sA = new BoundingSphere(a.Position, 1);
