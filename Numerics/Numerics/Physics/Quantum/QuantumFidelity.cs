@@ -1,4 +1,3 @@
-using CSharpNumerics.Engines.Quantum;
 using CSharpNumerics.Numerics.Objects;
 using System;
 

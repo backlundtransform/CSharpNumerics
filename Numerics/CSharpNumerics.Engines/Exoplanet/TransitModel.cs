@@ -1,8 +1,9 @@
 using System;
 using CSharpNumerics.Engines.Exoplanet.Data;
+using CSharpNumerics.Physics.Astro;
 using CSharpNumerics.Physics.Constants;
 
-namespace CSharpNumerics.Physics.Astro;
+namespace CSharpNumerics.Engines.Exoplanet;
 
 /// <summary>
 /// Analytical transit light curve model based on Mandel &amp; Agol (2002).
