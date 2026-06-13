@@ -47,15 +47,15 @@ namespace CSharpNumerics.Numerics.Objects
                 (a.imaginaryPart * b.realPart - a.realPart * b.imaginaryPart) / denominator);
         }
 
-        public static ComplexNumber operator /(ComplexNumber a,double b)=>new ComplexNumber(a.realPart / b, a.imaginaryPart);
+        public static ComplexNumber operator /(ComplexNumber a,double b)=>new ComplexNumber(a.realPart / b, a.imaginaryPart / b);
 
-        public static ComplexNumber operator *(double a, ComplexNumber b) => new ComplexNumber(b.realPart * a, b.imaginaryPart);
+        public static ComplexNumber operator *(double a, ComplexNumber b) => new ComplexNumber(b.realPart * a, b.imaginaryPart * a);
 
-        public static ComplexNumber operator *(ComplexNumber a, double b) => new ComplexNumber(a.realPart* b, a.imaginaryPart);
+        public static ComplexNumber operator *(ComplexNumber a, double b) => new ComplexNumber(a.realPart* b, a.imaginaryPart * b);
 
         public static ComplexNumber operator +(ComplexNumber a, double b) => new ComplexNumber(a.realPart + b, a.imaginaryPart);
 
-        public static ComplexNumber operator -(double a, ComplexNumber b) => new ComplexNumber(a-b.realPart, b.imaginaryPart);
+        public static ComplexNumber operator -(double a, ComplexNumber b) => new ComplexNumber(a-b.realPart, -b.imaginaryPart);
 
         public static ComplexNumber operator -(ComplexNumber a, double b) => new ComplexNumber(a.realPart - b, a.imaginaryPart);
 

@@ -183,16 +183,18 @@ namespace NumericsTests
         [TestMethod]
         public void TestDoubleIntegrate()
         {
+            // Seeded for deterministic Monte Carlo. Analytic value: ∫∫(x³+y²) over [1,4]² = 254.25.
             Func<(double, double), double> func = ((double x, double y) v) => (Math.Pow(v.x, 3) + Math.Pow(v.y, 2));
-    
-            var result = func.Integrate((1,4),(1,4));
-            Assert.IsTrue(Math.Truncate(result) == 254);
 
+            var result = func.Integrate((1, 4), (1, 4), seed: 12345);
+            Assert.AreEqual(254.25, result, 1.0);
+
+            // Analytic value: ∫∫(2xy + y²) over [1,4]² = 175.5.
             Func<(double, double), double> func2 = ((double x, double y) v) => 2*v.x*v.y + Math.Pow(v.y, 2);
 
-            result = func2.Integrate((1, 4), (1, 4));
+            result = func2.Integrate((1, 4), (1, 4), seed: 12345);
 
-            Assert.IsTrue(result < 177 && result > 173);
+            Assert.AreEqual(175.5, result, 1.0);
         }
 
 
