@@ -55,8 +55,15 @@ public static class PhysicsConstants
     public const double AstronomicalUnit = 1.495978707e11; // meters
     public const double LightYear = 9.4607e15; // meters
     public const double Parsec = 3.0857e16; // meters
+    public const double Megaparsec = 3.0857e22; // meters (10^6 parsecs)
     public const double EarthRadius = 6.371e6; // meters
     public const double MoonRadius = 1.7371e6; // meters
     public const double SolarLuminosity = 3.828e26; // Watts
     public const double HubbleConstant = 2.2e-18; // 1/s
+    public const double CmbTemperature = 2.72548; // Kelvin (cosmic microwave background)
+
+    // Planck units
+    public const double PlanckMass = 2.176434e-8; // kg
+    public const double PlanckLength = 1.616255e-35; // meters
+    public const double PlanckTime = 5.391247e-44; // seconds
 }

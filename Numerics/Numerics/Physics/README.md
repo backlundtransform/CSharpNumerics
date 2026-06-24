@@ -692,6 +692,73 @@ double esiVenus = AstronomyExtensions.CalculateEsi(0.95, 0.95, 0.93, 737); // �
 
 ---
 
+## 🌌 Cosmology
+
+The `Physics.Cosmology` namespace provides the `FlrwModel` — a homogeneous, isotropic Friedmann–Lemaître–Robertson–Walker cosmology. It derives the expansion history H(z), the cosmological distance measures, lookback time and the age of the universe by numerically integrating the Friedmann equation. H₀ is given in km·s⁻¹·Mpc⁻¹; distances are returned in metres, times in seconds.
+
+### Building a model
+
+```csharp
+using CSharpNumerics.Physics.Cosmology;
+
+// Planck 2018 flat ΛCDM (H₀ = 67.4, Ω_m = 0.315, Ω_Λ = 0.685)
+var cosmos = FlrwModel.Planck2018();
+
+// Or specify your own — curvature is fixed by flatness:
+// Ω_k = 1 − Ω_m − Ω_Λ − Ω_r
+var open = new FlrwModel(hubbleConstantKmSMpc: 70.0, omegaMatter: 0.3, omegaLambda: 0.0); // Ω_k = 0.7
+
+double dh = cosmos.HubbleDistance;   // c/H₀ (m)
+double th = cosmos.HubbleTime;       // 1/H₀ (s)
+double ok = cosmos.OmegaCurvature;   // ≈ 0 for the flat default
+```
+
+### Expansion history & density
+
+```csharp
+// Dimensionless Hubble E(z) = H(z)/H₀ = √(Ω_m(1+z)³ + Ω_r(1+z)⁴ + Ω_k(1+z)² + Ω_Λ)
+double E  = cosmos.DimensionlessHubble(1.0);
+double Hz = cosmos.HubbleParameter(1.0);    // H(z) in s⁻¹
+
+double a  = cosmos.ScaleFactor(1.0);        // 1/(1+z) = 0.5
+
+// Critical density ρ_c = 3H²/(8πG) — today (≈ 8.5×10⁻²⁷ kg/m³) or at redshift z
+double rhoC  = cosmos.CriticalDensity();
+double rhoCz = cosmos.CriticalDensity(2.0);
+```
+
+### Cosmological distances
+
+```csharp
+double dC = cosmos.ComovingDistance(1.0);              // line-of-sight comoving (m)
+double dM = cosmos.TransverseComovingDistance(1.0);    // accounts for curvature
+double dL = cosmos.LuminosityDistance(1.0);            // (1+z)·D_M
+double dA = cosmos.AngularDiameterDistance(1.0);       // D_M/(1+z)
+double mu = cosmos.DistanceModulus(1.0);               // 5·log₁₀(D_L/10pc) ≈ 44.2 at z = 1
+
+// At low redshift D_C → (c/H₀)·z (Hubble's law); the Etherington relation
+// D_L = (1+z)²·D_A holds exactly.
+```
+
+### Cosmic time
+
+```csharp
+double t0   = cosmos.AgeOfUniverse();   // ≈ 13.8 Gyr (in seconds)
+double tz   = cosmos.Age(2.0);          // age of the universe at z = 2
+double look = cosmos.LookbackTime(1.0); // t₀ − t(z), light-travel time since z = 1
+```
+
+| Member | Returns |
+|--------|---------|
+| `DimensionlessHubble(z)` / `HubbleParameter(z)` | E(z) / H(z) |
+| `CriticalDensity(z = 0)` | ρ_c = 3H²/(8πG) |
+| `ComovingDistance` / `TransverseComovingDistance` | D_C / D_M |
+| `LuminosityDistance` / `AngularDiameterDistance` | D_L / D_A |
+| `DistanceModulus` | μ = 5·log₁₀(D_L/10pc) |
+| `AgeOfUniverse` / `Age(z)` / `LookbackTime(z)` | cosmic time measures |
+
+---
+
 ## 🔄 Oscillations
 
 The `Physics.Oscillations` namespace provides one-dimensional oscillator models with both **analytic** and **numerical** solutions. All oscillators implement `IOscillator` for a consistent API.
