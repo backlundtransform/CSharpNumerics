@@ -4110,3 +4110,83 @@ double qAlt = HeatFlux.FromAltitudeAndVelocity(
 
 double h0 = HeatFlux.StagnationEnthalpy(velocity: 7000);  // J/kg
 ```
+
+---
+
+## 🪐 Gravitation
+
+The `Physics.Gravitation` namespace provides system-level Newtonian gravitation for arbitrary bodies (not Earth-specific): direct-summation N-body dynamics, vis-viva and the celestial-mechanics relations (reduced mass, Hill sphere, sphere of influence, Roche limit, tidal acceleration), and the five Lagrange points. SI units throughout (m, kg, s).
+
+> Basic two-body helpers (`GravitationalForce`, `GravitationalFieldStrength`, `EscapeVelocity`, `OrbitalSpeed`, `OrbitalPeriod`) live as extension methods in [Kinematics Extensions](#-kinematics-extensions); this namespace covers the multi-body and celestial-mechanics tools.
+
+### N-body dynamics
+
+```csharp
+using CSharpNumerics.Physics.Gravitation;
+using CSharpNumerics.Numerics.Objects;
+
+var positions = new[] { new Vector(0, 0, 0), new Vector(1.5e11, 0, 0), new Vector(0, 2.3e11, 0) };
+var masses    = new[] { 1.989e30, 5.972e24, 6.39e23 };
+
+// Acceleration on one body, or on all bodies at once (direct summation)
+Vector a0       = NBodyGravity.Acceleration(positions, masses, index: 0);
+Vector[] accel  = NBodyGravity.Accelerations(positions, masses);
+
+// Optional Plummer softening for close encounters
+Vector aSoft    = NBodyGravity.Acceleration(positions, masses, 0, softening: 1e7);
+
+double U   = NBodyGravity.PotentialEnergy(positions, masses);  // −Σ G·mᵢmⱼ/rᵢⱼ
+Vector com = NBodyGravity.CenterOfMass(positions, masses);
+```
+
+### Celestial mechanics
+
+```csharp
+using CSharpNumerics.Physics.Gravitation;
+using CSharpNumerics.Physics.Constants;
+
+double mSun = PhysicsConstants.SolarMass;
+double mEarth = PhysicsConstants.EarthMass;
+double au = PhysicsConstants.AstronomicalUnit;
+
+// Vis-viva: v = √(μ(2/r − 1/a)). For r = a this is the circular speed √(μ/r).
+double mu = PhysicsConstants.GravitationalConstant * mEarth;
+double v  = CelestialMechanics.VisVivaSpeed(mu, radius: 7.0e6, semiMajorAxis: 8.0e6);
+double v2 = CelestialMechanics.VisVivaSpeedFromMass(mEarth, 7.0e6, 8.0e6);
+
+double mRed = CelestialMechanics.ReducedMass(mEarth, PhysicsConstants.MoonMass);
+
+// Spheres of influence
+double rHill = CelestialMechanics.HillSphereRadius(au, eccentricity: 0.0167, mEarth, mSun); // ≈ 1.5×10⁶ km
+double rSoi  = CelestialMechanics.SphereOfInfluence(au, mEarth, mSun);                       // ≈ 924 000 km
+
+// Roche limit (rigid and fluid) — Moon-like satellite around Earth
+double dRigid = CelestialMechanics.RocheLimitRigid(PhysicsConstants.EarthRadius, 5514, 3344);
+double dFluid = CelestialMechanics.RocheLimitFluid(PhysicsConstants.EarthRadius, 5514, 3344); // ≈ 18 400 km
+
+// Differential tidal acceleration a = 2GMr/d³
+double aTide = CelestialMechanics.TidalAcceleration(
+    PhysicsConstants.MoonMass, distance: 3.844e8, bodyRadius: PhysicsConstants.EarthRadius);
+```
+
+### Lagrange points
+
+The five equilibria of the circular restricted three-body problem, in the co-rotating frame with the larger mass at the origin and the smaller mass at `(separation, 0, 0)`. L1–L3 are solved by Newton iteration; L4/L5 form equilateral triangles with the primaries.
+
+```csharp
+using CSharpNumerics.Physics.Gravitation;
+using CSharpNumerics.Physics.Constants;
+
+var (l1, l2, l3, l4, l5) = LagrangePoints.All(
+    largeMass: PhysicsConstants.SolarMass,
+    smallMass: PhysicsConstants.EarthMass,
+    separation: PhysicsConstants.AstronomicalUnit);
+
+// Earth–Sun L1/L2 sit ≈ 1.5×10⁶ km either side of Earth; L4/L5 lead/trail by 60°.
+```
+
+| Class | Covers |
+|-------|--------|
+| `NBodyGravity` | pairwise & N-body acceleration (with softening), potential energy, centre of mass |
+| `CelestialMechanics` | vis-viva, reduced mass, Hill sphere, sphere of influence, Roche limit, tidal acceleration |
+| `LagrangePoints` | L1–L5 of the circular restricted three-body problem |
