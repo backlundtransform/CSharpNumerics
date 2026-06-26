@@ -854,11 +854,64 @@ double delay = GeneralRelativity.ShapiroDelay(
     r1: au, r2: au, impactParameter: 6.957e8, centralMass: M);
 ```
 
+### Gravitational Waves
+
+Weak-field relations for a compact binary on a circular orbit (quadrupole approximation + the Peters inspiral formula).
+
+```csharp
+using CSharpNumerics.Physics.Relativity;
+using CSharpNumerics.Physics.Constants;
+
+double m1 = 30 * PhysicsConstants.SolarMass;
+double m2 = 30 * PhysicsConstants.SolarMass;
+double a  = 1.0e8; // orbital separation (m)
+
+// Chirp mass M_c = (m₁m₂)^(3/5)/(m₁+m₂)^(1/5)
+double mc = GravitationalWaves.ChirpMass(m1, m2);
+
+// Orbital / gravitational-wave frequency (f_gw = 2·f_orb)
+double fOrb = GravitationalWaves.OrbitalFrequency(m1, m2, a);
+double fGw  = GravitationalWaves.GravitationalWaveFrequency(m1, m2, a);
+
+// Quadrupole luminosity L = (32/5)·G⁴/c⁵·(m₁m₂)²(m₁+m₂)/a⁵
+double L = GravitationalWaves.Luminosity(m1, m2, a);
+
+// Time to coalescence from an initial separation (Peters 1964)
+double tMerge = GravitationalWaves.MergerTime(m1, m2, initialSeparation: 1.0e9);
+
+// Order-of-magnitude strain at distance D
+double h = GravitationalWaves.StrainAmplitude(mc, distance: 1.0e24, gravitationalWaveFrequency: fGw);
+```
+
+### Relativistic Clocks (GPS)
+
+Combined special- and general-relativistic clock rates in the weak field: a moving clock runs slow (−v²/2c²), a higher clock runs fast (+ΔΦ/c²).
+
+```csharp
+using CSharpNumerics.Physics.Relativity;
+using CSharpNumerics.Physics.Constants;
+
+// Net rate of a GPS satellite clock relative to the ground
+double rate = RelativisticClock.OrbitingClockFractionalRate(
+    mass: PhysicsConstants.EarthMass,
+    groundRadius: 6.371e6,
+    orbitRadius: 2.656e7,
+    orbitSpeed: 3874.0);
+
+double microsecPerDay = rate * 86400 * 1e6;   // ≈ +38 µs/day (GPS clocks run fast)
+
+// The two contributions individually
+double gr = RelativisticClock.GravitationalFractionalRate(PhysicsConstants.EarthMass, 6.371e6, 2.656e7); // > 0
+double sr = RelativisticClock.VelocityFractionalRate(3874.0);                                            // < 0
+```
+
 | Class | Covers |
 |-------|--------|
 | `SpecialRelativity` | Lorentz factor, time dilation, length contraction, momentum/energy, velocity addition, Doppler, rapidity |
 | `Schwarzschild` | gravitational radius, photon sphere, ISCO, time-dilation factor & redshift, clock-rate ratio, escape velocity |
 | `GeneralRelativity` | perihelion precession, light deflection, Shapiro delay |
+| `GravitationalWaves` | chirp mass, orbital/GW frequency, quadrupole luminosity, Peters merger time, strain amplitude |
+| `RelativisticClock` | gravitational & velocity clock rates, combined GPS-style satellite correction |
 
 ---
 
