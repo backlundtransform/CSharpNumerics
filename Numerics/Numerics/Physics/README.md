@@ -759,6 +759,109 @@ double look = cosmos.LookbackTime(1.0); // t₀ − t(z), light-travel time sinc
 
 ---
 
+## 🌌 Relativity
+
+The `Physics.Relativity` namespace covers **special relativity** (flat-spacetime kinematics and dynamics) and **weak-field general relativity** (Schwarzschild geometry and the classical tests of GR). Speeds are in m/s, masses in kg, lengths in metres, angles in radians.
+
+### Special Relativity
+
+```csharp
+using CSharpNumerics.Physics.Relativity;
+using CSharpNumerics.Physics.Constants;
+
+double c = PhysicsConstants.SpeedOfLight;
+
+// Lorentz factor γ = 1/√(1 − v²/c²)
+double gamma = SpecialRelativity.LorentzFactor(0.8 * c);      // 5/3 ≈ 1.6667
+
+// Time dilation: coordinate time for 1 s of proper time at 0.8c
+double dt = SpecialRelativity.TimeDilation(1.0, 0.8 * c);     // 1.6667 s
+
+// Length contraction: L = L₀/γ
+double L = SpecialRelativity.LengthContraction(1.0, 0.8 * c); // 0.6 m
+
+// Momentum and energy
+double p  = SpecialRelativity.Momentum(mass: 1.0, velocity: 0.9 * c);  // γmv
+double E0 = SpecialRelativity.RestEnergy(1.0);                         // mc²
+double E  = SpecialRelativity.TotalEnergy(1.0, 0.9 * c);               // γmc²
+double Ek = SpecialRelativity.KineticEnergy(1.0, 0.9 * c);            // (γ−1)mc²
+double Ep = SpecialRelativity.EnergyFromMomentum(1.0, p);             // √((pc)²+(mc²)²)
+
+// Relativistic velocity addition — never exceeds c
+double s = SpecialRelativity.AddVelocities(0.5 * c, 0.5 * c);  // 0.8c
+
+// Longitudinal Doppler (positive velocity = receding → redshift)
+double factor = SpecialRelativity.DopplerFactor(0.6 * c);              // 0.5
+double fObs   = SpecialRelativity.ObservedFrequency(1.0e9, 0.6 * c);   // 0.5 GHz
+
+// Rapidity — adds linearly under collinear boosts
+double phi = SpecialRelativity.Rapidity(0.6 * c);
+```
+
+> `KineticEnergy` is evaluated as `mc²·β²/(s(1+s))` with `s = √(1−β²)` — algebraically identical to `(γ−1)mc²` but free of the catastrophic cancellation the direct form suffers at low speeds (where it correctly reduces to ½mv²).
+
+### Schwarzschild Geometry
+
+Geometry around a static, uncharged, spherically symmetric mass.
+
+```csharp
+using CSharpNumerics.Physics.Relativity;
+using CSharpNumerics.Physics.Constants;
+
+double M = PhysicsConstants.SolarMass;
+
+// Characteristic radii
+double rs    = Schwarzschild.Radius(M);              // 2GM/c² ≈ 2953 m (Sun)
+double rPh   = Schwarzschild.PhotonSphereRadius(M);  // 1.5·rs
+double rIsco = Schwarzschild.Isco(M);                // 3·rs (= 6GM/c²)
+
+// Gravitational time dilation & redshift for a static observer at radius r
+double r = 7.0e8;
+double dtau_dt = Schwarzschild.TimeDilationFactor(r, M);  // √(1 − rs/r)
+double z       = Schwarzschild.Redshift(r, M);            // 1/√(1−rs/r) − 1
+
+// Clock-rate ratio between two radii (the lower clock runs slow)
+double ratio = Schwarzschild.ClockRateRatio(radiusLower: 1e7, radiusUpper: 1e9, mass: M);
+
+// Escape velocity √(2GM/r) — equals c exactly at the horizon
+double vEsc = Schwarzschild.EscapeVelocity(rs, M);  // = c
+```
+
+### Classical Tests of General Relativity
+
+Weak-field effects: perihelion precession, light deflection, and the Shapiro delay.
+
+```csharp
+using CSharpNumerics.Physics.Relativity;
+using CSharpNumerics.Physics.Constants;
+
+double M = PhysicsConstants.SolarMass;
+
+// Perihelion precession Δϖ = 6πGM / (c²·a(1−e²))
+double perOrbit = GeneralRelativity.PerihelionPrecessionPerOrbit(
+    semiMajorAxis: 5.79e10, eccentricity: 0.2056, centralMass: M);   // ≈ 5.0e-7 rad/orbit
+
+double arcsecPerCentury = GeneralRelativity.PerihelionPrecessionArcsecPerCentury(
+    5.79e10, 0.2056, M, orbitalPeriodDays: 87.969);                  // ≈ 43″ (Mercury)
+
+// Light deflection α = 4GM / (c²·b)
+double deflection = GeneralRelativity.LightDeflection(
+    impactParameter: 6.957e8, centralMass: M);                       // ≈ 1.75″ at the Sun's limb
+
+// Shapiro time delay for a signal grazing the mass
+double au = PhysicsConstants.AstronomicalUnit;
+double delay = GeneralRelativity.ShapiroDelay(
+    r1: au, r2: au, impactParameter: 6.957e8, centralMass: M);
+```
+
+| Class | Covers |
+|-------|--------|
+| `SpecialRelativity` | Lorentz factor, time dilation, length contraction, momentum/energy, velocity addition, Doppler, rapidity |
+| `Schwarzschild` | gravitational radius, photon sphere, ISCO, time-dilation factor & redshift, clock-rate ratio, escape velocity |
+| `GeneralRelativity` | perihelion precession, light deflection, Shapiro delay |
+
+---
+
 ## 🔄 Oscillations
 
 The `Physics.Oscillations` namespace provides one-dimensional oscillator models with both **analytic** and **numerical** solutions. All oscillators implement `IOscillator` for a consistent API.
