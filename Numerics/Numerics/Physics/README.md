@@ -612,6 +612,33 @@ double aAU = KeplerOrbit.SemiMajorAxisAU(periodDays: 365.25, stellarMassSolar: 1
 double v = KeplerOrbit.OrbitalVelocity(a: 1.496e11, period: 3.156e7); // ≈ 29.8 km/s
 ```
 
+### Planetary Ephemeris
+
+Approximate positions of the eight major planets from Standish's low-precision Keplerian elements (valid ~1800–2050, accurate to a few arc-minutes). The pipeline reuses the Julian-date, Kepler and orbital-element machinery; heliocentric coordinates are in the J2000 ecliptic frame, geocentric results are J2000 right ascension / declination.
+
+```csharp
+using CSharpNumerics.Physics.Astro;
+using CSharpNumerics.Physics.Astro.Enums;
+
+var date = new DateTime(2024, 6, 15, 0, 0, 0, DateTimeKind.Utc);
+
+// Heliocentric ecliptic position (AU), J2000 frame
+Vector marsHelio = PlanetaryEphemeris.HeliocentricEcliptic(Planet.Mars, date);
+
+// Geocentric apparent position: RA/Dec (degrees) + Earth–planet distance (AU)
+var (ra, dec, distance) = PlanetaryEphemeris.GeocentricEquatorial(Planet.Jupiter, date);
+
+// Combine with the existing coordinate transforms — e.g. where is Saturn in the sky?
+var (raS, decS, _) = PlanetaryEphemeris.GeocentricEquatorial(Planet.Saturn, date);
+var (alt, az) = AstronomyExtensions.EquatorialToHorizontal(
+    raS, decS, latitudeDegrees: 59.33, longitudeDegrees: 18.07, utc: date); // Stockholm
+```
+
+| Member | Returns |
+|--------|---------|
+| `HeliocentricEcliptic(planet, utc)` | heliocentric position (AU, J2000 ecliptic) |
+| `GeocentricEquatorial(planet, utc)` | (right ascension°, declination°, distance AU) |
+
 ### Exoplanet Classification
 
 Classify stars by temperature, compute habitable zones, and measure how Earth-like a planet is — all in `AstronomyExtensions`.
