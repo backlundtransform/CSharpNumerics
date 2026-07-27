@@ -1,4 +1,5 @@
-﻿using CSharpNumerics.Numerics.Objects;
+﻿using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
+using CSharpNumerics.Numerics.Objects;
 using System.Collections.Generic;
 using System.Linq;
 using System;
@@ -526,42 +527,42 @@ public static class DifferentialEquationExtensions
     #endregion
 
     /// <summary>
-    /// Solves a linear system A x = b by computing x = A^{-1} b.
+    /// Solves a linear system A x = b via LU decomposition with partial pivoting.
     /// </summary>
-    /// <param name="matrix">Coefficient matrix A.</param>
+    /// <param name="matrix">Coefficient matrix A (2x2 or 3x3).</param>
     /// <param name="vector">Right-hand side vector b.</param>
     /// <returns>Solution vector x.</returns>
     public static Vector LinearSystemSolver(this Matrix matrix, Vector vector)
     {
-        var values = matrix.Inverse() * vector;
+        var b = matrix.columnLength == 2
+            ? new List<double> { vector.x, vector.y }
+            : new List<double> { vector.x, vector.y, vector.z };
 
-        return values;
+        var x = new LuDecomposition(matrix).Solve(b);
+
+        return new Vector(x[0], x[1], x.Count > 2 ? x[2] : 0);
     }
 
     /// <summary>
-    /// Solves a linear system A x = b by computing x = A^{-1} b.
+    /// Solves a linear system A x = b via LU decomposition with partial pivoting.
     /// </summary>
     /// <param name="matrix">Coefficient matrix A.</param>
     /// <param name="vector">Right-hand side vector b.</param>
     /// <returns>Solution vector x.</returns>
     public static VectorN LinearSystemSolver(this Matrix matrix, VectorN vector)
     {
-        var values = matrix.Inverse() * vector;
-
-        return values;
+        return new LuDecomposition(matrix).Solve(vector);
     }
 
     /// <summary>
-    /// Solves a linear system A x = b by computing x = A^{-1} b.
+    /// Solves a linear system A x = b via LU decomposition with partial pivoting.
     /// </summary>
     /// <param name="matrix">Coefficient matrix A.</param>
     /// <param name="vector">Right-hand side vector b.</param>
     /// <returns>Solution vector x as a list.</returns>
     public static List<double> LinearSystemSolver(this Matrix matrix, List<double> vector)
     {
-        var values = matrix.Inverse() * vector;
-
-        return values;
+        return new LuDecomposition(matrix).Solve(vector);
     }
 
     /// <summary>

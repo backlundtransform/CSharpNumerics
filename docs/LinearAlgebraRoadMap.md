@@ -105,11 +105,11 @@ Placeras i `Numerics/RootFinding/`. Direkt användbart i: `KeplerOrbit` (Keplers
 ## Implementationsplan — Faser
 
 ### Phase 1 — Dekompositionsgrund
-- [ ] Skapa `Numerics/LinearAlgebra/Decompositions/`-struktur
-- [ ] Implementera `LuDecomposition` med partiell pivotering + `Solve`/`Determinant`/`Inverse`
-- [ ] Implementera `CholeskyDecomposition` + `IsPositiveDefinite`
-- [ ] Refaktorera `Matrix.Inverse` och `LinearSystemSolver` till LU internt (inga API-ändringar)
-- [ ] Enhetstester: kända faktoriseringar, singulära matriser, round-trip `A ≈ P·L·U`
+- [x] Skapa `Numerics/LinearAlgebra/Decompositions/`-struktur
+- [x] Implementera `LuDecomposition` med partiell pivotering + `Solve`/`Determinant`/`Inverse`
+- [x] Implementera `CholeskyDecomposition` + `IsPositiveDefinite`
+- [x] Refaktorera `Matrix.Inverse` och `LinearSystemSolver` till LU internt (inga API-ändringar)
+- [x] Enhetstester: kända faktoriseringar, singulära matriser, round-trip `A ≈ P·L·U`
 
 ### Phase 2 — QR & egendekomposition
 - [ ] Implementera `QrDecomposition` (Householder) + minsta kvadrat-`Solve`

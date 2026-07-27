@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 
 namespace CSharpNumerics.Numerics.Objects;
 
@@ -54,12 +55,12 @@ public struct Matrix
     }
     public Matrix Inverse()
     {
-        var determinant =Determinant();
-        if (determinant == 0) {
+        var lu = new LuDecomposition(this);
+        if (lu.IsSingular)
+        {
             throw new Exception("This matrix is not invertible");
         }
-        var adj = Adjugate();
-        return adj / determinant;
+        return lu.Inverse();
     }
 
 
