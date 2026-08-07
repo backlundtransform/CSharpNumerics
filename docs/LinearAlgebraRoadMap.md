@@ -112,11 +112,11 @@ Placeras i `Numerics/RootFinding/`. Direkt användbart i: `KeplerOrbit` (Keplers
 - [x] Enhetstester: kända faktoriseringar, singulära matriser, round-trip `A ≈ P·L·U`
 
 ### Phase 2 — QR & egendekomposition
-- [ ] Implementera `QrDecomposition` (Householder) + minsta kvadrat-`Solve`
-- [ ] Implementera symmetrisk `EigenDecomposition` (QR med shift)
-- [ ] Implementera osymmetrisk egenlösare (Hessenberg + QR-iteration)
-- [ ] Migrera kvantmodulens symmetriska egenlösare till den nya
-- [ ] Enhetstester: ortogonalitet `QᵀQ = I`, egenpar-residualer `‖Av − λv‖`
+- [x] Implementera `QrDecomposition` (Householder) + minsta kvadrat-`Solve`
+- [x] Implementera symmetrisk `EigenDecomposition` (QR med shift)
+- [x] Implementera osymmetrisk egenlösare (Hessenberg + QR-iteration)
+- [x] Migrera kvantmodulens symmetriska egenlösare till den nya
+- [x] Enhetstester: ortogonalitet `QᵀQ = I`, egenpar-residualer `‖Av − λv‖`
 
 ### Phase 3 — SVD
 - [ ] Implementera `SvdDecomposition` (Golub–Kahan)

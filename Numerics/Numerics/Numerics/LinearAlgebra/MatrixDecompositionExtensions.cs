@@ -16,4 +16,16 @@ public static class MatrixDecompositionExtensions
     /// The returned object caches the factorization for reuse across multiple solves.
     /// </summary>
     public static CholeskyDecomposition Cholesky(this Matrix matrix) => new CholeskyDecomposition(matrix);
+
+    /// <summary>
+    /// Computes the QR decomposition via Householder reflections: A = Q·R.
+    /// For overdetermined systems (rows &gt; columns) Solve gives the least squares solution.
+    /// </summary>
+    public static QrDecomposition Qr(this Matrix matrix) => new QrDecomposition(matrix);
+
+    /// <summary>
+    /// Computes the eigenvalue decomposition A·V = V·D.
+    /// Symmetric matrices give real, ascending eigenvalues with orthonormal eigenvectors.
+    /// </summary>
+    public static EigenDecomposition Eigen(this Matrix matrix) => new EigenDecomposition(matrix);
 }
