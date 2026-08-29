@@ -1,5 +1,14 @@
 # Linjär algebra — Dekompositioner, glesa lösare & rotfinnare
 
+> **Status (2026-08-29):** Phase 1–2 **klara** på grenen `feat/lu-cholesky-decompositions` — pushad, PR mot `master` återstår
+> (LU, Cholesky, QR, egendekomposition + fasaden `matrix.Lu()/.Cholesky()/.Qr()/.Eigen()`,
+> `Matrix.Inverse`/`LinearSystemSolver` refaktorerade till LU, kvantmodulens `SymmetricEigenSolver` ersatt).
+> Phase 3–6 (SVD, glesa lösare, rotfinnare, integration) är **ej påbörjade** — arbetet pausades här i ett rent läge,
+> hela testsviten grön (1508 tester). Phase 5 (rotfinnare) är en fristående snabb vinst att börja med vid återupptag.
+>
+> Känd kvarvarande städpunkt: `CoupledOscillators` (`Physics/Mechanics/Oscillations/`) har fortfarande en egen
+> privat Jacobi-egenlösare som bör migreras till `EigenDecomposition`, samma mönster som kvantmodulen.
+
 ## Mål
 
 Bygga ut linjär algebra-fundamentet med **matrisdekompositioner** (LU, QR, Cholesky, SVD, egendekomposition), **iterativa glesa lösare** (CG, BiCGSTAB, GMRES) samt ett komplett **rotfinnar-modul**. Detta är den enskilt viktigaste investeringen för att göra CSharpNumerics till ett ledande ramverk — nästan alla andra delar (PCA, Ridge, minsta kvadrat, FEM, Kalman, kvantmodulen) blir bättre av den.
@@ -105,18 +114,18 @@ Placeras i `Numerics/RootFinding/`. Direkt användbart i: `KeplerOrbit` (Keplers
 ## Implementationsplan — Faser
 
 ### Phase 1 — Dekompositionsgrund
-- [ ] Skapa `Numerics/LinearAlgebra/Decompositions/`-struktur
-- [ ] Implementera `LuDecomposition` med partiell pivotering + `Solve`/`Determinant`/`Inverse`
-- [ ] Implementera `CholeskyDecomposition` + `IsPositiveDefinite`
-- [ ] Refaktorera `Matrix.Inverse` och `LinearSystemSolver` till LU internt (inga API-ändringar)
-- [ ] Enhetstester: kända faktoriseringar, singulära matriser, round-trip `A ≈ P·L·U`
+- [x] Skapa `Numerics/LinearAlgebra/Decompositions/`-struktur
+- [x] Implementera `LuDecomposition` med partiell pivotering + `Solve`/`Determinant`/`Inverse`
+- [x] Implementera `CholeskyDecomposition` + `IsPositiveDefinite`
+- [x] Refaktorera `Matrix.Inverse` och `LinearSystemSolver` till LU internt (inga API-ändringar)
+- [x] Enhetstester: kända faktoriseringar, singulära matriser, round-trip `A ≈ P·L·U`
 
 ### Phase 2 — QR & egendekomposition
-- [ ] Implementera `QrDecomposition` (Householder) + minsta kvadrat-`Solve`
-- [ ] Implementera symmetrisk `EigenDecomposition` (QR med shift)
-- [ ] Implementera osymmetrisk egenlösare (Hessenberg + QR-iteration)
-- [ ] Migrera kvantmodulens symmetriska egenlösare till den nya
-- [ ] Enhetstester: ortogonalitet `QᵀQ = I`, egenpar-residualer `‖Av − λv‖`
+- [x] Implementera `QrDecomposition` (Householder) + minsta kvadrat-`Solve`
+- [x] Implementera symmetrisk `EigenDecomposition` (QR med shift)
+- [x] Implementera osymmetrisk egenlösare (Hessenberg + QR-iteration)
+- [x] Migrera kvantmodulens symmetriska egenlösare till den nya
+- [x] Enhetstester: ortogonalitet `QᵀQ = I`, egenpar-residualer `‖Av − λv‖`
 
 ### Phase 3 — SVD
 - [ ] Implementera `SvdDecomposition` (Golub–Kahan)

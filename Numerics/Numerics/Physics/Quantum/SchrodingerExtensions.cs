@@ -1,4 +1,5 @@
 using CSharpNumerics.Physics.Constants;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
@@ -62,7 +63,10 @@ public static class SchrodingerExtensions
             if (i < points - 1) h[i, i + 1] = -kinetic;
         }
 
-        var (energies, vectors) = SymmetricEigenSolver.Solve(h);
+        // Symmetric eigensolver: ascending eigenvalues, eigenvector k in column k.
+        var eigen = new EigenDecomposition(new Matrix(h));
+        var energies = eigen.RealEigenvalues;
+        var vectors = eigen.EigenVectors;
 
         int count = states < 0 ? points : Math.Min(states, points);
         var selectedEnergies = new double[count];
@@ -71,7 +75,12 @@ public static class SchrodingerExtensions
         for (int k = 0; k < count; k++)
         {
             selectedEnergies[k] = energies[k];
-            waveFunctions[k] = NormaliseReal(vectors[k], dx);
+
+            var vector = new double[points];
+            for (int i = 0; i < points; i++)
+                vector[i] = vectors.values[i, k];
+
+            waveFunctions[k] = NormaliseReal(vector, dx);
         }
 
         return new StationaryStates(selectedEnergies, waveFunctions, grid, dx);

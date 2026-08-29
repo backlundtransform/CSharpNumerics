@@ -267,6 +267,42 @@ var y = A * x;
 
 ---
 
+## 🧩 Matrix Decompositions
+
+Factorizations live in `CSharpNumerics.Numerics.LinearAlgebra` and are cached — factor once, solve many times.
+
+```csharp
+using CSharpNumerics.Numerics.LinearAlgebra;
+
+// LU with partial pivoting: P·A = L·U
+var A = new Matrix(new double[,] { { 2, 1, -1 }, { -3, -1, 2 }, { -2, 1, 2 } });
+var lu = A.Lu();
+var x = lu.Solve(new VectorN(new double[] { 8, -11, -3 }));  // (2, 3, -1)
+var det = lu.Determinant();
+var inv = lu.Inverse();
+
+// Cholesky: A = L·Lᵀ for symmetric positive definite matrices (≈2× faster than LU)
+var spd = new Matrix(new double[,] { { 4, 12, -16 }, { 12, 37, -43 }, { -16, -43, 98 } });
+var chol = spd.Cholesky();
+bool ok = chol.IsPositiveDefinite;
+var y = chol.Solve(new VectorN(new double[] { 1, 2, 3 }));
+
+// QR via Householder reflections: least squares for overdetermined systems
+var overdetermined = new Matrix(new double[,] { { 1, 1 }, { 1, 2 }, { 1, 3 } });
+var fit = overdetermined.Qr().Solve(new VectorN(new double[] { 6, 0, 0 }));  // min ‖Ax − b‖
+
+// Eigenvalue decomposition: A·V = V·D
+// Symmetric → real ascending eigenvalues, orthonormal eigenvectors.
+// Non-symmetric → complex pairs via RealEigenvalues/ImaginaryEigenvalues.
+var eigen = spd.Eigen();
+double[] eigenvalues = eigen.RealEigenvalues;
+Matrix eigenvectors = eigen.EigenVectors;
+```
+
+`Matrix.Inverse()` and `LinearSystemSolver` use LU internally — same API, O(n³) instead of cofactor expansion.
+
+---
+
 ## 🔢 Complex Linear Algebra
 
 `ComplexVector`, `ComplexVectorN`, and `ComplexMatrix` mirror the real-valued types with full complex number support. Existing real types convert implicitly — no API breakage.
