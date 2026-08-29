@@ -1,5 +1,14 @@
 # Linjär algebra — Dekompositioner, glesa lösare & rotfinnare
 
+> **Status (2026-08-29):** Phase 1–2 **klara** på grenen `feat/lu-cholesky-decompositions` — pushad, PR mot `master` återstår
+> (LU, Cholesky, QR, egendekomposition + fasaden `matrix.Lu()/.Cholesky()/.Qr()/.Eigen()`,
+> `Matrix.Inverse`/`LinearSystemSolver` refaktorerade till LU, kvantmodulens `SymmetricEigenSolver` ersatt).
+> Phase 3–6 (SVD, glesa lösare, rotfinnare, integration) är **ej påbörjade** — arbetet pausades här i ett rent läge,
+> hela testsviten grön (1508 tester). Phase 5 (rotfinnare) är en fristående snabb vinst att börja med vid återupptag.
+>
+> Känd kvarvarande städpunkt: `CoupledOscillators` (`Physics/Mechanics/Oscillations/`) har fortfarande en egen
+> privat Jacobi-egenlösare som bör migreras till `EigenDecomposition`, samma mönster som kvantmodulen.
+
 ## Mål
 
 Bygga ut linjär algebra-fundamentet med **matrisdekompositioner** (LU, QR, Cholesky, SVD, egendekomposition), **iterativa glesa lösare** (CG, BiCGSTAB, GMRES) samt ett komplett **rotfinnar-modul**. Detta är den enskilt viktigaste investeringen för att göra CSharpNumerics till ett ledande ramverk — nästan alla andra delar (PCA, Ridge, minsta kvadrat, FEM, Kalman, kvantmodulen) blir bättre av den.

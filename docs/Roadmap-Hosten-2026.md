@@ -1,5 +1,11 @@
 # CSharpNumerics — Övergripande roadmap hösten 2026
 
+> **Status (2026-08-29):** Ur v4.1-scopet är LinearAlgebra Phase 1–2 klart (LU/Cholesky/QR/egendekomposition,
+> refaktorerad `Matrix.Inverse`/`LinearSystemSolver`, kvantmodulen migrerad) — se statusnoten i
+> [LinearAlgebraRoadMap](LinearAlgebraRoadMap.md). Övriga v4.1-punkter (benchmarks, SIMD, rotfinnare,
+> dual numbers, städning) är ej påbörjade. Dokumentet beskriver den ursprungliga höstplanen; vid nya mål
+> för biblioteket, uppdatera eller ersätt planen härifrån.
+
 ## Vision
 
 CSharpNumerics ska bli ett av de främsta ramverken för **maskininlärning och numerisk analys i C#**. Bredden finns redan (numerik, statistik, ML inkl. RL och sekvensmodeller, samt en unik fysikmodul). Höstens arbete fokuserar på det som skiljer ett bra bibliotek från ett ledande ramverk: **fundament, prestanda och differentiering**.
