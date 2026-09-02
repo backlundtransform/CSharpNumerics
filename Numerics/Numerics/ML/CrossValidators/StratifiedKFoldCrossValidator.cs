@@ -68,6 +68,23 @@ public class StratifiedKFoldCrossValidator : ICrossValidator
             }
 
            
+            // Folds are filled class by class, each class restarting at fold 0,
+            // so a class with fewer members than Folds leaves the later folds
+            // short and a data set of entirely small classes leaves them empty.
+            // Without this the failure surfaces further down as an opaque
+            // "values cannot be null or empty" from the VectorN constructor,
+            // which says nothing about the cause.
+            for (int fold = 0; fold < Folds; fold++)
+            {
+                if (foldIndices[fold].Count == 0)
+                    throw new InvalidOperationException(
+                        $"Fold {fold + 1} of {Folds} is empty, so it cannot be validated against. " +
+                        $"Samples: {n}, classes: {classIndices.Count}, " +
+                        $"smallest class: {classIndices.Values.Min(c => c.Count)} member(s). " +
+                        "Stratified folds need at least as many members in every class as there are folds; " +
+                        "reduce the fold count or supply more samples per class.");
+            }
+
             for (int fold = 0; fold < Folds; fold++)
             {
                 var testIdx = foldIndices[fold].OrderBy(x => x).ToArray();
