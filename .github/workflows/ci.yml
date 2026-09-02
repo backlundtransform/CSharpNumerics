@@ -1,0 +1,43 @@
+name: CI
+
+# Verifies every branch and pull request. Releases are handled separately by
+# publish.yml, which runs on version tags — this workflow never publishes.
+#
+# It exists because nothing else runs the test suite. publish.yml builds and
+# packs the library project directly and never invokes dotnet test, so until now
+# a release could go out without a single test having been executed. The suite
+# also cannot be relied on to run locally: a Windows application control policy
+# can block locally built test assemblies from loading.
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - 'v*'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore Numerics/Numerics.sln
+
+      - name: Build
+        run: dotnet build Numerics/Numerics.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Numerics/NumericTest/NumericTest.csproj -c Release --no-build
