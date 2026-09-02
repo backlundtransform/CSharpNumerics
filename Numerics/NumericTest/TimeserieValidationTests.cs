@@ -1,4 +1,6 @@
 ﻿using CSharpNumerics.ML;
+using System;
+using System.Linq;
 using CSharpNumerics.ML.CrossValidators;
 using CSharpNumerics.ML.Models.Classification;
 using CSharpNumerics.ML.Models.Regression;
@@ -71,6 +73,24 @@ namespace NumericTest
         }
 
         [TestMethod]
+        public void SeriesFromCsv_ColsMustAlignWithData()
+        {
+            // Regression test for the off-by-one that made every Series-based
+            // cross-validation train on a leaked target and validate against a
+            // feature: Cols was header.Skip(1), so IndexOf(Cols, name) pointed
+            // one column left of the truth in Data.
+            CsvTestDataGenerator.GenerateClassificationCsv("cols_alignment.csv");
+            var df = Series.FromCsv("cols_alignment.csv");
+
+            Assert.AreEqual(df.Data.Length, df.Cols.Length,
+                "every data column must have a name");
+
+            var target = df.Data[Array.IndexOf(df.Cols, "Target")];
+            Assert.IsTrue(target.All(v => v == 0.0 || v == 1.0),
+                "the column Cols calls 'Target' must hold the class labels, not a feature");
+        }
+
+        [TestMethod]
         public void StratifiedKFoldCV_Should_WorkOnClassificationData()
         {
             CsvTestDataGenerator.GenerateClassificationCsv("classification.csv");
@@ -85,7 +105,7 @@ namespace NumericTest
 
             var cv = new StratifiedKFoldCrossValidator(pipelineGrid, folds: 5);
 
-            var result = cv.Run(df.ToMatrix(2), new VectorN(df.Data[colIndex]));
+            var result = cv.Run(df.ToMatrix(colIndex), new VectorN(df.Data[colIndex]));
 
 
             Assert.IsTrue(result.BestScore > 0);

@@ -113,6 +113,12 @@ public class Series(int[] index, double[][] data, string[] cols, int[] groups = 
         }
 
         var index = Enumerable.Range(0, rows).ToArray();
-        return new Series(index, data, [.. header.Skip(1)], groups);
+
+        // Cols must name exactly the columns that ended up in Data, in the same
+        // order. The previous header.Skip(1) was copied from TimeSeries, where
+        // column 0 is the time axis and really is excluded from Data - here it
+        // shifted every name one step left, so a lookup like
+        // IndexOf(Cols, "Target") pointed at the wrong data column.
+        return new Series(index, data, [.. featureIdx.Select(i => header[i])], groups);
     }
 }
