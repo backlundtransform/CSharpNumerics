@@ -1,4 +1,5 @@
 ﻿using Xunit.Sdk;
+using System;
 using CSharpNumerics.Numerics.Objects;
 using System.Drawing;
 using CSharpNumerics.Numerics;
@@ -90,6 +91,17 @@ namespace NumericsTests
         [TestMethod]
         public void TestMandelbrot()
         {
+            // System.Drawing.Common is Windows-only from .NET 6 onward, and CI
+            // runs on Linux. The Mandelbrot maths is exercised by the complex
+            // number tests above; this one only checks that it can be rendered,
+            // so it is reported as inconclusive off Windows rather than being
+            // silently skipped or forcing the whole suite onto a Windows runner.
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("System.Drawing.Common requires Windows.");
+                return;
+            }
+
             var maxValueExtent = 2.0;
 
             var  bitmap = new Bitmap(600, 600);
