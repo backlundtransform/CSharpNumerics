@@ -1,4 +1,5 @@
 using CSharpNumerics.ML.Clustering.Interfaces;
+using CSharpNumerics.ML.Models.Interfaces;
 using CSharpNumerics.ML.Clustering.Results;
 using CSharpNumerics.ML.Scalers.Interfaces;
 using CSharpNumerics.Numerics.Objects;
@@ -62,7 +63,13 @@ public class MonteCarloClustering
     /// <summary>Number of Monte Carlo iterations. Default 100.</summary>
     public int Iterations { get; set; } = 100;
 
-    /// <summary>Optional random seed for reproducibility.</summary>
+    /// <summary>
+    /// Optional random seed for reproducibility. When set it governs the whole
+    /// run: bootstrap sampling, and a per-iteration seed handed to each model
+    /// clone that accepts one, so an unseeded KMeans no longer re-randomises its
+    /// initialisation between what should be identical runs. Models that take no
+    /// seed, like DBSCAN, ignore it.
+    /// </summary>
     public int? Seed { get; set; }
 
     /// <summary>Confidence level for reported intervals. Default 0.95.</summary>
@@ -120,6 +127,7 @@ public class MonteCarloClustering
 
             // 3. Fit & predict
             var modelClone = algorithm.Clone();
+            SeedClone(modelClone, rng);
             VectorN labels = modelClone.FitPredict(xBoot);
 
             // 4. Score
@@ -257,6 +265,7 @@ public class MonteCarloClustering
             {
                 var modelClone = algorithm.Clone();
                 SetK(modelClone, k);
+                SeedClone(modelClone, rng);
 
                 VectorN labels = modelClone.FitPredict(xBoot);
                 double score = evaluator.Score(xBoot, labels);
@@ -304,6 +313,25 @@ public class MonteCarloClustering
     /// <summary>
     /// Bootstrap sampling: draw n indices from [0, n) with replacement.
     /// </summary>
+    /// <summary>
+    /// Hands a model clone a seed derived from the run's generator, so that a
+    /// seeded Monte Carlo run is deterministic end to end. Without this the
+    /// bootstrap sampling was reproducible but the model's own initialisation
+    /// was not, and RunBootstrap on an unseeded KMeans differed between
+    /// identical runs whenever k-means landed in a different local optimum.
+    /// Derived per iteration rather than fixed, so replicates stay independent.
+    /// No-op when the run is unseeded or the model takes no hyperparameters.
+    /// </summary>
+    private void SeedClone(IClusteringModel modelClone, RandomGenerator rng)
+    {
+        if (!Seed.HasValue) return;
+        if (modelClone is IHasHyperparameters seedable)
+            seedable.SetHyperParameters(new Dictionary<string, object>
+            {
+                ["Seed"] = rng.NextInt(int.MaxValue)
+            });
+    }
+
     private static int[] SampleWithReplacement(RandomGenerator rng, int populationSize, int sampleSize)
     {
         var result = new int[sampleSize];
