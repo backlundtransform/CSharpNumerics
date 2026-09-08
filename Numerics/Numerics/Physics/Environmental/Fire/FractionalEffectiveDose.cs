@@ -118,6 +118,24 @@ public static class FractionalEffectiveDose
         return factor < 1.0 ? 1.0 : factor;
     }
 
+    /// <summary>
+    /// Fractional effective dose of convective heat accumulated per minute of
+    /// exposure to hot air, for a lightly clothed person:
+    /// <para>rate = 1 / exp(5.1849 − 0.0273 · T°C)</para>
+    /// <para>
+    /// Roughly an hour to incapacitation at 40 °C, twelve minutes at 100 °C.
+    /// Returns 0 at or below 30 °C, beneath which the correlation has no
+    /// validity — ordinary warmth is not a dose. Radiant heat is a separate
+    /// pathway and is not included.
+    /// </para>
+    /// </summary>
+    /// <param name="temperatureCelsius">Air temperature in degrees Celsius.</param>
+    public static double ConvectiveHeatRate(double temperatureCelsius)
+    {
+        if (temperatureCelsius <= 30.0) return 0;
+        return 1.0 / Math.Exp(5.1849 - 0.0273 * temperatureCelsius);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  Combined dose
     // ═══════════════════════════════════════════════════════════════

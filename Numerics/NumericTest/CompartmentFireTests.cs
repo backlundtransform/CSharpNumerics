@@ -248,6 +248,26 @@ namespace NumericTest
             Assert.AreEqual(1.0, FractionalEffectiveDose.Accumulate(history, stepSeconds), 0.01);
         }
 
+        [TestMethod]
+        public void Fed_HeatDoseMatchesPublishedTimes()
+        {
+            // Purser's convective-heat correlation for a lightly clothed person:
+            // about an hour at 40 °C, about twelve minutes at 100 °C.
+            double at40 = 1.0 / FractionalEffectiveDose.ConvectiveHeatRate(40);
+            double at100 = 1.0 / FractionalEffectiveDose.ConvectiveHeatRate(100);
+
+            Assert.IsTrue(at40 > 50 && at40 < 70, "40 °C should take about an hour, got " + at40 + " min");
+            Assert.IsTrue(at100 > 9 && at100 < 14, "100 °C should take about twelve minutes, got " + at100 + " min");
+        }
+
+        [TestMethod]
+        public void Fed_OrdinaryWarmthIsNotADose()
+        {
+            Assert.AreEqual(0, FractionalEffectiveDose.ConvectiveHeatRate(20), 1e-12);
+            Assert.AreEqual(0, FractionalEffectiveDose.ConvectiveHeatRate(30), 1e-12);
+            Assert.IsTrue(FractionalEffectiveDose.ConvectiveHeatRate(31) > 0);
+        }
+
         // ════════════════════════════════════════════
         //  Visibility
         // ════════════════════════════════════════════
