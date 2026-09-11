@@ -34,7 +34,13 @@ namespace NumericTest
             double expectedHotSurface = hotGas - q / hHot;
             double expectedColdSurface = Ambient + q / hCold;
 
-            for (int i = 0; i < 6000; i++)
+            // The approach to steady state is exponential with
+            // τ = ρ·c·L / (h₁+h₂) ≈ 1170 s. Ten time constants leave a residual
+            // of ~0.01 K; five leave 2 K, which is what CI caught when this ran
+            // 6000 s against a 0.5 K tolerance — the solver tracked the
+            // analytical decay to three decimals, but had not been given time
+            // to finish converging.
+            for (int i = 0; i < 12000; i++)
                 slab.Step(1.0, hotGas, hHot, Ambient, hCold);
 
             Assert.AreEqual(expectedHotSurface, slab.HotSideTemperature, 0.5);
