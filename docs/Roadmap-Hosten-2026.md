@@ -1,10 +1,19 @@
 # CSharpNumerics — Övergripande roadmap hösten 2026
 
-> **Status (2026-08-29):** Ur v4.1-scopet är LinearAlgebra Phase 1–2 klart (LU/Cholesky/QR/egendekomposition,
-> refaktorerad `Matrix.Inverse`/`LinearSystemSolver`, kvantmodulen migrerad) — se statusnoten i
-> [LinearAlgebraRoadMap](LinearAlgebraRoadMap.md). Övriga v4.1-punkter (benchmarks, SIMD, rotfinnare,
-> dual numbers, städning) är ej påbörjade. Dokumentet beskriver den ursprungliga höstplanen; vid nya mål
-> för biblioteket, uppdatera eller ersätt planen härifrån.
+> **Status (2026-09-29):** Planen nedan är **den ursprungliga höstplanen och följs inte längre** — den
+> bevaras som bakgrund. Läs [Roadmap-v4.3](Roadmap-v4.3.md) för vad som faktiskt är planerat härnäst.
+>
+> Vad som hänt sedan planen skrevs:
+> - **LinearAlgebra Phase 1–2 är mergat** till `master` (LU/Cholesky/QR/egendekomposition, refaktorerad
+>   `Matrix.Inverse`/`LinearSystemSolver`, kvantmodulen migrerad).
+> - **Ett kundspecifikt fysikspår tog över hösten** och finns inte i planen nedan: compartment fire,
+>   relativitet, kosmologi, gravitation, gravitationsvågor, planetefemerider. Allt är mergat.
+> - **v4.1.0 och v4.2.0 är taggade**, men innehållet följer fysikspåret — inte tabellerna nedan.
+>   Releaseetiketterna betyder alltså inte vad v4.1/v4.2-tabellerna säger.
+> - **Övriga v4.1-punkter är fortfarande ej påbörjade:** benchmarks, SIMD, rotfinnare, dual numbers,
+>   städning. De är omtagna i v4.3-planen där de fortfarande är relevanta.
+>
+> Visionen och de vägledande principerna längre ned gäller fortfarande. Releasetabellerna gör det inte.
 
 ## Vision
 
