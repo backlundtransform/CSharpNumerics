@@ -1,5 +1,6 @@
 using System;
 using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Numerics.RootFinding;
 
 namespace CSharpNumerics.Physics.Gravitation;
 
@@ -58,31 +59,30 @@ public static class LagrangePoints
     // Newton's method on f(x) = x − (1−mu)(x+mu)/|x+mu|³ − mu(x−1+mu)/|x−1+mu|³.
     private static double SolveCollinear(double initialGuess, double mu)
     {
-        double x = initialGuess;
         double m1Pos = -mu;             // larger mass position
         double m2Pos = 1.0 - mu;        // smaller mass position
 
-        for (int iter = 0; iter < 100; iter++)
+        double Equation(double x)
         {
-            double d1 = x - m1Pos;
-            double d2 = x - m2Pos;
-            double a1 = Math.Abs(d1);
-            double a2 = Math.Abs(d2);
+            double a1 = Math.Abs(x - m1Pos);
+            double a2 = Math.Abs(x - m2Pos);
 
-            double f = x
-                       - (1.0 - mu) * d1 / (a1 * a1 * a1)
-                       - mu * d2 / (a2 * a2 * a2);
-
-            // f'(x) = 1 + 2(1−mu)/|d1|³ + 2·mu/|d2|³  (always positive)
-            double fp = 1.0
-                        + 2.0 * (1.0 - mu) / (a1 * a1 * a1)
-                        + 2.0 * mu / (a2 * a2 * a2);
-
-            double dx = f / fp;
-            x -= dx;
-            if (Math.Abs(dx) < 1e-14) break;
+            return x
+                   - (1.0 - mu) * (x - m1Pos) / (a1 * a1 * a1)
+                   - mu * (x - m2Pos) / (a2 * a2 * a2);
         }
 
-        return x;
+        // f'(x) = 1 + 2(1−mu)/|d1|³ + 2·mu/|d2|³  (always positive)
+        double Derivative(double x)
+        {
+            double a1 = Math.Abs(x - m1Pos);
+            double a2 = Math.Abs(x - m2Pos);
+
+            return 1.0
+                   + 2.0 * (1.0 - mu) / (a1 * a1 * a1)
+                   + 2.0 * mu / (a2 * a2 * a2);
+        }
+
+        return RootFinder.Newton(Equation, Derivative, initialGuess, 1e-14, 100).Value;
     }
 }

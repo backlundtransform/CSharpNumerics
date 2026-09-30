@@ -182,14 +182,20 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
 
 ## Implementationsplan — Faser
 
-### Phase 1 — Rotfinnare
-- [ ] Skapa `Numerics/RootFinding/`-struktur + `RootResult`
-- [ ] Implementera `Bisection`, `Secant`
-- [ ] Implementera `Brent`
-- [ ] Implementera `Newton` med tolerans, maxiter, f′-skydd och analytisk-derivata-overload
-- [ ] `NewtonRaphson` blir wrapper över `Newton` (signatur oförändrad)
-- [ ] Migrera `KeplerOrbit` och `LagrangePoints` till fasaden
-- [ ] Enhetstester: patologiska funktioner, platta derivator, ingen teckenväxling, konvergensrapportering
+### Phase 1 — Rotfinnare ✔ klar
+- [x] Skapa `Numerics/RootFinding/`-struktur + `RootResult`
+- [x] Implementera `Bisection`, `Secant`
+- [x] Implementera `Brent`
+- [x] Implementera `Newton` med tolerans, maxiter, f′-skydd och analytisk-derivata-overload
+- [x] `NewtonRaphson` blir wrapper över `Newton` (signatur oförändrad)
+- [x] Migrera `KeplerOrbit` och `LagrangePoints` till fasaden
+- [x] Enhetstester: patologiska funktioner, platta derivator, ingen teckenväxling, konvergensrapportering
+
+> **Noterat under Phase 1:** `TimeserieValidationTests` har tre fel som *inte* rör rotfinnarna.
+> `TestData/CsvTestDataGenerator` skriver decimaltal med aktuell kultur (`$"{v:F2}"`), så på en svensk
+> maskin blir `6.44` till `6,44` och kolliderar med CSV-avgränsaren. Testerna passerar med
+> `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` och på CI (Linux). Fixen är `CultureInfo.InvariantCulture`
+> i generatorn — ligger utanför v4.3-scopet men bör tas någon gång.
 
 ### Phase 2 — Benchmark-baseline
 - [ ] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
