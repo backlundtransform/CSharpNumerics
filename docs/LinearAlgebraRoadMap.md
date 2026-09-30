@@ -1,13 +1,19 @@
 # Linjär algebra — Dekompositioner, glesa lösare & rotfinnare
 
-> **Status (2026-08-29):** Phase 1–2 **klara** på grenen `feat/lu-cholesky-decompositions` — pushad, PR mot `master` återstår
-> (LU, Cholesky, QR, egendekomposition + fasaden `matrix.Lu()/.Cholesky()/.Qr()/.Eigen()`,
-> `Matrix.Inverse`/`LinearSystemSolver` refaktorerade till LU, kvantmodulens `SymmetricEigenSolver` ersatt).
-> Phase 3–6 (SVD, glesa lösare, rotfinnare, integration) är **ej påbörjade** — arbetet pausades här i ett rent läge,
-> hela testsviten grön (1508 tester). Phase 5 (rotfinnare) är en fristående snabb vinst att börja med vid återupptag.
+> **Status (2026-09-29):** Phase 1–2 **klara och mergade** till `master` (LU, Cholesky, QR, egendekomposition
+> + fasaden `matrix.Lu()/.Cholesky()/.Qr()/.Eigen()`, `Matrix.Inverse`/`LinearSystemSolver` refaktorerade till LU,
+> kvantmodulens `SymmetricEigenSolver` ersatt).
 >
-> Känd kvarvarande städpunkt: `CoupledOscillators` (`Physics/Mechanics/Oscillations/`) har fortfarande en egen
-> privat Jacobi-egenlösare som bör migreras till `EigenDecomposition`, samma mönster som kvantmodulen.
+> **Phase 4 är delvis gjord utanför denna plan:** `SparseMatrix` har CSR-lagring och `SolvePCG`
+> (konjugerad gradient med diagonal/Jacobi-preconditionering) som driver `FiniteElement/Assembler2D`.
+> BiCGSTAB, GMRES, ILU(0)/IC(0) och en gles väg för `Assembler1D` återstår.
+>
+> Phase 3 (SVD), Phase 5 (rotfinnare) och Phase 6 (integration) är **ej påbörjade**.
+>
+> **Viktig kvarvarande skuld:** dekompositionerna byggdes men anropsställena migrerades aldrig — åtta filer
+> löser fortfarande täta system med handskriven gausselimination, och `CoupledOscillators`
+> (`Physics/Mechanics/Oscillations/`) har kvar sin egen privata Jacobi-egenlösare. Den migreringen är
+> kärnan i [Roadmap-v4.3](Roadmap-v4.3.md), tillsammans med Phase 5 (rotfinnare). SVD ligger i v4.4.
 
 ## Mål
 
@@ -22,7 +28,7 @@ Bygga ut linjär algebra-fundamentet med **matrisdekompositioner** (LU, QR, Chol
 | Komponent | Status | Plats | Kommentar |
 |-----------|--------|-------|-----------|
 | `Matrix` | ✓ | `Numerics/Objects/Matrix.cs` | Inverse, Determinant, Transpose, Slice, operatorer |
-| `SparseMatrix` | ✓ | `Numerics/Objects/SparseMatrix.cs` | Lagring finns, men inga iterativa lösare |
+| `SparseMatrix` | ✓ | `Numerics/Objects/SparseMatrix.cs` | CSR-lagring + `SolvePCG` (Jacobi-preconditionerad CG). BiCGSTAB/GMRES saknas |
 | `GaussElimination` / `LinearSystemSolver` | ✓ | `Numerics/DifferentialEquationExtensions.cs` | Direkt lösning av täta system |
 | Egenvärden (potensmetod) | ✓ | `Numerics/DifferentialEquationExtensions.cs` | Endast dominant + iterativ full |
 | Symmetrisk egenlösare | ✓ | `Physics/Quantum/` | Inlåst i kvantmodulen — bör lyftas ut |
@@ -37,10 +43,11 @@ Bygga ut linjär algebra-fundamentet med **matrisdekompositioner** (LU, QR, Chol
 
 ### Nyckelidentifierade begränsningar
 
-1. **`Matrix.Inverse` via kofaktorer/eliminering utan pivotering-API** — Ingen möjlighet att återanvända faktorisering för flera högerled; `Solve(A, b)` beräknas från scratch varje gång.
-2. **PCA använder inte SVD** — PCA via kovariansmatris + potensmetod är numeriskt sämre än SVD-baserad PCA.
-3. **`SparseMatrix` är en ren datastruktur** — FEM-assemblern bygger glesa system men löser dem tätt, vilket sätter ett hårt tak på problemstorlek.
+1. ~~**`Matrix.Inverse` via kofaktorer/eliminering utan pivotering-API**~~ — *åtgärdad i Phase 1:* `Matrix.Inverse` går via `LuDecomposition`. **Men** möjligheten att återanvända faktorisering över flera högerled utnyttjas fortfarande inte av anropsställena — se punkt 5.
+2. **PCA använder inte SVD** — PCA via kovariansmatris + potensmetod är numeriskt sämre än SVD-baserad PCA. (Ett mellansteg till `EigenDecomposition` ligger i v4.3.)
+3. **Glesa lösare finns men är smala** — `SolvePCG` med Jacobi-preconditioner täcker symmetriska positivt definita system (`Assembler2D`). Osymmetriska system, starkare preconditioners och `Assembler1D` saknar fortfarande glesa vägar.
 4. **Konditionstal, rank, pseudoinvers saknas** — kräver SVD.
+5. **Dekompositionerna har konsumenter kvar att vinna** — åtta filer löser täta system med egen gausselimination i stället för `LuDecomposition`/`QrDecomposition`, och `CoupledOscillators` har en egen Jacobi-egenlösare. Se [Roadmap-v4.3](Roadmap-v4.3.md) för full lista.
 
 ---
 
@@ -134,12 +141,13 @@ Placeras i `Numerics/RootFinding/`. Direkt användbart i: `KeplerOrbit` (Keplers
 - [ ] Enhetstester: rekonstruktion `A ≈ UΣVᵀ`, jämförelse mot kända referensvärden
 
 ### Phase 4 — Glesa lösare
-- [ ] CSR-lagring i `SparseMatrix` + snabb SpMV
-- [ ] Implementera `ConjugateGradient` + Jacobi-preconditioner
+- [x] CSR-lagring i `SparseMatrix` + snabb SpMV
+- [x] Implementera `ConjugateGradient` + Jacobi-preconditioner (`SparseMatrix.SolvePCG`)
 - [ ] Implementera `BiCgStab` och `Gmres(m)`
 - [ ] ILU(0)/IC(0)-preconditioners
-- [ ] Koppla in i `FiniteElement/`-lösningsvägen (opt-in via options)
-- [ ] Enhetstester + konvergenstester på FEM-genererade system
+- [x] Koppla in i `FiniteElement/`-lösningsvägen — `Assembler2D` använder PCG
+- [ ] Ge `Assembler1D` samma glesa väg (löser tätt idag)
+- [x] Enhetstester + konvergenstester på FEM-genererade system
 
 ### Phase 5 — Rotfinnare
 - [ ] Implementera `Bisection`, `Secant`, `Brent`
