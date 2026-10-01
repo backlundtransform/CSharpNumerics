@@ -198,10 +198,16 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
 > i generatorn — ligger utanför v4.3-scopet men bör tas någon gång.
 
 ### Phase 2 — Benchmark-baseline
-- [ ] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
-- [ ] Benchmarks för matmul, SpMV, LU/QR/Cholesky, `Solve`
-- [ ] Benchmark för en MLP-träningsepok
-- [ ] Kör och checka in baseline **före** Del 1-migreringen
+- [x] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
+- [x] Benchmarks för matmul, SpMV, LU/QR/Cholesky, `Solve`
+- [x] Benchmark för en MLP-träningsepok
+- [x] Kör och checka in baseline **före** Del 1-migreringen
+
+> **Noterat under Phase 2:** Windows app control-policyn (0x800711C7) blockerar den DLL-kopia som
+> BenchmarkDotNet lägger i sin genererade per-benchmark-mapp, så standardtoolchainen (en process per
+> benchmark) ger `No Workload Results` på den här maskinen. Körningarna görs därför med `--inProcess`.
+> Mätningarna är giltiga men något mindre isolerade än med processeparation — jämför alltid baslinje
+> mot omkörning gjord på samma sätt.
 
 ### Phase 3 — Migrering till dekompositionerna
 - [ ] Regressionstester som låser nuvarande resultat för de åtta anropsställena
