@@ -201,7 +201,7 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
 - [x] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
 - [x] Benchmarks för matmul, SpMV, LU/QR/Cholesky, `Solve`
 - [x] Benchmark för en MLP-träningsepok
-- [x] Kör och checka in baseline **före** Del 1-migreringen
+- [x] Kör och checka in baseline **före** Del 1-migreringen → [baseline-2026-10-01](benchmarks/baseline-2026-10-01.md)
 
 > **Noterat under Phase 2:** Windows app control-policyn (0x800711C7) blockerar den DLL-kopia som
 > BenchmarkDotNet lägger i sin genererade per-benchmark-mapp, så standardtoolchainen (en process per
