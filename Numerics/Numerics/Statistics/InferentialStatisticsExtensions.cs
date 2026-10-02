@@ -1,4 +1,6 @@
-﻿using CSharpNumerics.Statistics.Distributions;
+﻿using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
+using CSharpNumerics.Numerics.Objects;
+using CSharpNumerics.Statistics.Distributions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -401,46 +403,30 @@ public static class InferentialStatisticsExtensions
     // ──────────────────────────────────────────────
 
     /// <summary>
-    /// Solves an augmented matrix [A|b] via Gaussian elimination with partial pivoting.
+    /// Solves an augmented matrix [A|b] via LU decomposition with partial pivoting.
     /// </summary>
+    /// <remarks>
+    /// Note that the caller forms the normal equations XᵀX before getting here, which squares
+    /// the condition number of the design matrix. Switching the solve to LU removes a duplicate
+    /// elimination routine but does not recover that lost accuracy — only building the design
+    /// matrix and solving it with QR would.
+    /// </remarks>
     private static double[] GaussianElimination(double[,] matrix, int n)
     {
-        for (int col = 0; col < n; col++)
+        var a = new double[n, n];
+        var b = new double[n];
+
+        for (var i = 0; i < n; i++)
         {
-            // Partial pivot
-            int maxRow = col;
-            for (int row = col + 1; row < n; row++)
+            for (var j = 0; j < n; j++)
             {
-                if (Math.Abs(matrix[row, col]) > Math.Abs(matrix[maxRow, col]))
-                    maxRow = row;
-            }
-            for (int j = col; j <= n; j++)
-            {
-                double tmp = matrix[col, j];
-                matrix[col, j] = matrix[maxRow, j];
-                matrix[maxRow, j] = tmp;
+                a[i, j] = matrix[i, j];
             }
 
-            // Eliminate below
-            for (int row = col + 1; row < n; row++)
-            {
-                double factor = matrix[row, col] / matrix[col, col];
-                for (int j = col; j <= n; j++)
-                    matrix[row, j] -= factor * matrix[col, j];
-            }
+            b[i] = matrix[i, n];
         }
 
-        // Back substitute
-        double[] result = new double[n];
-        for (int i = n - 1; i >= 0; i--)
-        {
-            result[i] = matrix[i, n];
-            for (int j = i + 1; j < n; j++)
-                result[i] -= matrix[i, j] * result[j];
-            result[i] /= matrix[i, i];
-        }
-
-        return result;
+        return new LuDecomposition(new Matrix(a)).Solve(new VectorN(b)).Values;
     }
 
     /// <summary>

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NumericTest", "NumericTest\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Numerics", "Numerics", "{35409048-A951-1400-ED33-5FB42D2B3E23}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Numerics.Benchmarks", "Numerics.Benchmarks\Numerics.Benchmarks.csproj", "{2CD34815-7653-4FEC-9069-210E4DC8723B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{26D48AFB-281B-452F-B8C8-5BCCD105925C}.Release|x64.Build.0 = Release|Any CPU
 		{26D48AFB-281B-452F-B8C8-5BCCD105925C}.Release|x86.ActiveCfg = Release|Any CPU
 		{26D48AFB-281B-452F-B8C8-5BCCD105925C}.Release|x86.Build.0 = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|x64.Build.0 = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Debug|x86.Build.0 = Debug|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|x64.ActiveCfg = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|x64.Build.0 = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|x86.ActiveCfg = Release|Any CPU
+		{2CD34815-7653-4FEC-9069-210E4DC8723B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

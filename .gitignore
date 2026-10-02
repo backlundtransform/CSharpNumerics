@@ -32,3 +32,7 @@ _ReSharper*/
 #Nuget packages folder
 packages/
 /.claude/settings.json
+
+# BenchmarkDotNet run artifacts (reports are copied into docs/benchmarks/ by hand)
+docs/benchmarks/artifacts/
+BenchmarkDotNet.Artifacts/

@@ -182,30 +182,59 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
 
 ## Implementationsplan — Faser
 
-### Phase 1 — Rotfinnare
-- [ ] Skapa `Numerics/RootFinding/`-struktur + `RootResult`
-- [ ] Implementera `Bisection`, `Secant`
-- [ ] Implementera `Brent`
-- [ ] Implementera `Newton` med tolerans, maxiter, f′-skydd och analytisk-derivata-overload
-- [ ] `NewtonRaphson` blir wrapper över `Newton` (signatur oförändrad)
-- [ ] Migrera `KeplerOrbit` och `LagrangePoints` till fasaden
-- [ ] Enhetstester: patologiska funktioner, platta derivator, ingen teckenväxling, konvergensrapportering
+### Phase 1 — Rotfinnare ✔ klar
+- [x] Skapa `Numerics/RootFinding/`-struktur + `RootResult`
+- [x] Implementera `Bisection`, `Secant`
+- [x] Implementera `Brent`
+- [x] Implementera `Newton` med tolerans, maxiter, f′-skydd och analytisk-derivata-overload
+- [x] `NewtonRaphson` blir wrapper över `Newton` (signatur oförändrad)
+- [x] Migrera `KeplerOrbit` och `LagrangePoints` till fasaden
+- [x] Enhetstester: patologiska funktioner, platta derivator, ingen teckenväxling, konvergensrapportering
+
+> **Noterat under Phase 1:** `TimeserieValidationTests` har tre fel som *inte* rör rotfinnarna.
+> `TestData/CsvTestDataGenerator` skriver decimaltal med aktuell kultur (`$"{v:F2}"`), så på en svensk
+> maskin blir `6.44` till `6,44` och kolliderar med CSV-avgränsaren. Testerna passerar med
+> `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` och på CI (Linux). Fixen är `CultureInfo.InvariantCulture`
+> i generatorn — ligger utanför v4.3-scopet men bör tas någon gång.
 
 ### Phase 2 — Benchmark-baseline
-- [ ] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
-- [ ] Benchmarks för matmul, SpMV, LU/QR/Cholesky, `Solve`
-- [ ] Benchmark för en MLP-träningsepok
-- [ ] Kör och checka in baseline **före** Del 1-migreringen
+- [x] Skapa `Numerics.Benchmarks`-projekt (BenchmarkDotNet), lägg till i `.sln`, exkludera från paketering
+- [x] Benchmarks för matmul, SpMV, LU/QR/Cholesky, `Solve`
+- [x] Benchmark för en MLP-träningsepok
+- [x] Kör och checka in baseline **före** Del 1-migreringen → [baseline-2026-10-01](benchmarks/baseline-2026-10-01.md)
+
+> **Noterat under Phase 2:** Windows app control-policyn (0x800711C7) blockerar den DLL-kopia som
+> BenchmarkDotNet lägger i sin genererade per-benchmark-mapp, så standardtoolchainen (en process per
+> benchmark) ger `No Workload Results` på den här maskinen. Körningarna görs därför med `--inProcess`.
+> Mätningarna är giltiga men något mindre isolerade än med processeparation — jämför alltid baslinje
+> mot omkörning gjord på samma sätt.
 
 ### Phase 3 — Migrering till dekompositionerna
-- [ ] Regressionstester som låser nuvarande resultat för de åtta anropsställena
-- [ ] Migrera `MultivariateInterpolation`, `PanelMethod`, `Assembler1D`, `CubicSpline`-fallback, `InferentialStatisticsExtensions`, `DifferentialEquationExtensions` till LU
+- [x] Regressionstester för anropsställena — nya sviter för `PanelMethod` och `PCA`, som saknade
+      täckning helt; övriga sites täcks av befintliga tester
+- [x] Migrera `MultivariateInterpolation`, `Assembler1D`, `CubicSpline`-fallback,
+      `InferentialStatisticsExtensions`, `DifferentialEquationExtensions` till LU
 - [ ] Migrera `FittingSolver` till QR + verifiera standardfelen mot nuvarande värden
-- [ ] Migrera `KalmanFilter`/`ExtendedKalmanFilter`/`KalmanSmoother` till Cholesky-lösning
-- [ ] Migrera `CoupledOscillators` till `EigenDecomposition`
-- [ ] Migrera `PCA` till `EigenDecomposition`
-- [ ] Låt `EigenValues`/`DominantEigenVector`/`EigenVector` delegera till `EigenDecomposition`
-- [ ] Cacha faktoriseringar där flera högerled löses mot samma matris
+- [x] Migrera `KalmanFilter`/`ExtendedKalmanFilter`/`KalmanSmoother` till Cholesky-lösning
+- [x] Migrera `CoupledOscillators` till `EigenDecomposition`
+- [x] Migrera `PCA` till `EigenDecomposition`
+- [x] Cacha faktoriseringar där flera högerled löses mot samma matris — gäller Kalman-vinsten,
+      där `Cholesky.Solve(Matrix)` nu löser alla kolumner mot en faktorisering
+
+**Två punkter ströks efter att koden lästs:**
+
+- **`PanelMethod` migrerades inte.** Den har varken tester eller anropare. Karaktäriseringstesterna
+  avslöjade att lösaren ger Cp ≈ 1 på varje panel för en cylinder vid noll anfallsvinkel, där
+  potentialflöde ger ett intervall över [−3, 1]. Om det är en bugg eller om en cylinder ligger
+  utanför dess domän (den påtvingar ett Kutta-villkor vid en bakkant cylindern inte har) är
+  ouppklarat — testet ligger `[Ignore]`-markerat med frågan nedskriven. Utan tester och utan
+  anropare är dess duplicering den minst skadliga, och att utreda lösaren är separat arbete.
+- **`EigenValues`/`DominantEigenVector`/`EigenVector` delegerar inte.** Planpunkten antog att de var
+  duplicerade generella egenlösare. De är i stället lågnoggranna hjälpfunktioner vars publika
+  kontrakt är avrundade heltalskvoter — `Math.Abs(Math.Round(c / min))` — asserterat av befintliga
+  tester (`result[0] == 2`) och konsumerat av `OdeSolver`. Att delegera dem byter ut kontraktet mot
+  normaliserade egenvektorer, vilket är en API-ändring med omvalidering av `OdeSolver`, inte en
+  refaktorering bakom befintligt API. Kräver ett eget beslut.
 
 ### Phase 4 — Städning
 - [ ] `NaiveBayes.NumClasses` sätts i `Fit`
