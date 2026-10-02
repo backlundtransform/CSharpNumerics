@@ -210,14 +210,31 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
 > mot omkörning gjord på samma sätt.
 
 ### Phase 3 — Migrering till dekompositionerna
-- [ ] Regressionstester som låser nuvarande resultat för de åtta anropsställena
-- [ ] Migrera `MultivariateInterpolation`, `PanelMethod`, `Assembler1D`, `CubicSpline`-fallback, `InferentialStatisticsExtensions`, `DifferentialEquationExtensions` till LU
+- [x] Regressionstester för anropsställena — nya sviter för `PanelMethod` och `PCA`, som saknade
+      täckning helt; övriga sites täcks av befintliga tester
+- [x] Migrera `MultivariateInterpolation`, `Assembler1D`, `CubicSpline`-fallback,
+      `InferentialStatisticsExtensions`, `DifferentialEquationExtensions` till LU
 - [ ] Migrera `FittingSolver` till QR + verifiera standardfelen mot nuvarande värden
-- [ ] Migrera `KalmanFilter`/`ExtendedKalmanFilter`/`KalmanSmoother` till Cholesky-lösning
-- [ ] Migrera `CoupledOscillators` till `EigenDecomposition`
-- [ ] Migrera `PCA` till `EigenDecomposition`
-- [ ] Låt `EigenValues`/`DominantEigenVector`/`EigenVector` delegera till `EigenDecomposition`
-- [ ] Cacha faktoriseringar där flera högerled löses mot samma matris
+- [x] Migrera `KalmanFilter`/`ExtendedKalmanFilter`/`KalmanSmoother` till Cholesky-lösning
+- [x] Migrera `CoupledOscillators` till `EigenDecomposition`
+- [x] Migrera `PCA` till `EigenDecomposition`
+- [x] Cacha faktoriseringar där flera högerled löses mot samma matris — gäller Kalman-vinsten,
+      där `Cholesky.Solve(Matrix)` nu löser alla kolumner mot en faktorisering
+
+**Två punkter ströks efter att koden lästs:**
+
+- **`PanelMethod` migrerades inte.** Den har varken tester eller anropare. Karaktäriseringstesterna
+  avslöjade att lösaren ger Cp ≈ 1 på varje panel för en cylinder vid noll anfallsvinkel, där
+  potentialflöde ger ett intervall över [−3, 1]. Om det är en bugg eller om en cylinder ligger
+  utanför dess domän (den påtvingar ett Kutta-villkor vid en bakkant cylindern inte har) är
+  ouppklarat — testet ligger `[Ignore]`-markerat med frågan nedskriven. Utan tester och utan
+  anropare är dess duplicering den minst skadliga, och att utreda lösaren är separat arbete.
+- **`EigenValues`/`DominantEigenVector`/`EigenVector` delegerar inte.** Planpunkten antog att de var
+  duplicerade generella egenlösare. De är i stället lågnoggranna hjälpfunktioner vars publika
+  kontrakt är avrundade heltalskvoter — `Math.Abs(Math.Round(c / min))` — asserterat av befintliga
+  tester (`result[0] == 2`) och konsumerat av `OdeSolver`. Att delegera dem byter ut kontraktet mot
+  normaliserade egenvektorer, vilket är en API-ändring med omvalidering av `OdeSolver`, inte en
+  refaktorering bakom befintligt API. Kräver ett eget beslut.
 
 ### Phase 4 — Städning
 - [ ] `NaiveBayes.NumClasses` sätts i `Fit`

@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using CSharpNumerics.Numerics.LinearAlgebra;
 using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Statistics.StateEstimation;
@@ -101,7 +102,10 @@ public class KalmanFilter
 
         VectorN innovation = z - H * _state;          // y
         Matrix S = H * _covariance * Ht + R;          // innovation covariance
-        Matrix K = _covariance * Ht * S.Inverse();    // Kalman gain (n×m)
+        // Kalman gain K = P·Hᵀ·S⁻¹ (n×m). Solved as S·Kᵀ = (P·Hᵀ)ᵀ rather than by forming
+        // S⁻¹: S is symmetric positive definite, so Cholesky applies, and an explicit inverse
+        // costs several times a factorize-and-solve while losing accuracy.
+        Matrix K = S.SolveSymmetricPositiveDefinite((_covariance * Ht).Transpose()).Transpose();
 
         _state = _state + K * innovation;
 

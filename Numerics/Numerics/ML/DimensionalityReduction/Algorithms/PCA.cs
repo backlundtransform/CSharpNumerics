@@ -1,5 +1,6 @@
-using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
+﻿using CSharpNumerics.ML.DimensionalityReduction.Interfaces;
 using CSharpNumerics.ML.Models.Interfaces;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
@@ -8,15 +9,30 @@ namespace CSharpNumerics.ML.DimensionalityReduction.Algorithms;
 
 /// <summary>
 /// Principal Component Analysis (PCA).
-/// Projects data onto the top <see cref="NComponents"/> eigenvectors of the covariance matrix.
-/// Uses the power iteration method with deflation for eigendecomposition.
+/// Projects data onto the top <see cref="NComponents"/> eigenvectors of the covariance matrix,
+/// found with <see cref="EigenDecomposition"/>.
 /// </summary>
 public class PCA : IDimensionalityReducer, IHasHyperparameters
 {
     // ── Hyperparameters ──────────────────────────────────────────
     public int NComponents { get; set; } = 2;
+
+    /// <summary>
+    /// No longer affects the result. Retained so existing calls and grid-search parameter
+    /// dictionaries keep working.
+    /// </summary>
+    /// <remarks>
+    /// PCA used to find eigenpairs by power iteration with deflation, which needed an iteration
+    /// budget, a convergence tolerance and a random starting vector. It now uses
+    /// <see cref="EigenDecomposition"/>, which is direct and deterministic, so none of the three
+    /// has anything left to control.
+    /// </remarks>
     public int MaxIterations { get; set; } = 1000;
+
+    /// <inheritdoc cref="MaxIterations"/>
     public double Tolerance { get; set; } = 1e-8;
+
+    /// <inheritdoc cref="MaxIterations"/>
     public int? Seed { get; set; }
 
     // ── Results (available after Fit) ────────────────────────────
@@ -67,58 +83,49 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
         Components = new double[effectiveComponents, d];
         ExplainedVariance = new double[effectiveComponents];
 
-        var rng = Seed.HasValue ? new Random(Seed.Value) : new Random();
-
         if (n >= d)
         {
-            // Standard PCA: covariance matrix (d × d)
-            double[,] cov = ComputeCovariance(centered, n, d);
+            // Standard PCA: eigendecomposition of the covariance matrix (d × d).
+            var eigen = new EigenDecomposition(new Matrix(ComputeCovariance(centered, n, d)));
+            var eigenvalues = eigen.RealEigenvalues;
+            var eigenvectors = eigen.EigenVectors;
 
+            // Eigenvalues come back ascending, so the leading components are at the end.
             for (int k = 0; k < effectiveComponents; k++)
             {
-                var (eigenvalue, eigenvector) = PowerIteration(cov, d, rng);
-                ExplainedVariance[k] = eigenvalue;
+                int index = d - 1 - k;
+                ExplainedVariance[k] = eigenvalues[index];
 
                 for (int j = 0; j < d; j++)
-                    Components[k, j] = eigenvector[j];
-
-                // Deflate
-                for (int i = 0; i < d; i++)
-                    for (int j = 0; j < d; j++)
-                        cov[i, j] -= eigenvalue * eigenvector[i] * eigenvector[j];
+                    Components[k, j] = eigenvectors.values[j, index];
             }
         }
         else
         {
-            // Dual PCA: Gram matrix (n × n) — used when n << d to avoid OOM
-            double[,] gram = ComputeGramMatrix(centered, n, d);
+            // Dual PCA: the Gram matrix (n × n) when n < d, which shares the covariance
+            // matrix's non-zero eigenvalues — both are already scaled by 1/(n-1).
+            var eigen = new EigenDecomposition(new Matrix(ComputeGramMatrix(centered, n, d)));
+            var eigenvalues = eigen.RealEigenvalues;
+            var eigenvectors = eigen.EigenVectors;
 
             for (int k = 0; k < effectiveComponents; k++)
             {
-                var (eigenvalue, eigenvector) = PowerIteration(gram, n, rng);
+                int index = n - 1 - k;
 
-                // Convert eigenvalue: gram eigenvalue = (n-1) * covariance eigenvalue
-                double covEigenvalue = eigenvalue;
-
-                // Recover d-dimensional eigenvector: v = X^T * u, then normalize
+                // Recover the d-dimensional direction: v = Xᵀu, then normalise.
                 var component = new double[d];
                 for (int j = 0; j < d; j++)
                 {
                     double sum = 0;
                     for (int i = 0; i < n; i++)
-                        sum += centered[i, j] * eigenvector[i];
+                        sum += centered[i, j] * eigenvectors.values[i, index];
                     component[j] = sum;
                 }
                 NormalizeArray(component);
 
-                ExplainedVariance[k] = covEigenvalue;
+                ExplainedVariance[k] = eigenvalues[index];
                 for (int j = 0; j < d; j++)
                     Components[k, j] = component[j];
-
-                // Deflate gram matrix
-                for (int i = 0; i < n; i++)
-                    for (int j = 0; j < n; j++)
-                        gram[i, j] -= eigenvalue * eigenvector[i] * eigenvector[j];
             }
         }
 
@@ -262,51 +269,6 @@ public class PCA : IDimensionalityReducer, IHasHyperparameters
             total += sum / (n - 1);
         }
         return total;
-    }
-
-    private (double eigenvalue, double[] eigenvector) PowerIteration(
-        double[,] matrix, int d, Random rng)
-    {
-        // Random initial vector
-        var v = new double[d];
-        for (int i = 0; i < d; i++)
-            v[i] = rng.NextDouble() - 0.5;
-        Normalize(v);
-
-        double eigenvalue = 0;
-
-        for (int iter = 0; iter < MaxIterations; iter++)
-        {
-            // w = A * v
-            var w = new double[d];
-            for (int i = 0; i < d; i++)
-            {
-                double sum = 0;
-                for (int j = 0; j < d; j++)
-                    sum += matrix[i, j] * v[j];
-                w[i] = sum;
-            }
-
-            // Rayleigh quotient: eigenvalue = v^T * w
-            double newEigenvalue = 0;
-            for (int i = 0; i < d; i++)
-                newEigenvalue += v[i] * w[i];
-
-            // Normalize
-            Normalize(w);
-
-            if (Math.Abs(newEigenvalue - eigenvalue) < Tolerance)
-            {
-                eigenvalue = newEigenvalue;
-                v = w;
-                break;
-            }
-
-            eigenvalue = newEigenvalue;
-            v = w;
-        }
-
-        return (eigenvalue, v);
     }
 
     private static void Normalize(double[] v)

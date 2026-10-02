@@ -28,4 +28,23 @@ public static class MatrixDecompositionExtensions
     /// Symmetric matrices give real, ascending eigenvalues with orthonormal eigenvectors.
     /// </summary>
     public static EigenDecomposition Eigen(this Matrix matrix) => new EigenDecomposition(matrix);
+
+    /// <summary>
+    /// Solves A·X = B for a matrix expected to be symmetric positive definite, one solve per
+    /// column of <paramref name="rightHandSides"/>.
+    /// </summary>
+    /// <remarks>
+    /// Uses Cholesky, which is about twice as fast as LU and preserves symmetry, and falls back
+    /// to LU if the matrix turns out not to be positive definite. The fallback matters for
+    /// quantities that are positive definite in theory but can drift in floating point —
+    /// a recursively updated covariance, for instance.
+    /// </remarks>
+    public static Matrix SolveSymmetricPositiveDefinite(this Matrix matrix, Matrix rightHandSides)
+    {
+        var cholesky = new CholeskyDecomposition(matrix);
+
+        return cholesky.IsPositiveDefinite
+            ? cholesky.Solve(rightHandSides)
+            : new LuDecomposition(matrix).Solve(rightHandSides);
+    }
 }
