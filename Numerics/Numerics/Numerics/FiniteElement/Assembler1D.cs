@@ -1,8 +1,9 @@
-namespace CSharpNumerics.Numerics.FiniteElement;
+﻿namespace CSharpNumerics.Numerics.FiniteElement;
 
 using System;
 using System.Collections.Generic;
 using CSharpNumerics.Numerics.FiniteElement.Interfaces;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 
 /// <summary>
@@ -76,7 +77,7 @@ public class Assembler1D
 
     /// <summary>
     /// Solves the global system Ku = F after applying Dirichlet boundary conditions
-    /// by row/column elimination and Gaussian elimination with partial pivoting.
+    /// by row/column elimination, then solving densely via LU with partial pivoting.
     /// </summary>
     /// <param name="fixedDofs">Dictionary mapping global DOF index → prescribed value.</param>
     /// <returns>Solution vector of all DOFs.</returns>
@@ -106,45 +107,7 @@ public class Assembler1D
             b[dof] = val;
         }
 
-        // Gaussian elimination with partial pivoting
-        for (int col = 0; col < n; col++)
-        {
-            int maxRow = col;
-            double maxVal = Math.Abs(A[col, col]);
-            for (int row = col + 1; row < n; row++)
-            {
-                double v = Math.Abs(A[row, col]);
-                if (v > maxVal) { maxVal = v; maxRow = row; }
-            }
-
-            if (maxRow != col)
-            {
-                for (int j = col; j < n; j++)
-                    (A[col, j], A[maxRow, j]) = (A[maxRow, j], A[col, j]);
-                (b[col], b[maxRow]) = (b[maxRow], b[col]);
-            }
-
-            double pivot = A[col, col];
-            for (int row = col + 1; row < n; row++)
-            {
-                double factor = A[row, col] / pivot;
-                for (int j = col; j < n; j++)
-                    A[row, j] -= factor * A[col, j];
-                b[row] -= factor * b[col];
-            }
-        }
-
-        // Back substitution
-        var x = new double[n];
-        for (int i = n - 1; i >= 0; i--)
-        {
-            double sum = b[i];
-            for (int j = i + 1; j < n; j++)
-                sum -= A[i, j] * x[j];
-            x[i] = sum / A[i, i];
-        }
-
-        return new VectorN(x);
+        return new LuDecomposition(new Matrix(A)).Solve(new VectorN(b));
     }
 
     private int[] GetElementDofs(int nodeA, int nodeB)

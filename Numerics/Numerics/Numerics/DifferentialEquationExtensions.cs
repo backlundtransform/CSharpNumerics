@@ -581,70 +581,20 @@ public static class DifferentialEquationExtensions
     /// <summary>
     /// Solves a linear system using Gaussian elimination with partial pivoting.
     /// </summary>
-    /// <param name="matrix">Coefficient matrix (will be modified in-place).</param>
-    /// <param name="vector">Right-hand side vector (will be modified in-place).</param>
+    /// <param name="matrix">Coefficient matrix A.</param>
+    /// <param name="vector">Right-hand side vector b.</param>
     /// <returns>Solution vector as a list.</returns>
+    /// <remarks>
+    /// Delegates to <see cref="LuDecomposition"/>, which performs the same elimination with the
+    /// same partial pivoting. Two behaviours changed with that move, both for the better:
+    /// the arguments are no longer modified in place, and a solution component that is exactly
+    /// zero now comes back as zero. The previous back substitution returned the pivot
+    /// <c>A[i, i]</c> in that case, so any system with a zero in its solution was answered
+    /// wrongly without complaint.
+    /// </remarks>
     public static List<double> GaussElimination(this Matrix matrix, List<double> vector)
     {
-        var n = vector.Count;
-
-        for (var p = 0; p < n; p++)
-        {
-            var max = p;
-            for (var i = p + 1; i < n; i++)
-            {
-                if (Math.Abs(matrix.values[i, p]) > Math.Abs(matrix.values[max, p]))
-                {
-                    max = i;
-                }
-            }
-
-            for (var c = 0; c < matrix.columnLength; c++)
-            {
-                var temp = matrix.values[p, c];
-
-                matrix.values[p, c] = matrix.values[max, c];
-
-                matrix.values[max, c] = temp;
-            }
-
-            var t = vector[p];
-            vector[p] = vector[max];
-            vector[max] = t;
-
-            for (var i = p + 1; i < n; i++)
-            {
-                var alpha = matrix.values[i, p] / matrix.values[p, p];
-                vector[i] -= alpha * vector[p];
-                for (var j = p; j < n; j++)
-                {
-                    matrix.values[i, j] -= alpha * matrix.values[p, j];
-                }
-            }
-        }
-
-        var x = new double[n];
-        for (var i = n - 1; i >= 0; i--)
-        {
-            var sum = 0.0;
-            for (var j = i + 1; j < n; j++)
-            {
-                sum += matrix.values[i, j] * x[j];
-            }
-            if (matrix.values[i, i] != 0)
-            {
-                if ((vector[i] - sum) != 0)
-                {
-                    x[i] = (vector[i] - sum) / matrix.values[i, i];
-                }
-
-                if ((vector[i] - sum) == 0)
-                {
-                    x[i] = matrix.values[i, i];
-                }
-            }
-        }
-        return x.ToList();
+        return new LuDecomposition(matrix).Solve(vector);
     }
 
     /// <summary>

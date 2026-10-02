@@ -1,5 +1,7 @@
-using System;
+﻿using System;
 using System.Linq;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
+using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Numerics.Interpolation;
 
@@ -27,6 +29,11 @@ namespace CSharpNumerics.Numerics.Interpolation;
 /// </summary>
 public class MultivariateInterpolation
 {
+    /// <summary>
+    /// Pivot magnitude below which the RBF matrix is treated as numerically singular.
+    /// </summary>
+    private const double SingularPivotTolerance = 1e-14;
+
     private readonly double[][] _points;
     private readonly double[] _values;
     private readonly int _n;
@@ -261,51 +268,25 @@ public class MultivariateInterpolation
         };
     }
 
+    /// <summary>
+    /// Solves A x = b for the RBF weights via LU decomposition with partial pivoting.
+    /// </summary>
+    /// <remarks>
+    /// RBF interpolation matrices are ill-conditioned by nature — a poorly chosen epsilon
+    /// makes them numerically singular — so the smallest pivot is checked before solving
+    /// and the caller is told to change epsilon or kernel rather than handed a meaningless
+    /// set of weights.
+    /// </remarks>
     private static double[] SolveLinearSystem(double[,] A, double[] b)
     {
-        int n = b.Length;
-        var aug = new double[n, n + 1];
-        for (int i = 0; i < n; i++)
+        var lu = new LuDecomposition(new Matrix(A));
+
+        if (lu.SmallestPivotMagnitude < SingularPivotTolerance)
         {
-            for (int j = 0; j < n; j++)
-                aug[i, j] = A[i, j];
-            aug[i, n] = b[i];
+            throw new InvalidOperationException("Singular or near-singular RBF matrix. Try different epsilon or kernel.");
         }
 
-        // Gaussian elimination with partial pivoting
-        for (int col = 0; col < n; col++)
-        {
-            int maxRow = col;
-            for (int row = col + 1; row < n; row++)
-                if (Math.Abs(aug[row, col]) > Math.Abs(aug[maxRow, col]))
-                    maxRow = row;
-
-            if (maxRow != col)
-                for (int j = 0; j <= n; j++)
-                    (aug[col, j], aug[maxRow, j]) = (aug[maxRow, j], aug[col, j]);
-
-            double pivot = aug[col, col];
-            if (Math.Abs(pivot) < 1e-14)
-                throw new InvalidOperationException("Singular or near-singular RBF matrix. Try different epsilon or kernel.");
-
-            for (int row = col + 1; row < n; row++)
-            {
-                double factor = aug[row, col] / pivot;
-                for (int j = col; j <= n; j++)
-                    aug[row, j] -= factor * aug[col, j];
-            }
-        }
-
-        // Back substitution
-        var x = new double[n];
-        for (int i = n - 1; i >= 0; i--)
-        {
-            double sum = aug[i, n];
-            for (int j = i + 1; j < n; j++)
-                sum -= aug[i, j] * x[j];
-            x[i] = sum / aug[i, i];
-        }
-        return x;
+        return lu.Solve(new VectorN(b)).Values;
     }
 
     private static int FindGridIndex(double[] grid, double val)
