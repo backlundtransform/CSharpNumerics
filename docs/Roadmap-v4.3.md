@@ -214,7 +214,11 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
       täckning helt; övriga sites täcks av befintliga tester
 - [x] Migrera `MultivariateInterpolation`, `Assembler1D`, `CubicSpline`-fallback,
       `InferentialStatisticsExtensions`, `DifferentialEquationExtensions` till LU
-- [ ] Migrera `FittingSolver` till QR + verifiera standardfelen mot nuvarande värden
+- [x] Migrera `FittingSolver` till QR + verifiera standardfelen mot nuvarande värden — gjort för
+      `LeastSquaresFitter`, `WeightedLeastSquaresFitter`, `RobustFitter`, `ParameterEstimation` och
+      `NonlinearLeastSquaresFitter`s kovarians. LM-iterationen lämnas på dämpade normalekvationer
+      (dämpningen läggs på `JtJ`s diagonal; QR kräver den utvidgade formuleringen [J; √(λD)], en
+      algoritmändring)
 - [x] Migrera `KalmanFilter`/`ExtendedKalmanFilter`/`KalmanSmoother` till Cholesky-lösning
 - [x] Migrera `CoupledOscillators` till `EigenDecomposition`
 - [x] Migrera `PCA` till `EigenDecomposition`

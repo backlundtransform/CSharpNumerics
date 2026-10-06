@@ -1,4 +1,4 @@
-using CSharpNumerics.Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 
 namespace CSharpNumerics.Statistics.Fitting;
@@ -44,9 +44,8 @@ public static class WeightedLeastSquaresFitter
 
     internal static FittingResult FitDesignMatrix(double[,] X, double[] y, double[] weights, int n, int p)
     {
-        double[,] XtWX = FittingSolver.MultiplyATWA(X, weights, n, p);
-        double[] XtWy = FittingSolver.MultiplyATWb(X, weights, y, n, p);
-        double[] beta = FittingSolver.Solve(XtWX, XtWy);
+        // QR on the row-scaled design matrix, rather than the weighted normal equations.
+        var (beta, XtWXInv) = FittingSolver.SolveWeightedLeastSquares(X, y, weights, n, p);
         double[] fitted = FittingSolver.ComputeFitted(X, beta, n, p);
 
         double ssRes = 0;
@@ -57,7 +56,6 @@ public static class WeightedLeastSquaresFitter
         }
         double s2 = (n > p) ? ssRes / (n - p) : 0.0;
 
-        double[,] XtWXInv = FittingSolver.Invert(XtWX, p);
         double[] se = FittingSolver.ComputeStandardErrors(XtWXInv, s2, p);
 
         return new FittingResult(

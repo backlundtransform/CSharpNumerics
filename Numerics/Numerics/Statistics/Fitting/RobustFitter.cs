@@ -1,4 +1,4 @@
-using CSharpNumerics.Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 
 namespace CSharpNumerics.Statistics.Fitting;
@@ -76,10 +76,8 @@ public static class RobustFitter
         if (c <= 0)
             c = DefaultC(wf);
 
-        // Step 1: initial OLS fit
-        double[,] XtX = FittingSolver.MultiplyATA(X, n, p);
-        double[] Xty = FittingSolver.MultiplyATb(X, y, n, p);
-        double[] beta = FittingSolver.Solve(XtX, Xty);
+        // Step 1: initial OLS fit, via QR on the design matrix.
+        double[] beta = FittingSolver.SolveLeastSquares(X, y, p).Beta;
 
         double[] weights = new double[n];
 
@@ -105,12 +103,9 @@ public static class RobustFitter
                 weights[i] = ComputeWeight(u, c, wf);
             }
 
-            // WLS step
-            double[,] XtWX = FittingSolver.MultiplyATWA(X, weights, n, p);
-            double[] XtWy = FittingSolver.MultiplyATWb(X, weights, y, n, p);
-
+            // WLS step, via QR on the row-scaled design matrix.
             double[] betaNew;
-            try { betaNew = FittingSolver.Solve(XtWX, XtWy); }
+            try { betaNew = FittingSolver.SolveWeightedLeastSquares(X, y, weights, n, p).Beta; }
             catch (InvalidOperationException) { break; }
 
             // Check convergence
@@ -136,8 +131,8 @@ public static class RobustFitter
         double[] se;
         try
         {
-            double[,] XtWX = FittingSolver.MultiplyATWA(X, weights, n, p);
-            double[,] XtWXInv = FittingSolver.Invert(XtWX, p);
+            double[,] XtWXInv = FittingSolver
+                .SolveWeightedLeastSquares(X, y, weights, n, p).GramInverse;
             se = FittingSolver.ComputeStandardErrors(XtWXInv, s2, p);
         }
         catch (InvalidOperationException)

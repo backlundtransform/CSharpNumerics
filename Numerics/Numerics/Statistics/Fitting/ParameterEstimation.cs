@@ -1,3 +1,4 @@
+﻿using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
@@ -56,8 +57,9 @@ public static class ParameterEstimation
         int n = designMatrix.GetLength(0);
         int p = designMatrix.GetLength(1);
 
-        double[,] XtX = FittingSolver.MultiplyATA(designMatrix, n, p);
-        double[,] XtXInv = FittingSolver.Invert(XtX, p);
+        // (XᵀX)⁻¹ from the triangular factor of X, without forming XᵀX.
+        double[,] XtXInv = FittingSolver.GramInverseFromR(
+            new QrDecomposition(new Matrix(designMatrix)).R, p);
 
         // Residual variance (unbiased)
         double ssRes = 0;

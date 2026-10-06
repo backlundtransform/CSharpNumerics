@@ -1,3 +1,4 @@
+﻿using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
@@ -66,6 +67,110 @@ internal static class FittingSolver
         }
 
         return x;
+    }
+
+    /// <summary>
+    /// Solves the least squares problem min ‖Xβ − y‖ by QR decomposition, returning the
+    /// coefficients together with (XᵀX)⁻¹ for standard errors.
+    /// </summary>
+    /// <remarks>
+    /// Works on the design matrix directly rather than forming the normal equations XᵀX, which
+    /// square the condition number of X. For a Vandermonde design — any polynomial fit — that
+    /// squaring is a real loss of accuracy. (XᵀX)⁻¹ is recovered as R⁻¹R⁻ᵀ, since XᵀX = RᵀR,
+    /// so the Gram matrix is never formed or inverted at all.
+    /// </remarks>
+    /// <param name="X">Design matrix (n × p), n &gt; p.</param>
+    /// <param name="y">Response vector (length n).</param>
+    /// <param name="p">Number of parameters.</param>
+    /// <exception cref="InvalidOperationException">The design matrix is rank deficient.</exception>
+    internal static (double[] Beta, double[,] GramInverse) SolveLeastSquares(double[,] X, double[] y, int p)
+    {
+        var qr = new QrDecomposition(new Matrix(X));
+
+        if (!qr.IsFullRank)
+        {
+            throw new InvalidOperationException("Singular matrix encountered during fitting.");
+        }
+
+        var beta = qr.Solve(new VectorN(y)).Values;
+
+        return (beta, GramInverseFromR(qr.R, p));
+    }
+
+    /// <summary>
+    /// Solves the weighted least squares problem min ‖√W(Xβ − y)‖ by QR, returning the
+    /// coefficients together with (XᵀWX)⁻¹.
+    /// </summary>
+    /// <remarks>
+    /// Scaling each row i by √wᵢ turns the weighted problem into an ordinary one, so the same
+    /// QR path applies and the weighted normal equations are likewise never formed.
+    /// </remarks>
+    internal static (double[] Beta, double[,] GramInverse) SolveWeightedLeastSquares(
+        double[,] X, double[] y, double[] weights, int n, int p)
+    {
+        var scaledX = new double[n, p];
+        var scaledY = new double[n];
+
+        for (int i = 0; i < n; i++)
+        {
+            // A negative weight has no meaning here and would make the square root undefined.
+            double rootWeight = Math.Sqrt(weights[i] > 0 ? weights[i] : 0.0);
+
+            for (int j = 0; j < p; j++)
+                scaledX[i, j] = rootWeight * X[i, j];
+
+            scaledY[i] = rootWeight * y[i];
+        }
+
+        return SolveLeastSquares(scaledX, scaledY, p);
+    }
+
+    /// <summary>
+    /// Computes (XᵀX)⁻¹ = R⁻¹R⁻ᵀ from the triangular factor of X, without forming XᵀX.
+    /// </summary>
+    internal static double[,] GramInverseFromR(Matrix r, int p)
+    {
+        // Invert the upper triangular R by back substitution, one column at a time.
+        var rInverse = new double[p, p];
+
+        for (int col = p - 1; col >= 0; col--)
+        {
+            double diagonal = r.values[col, col];
+
+            if (Math.Abs(diagonal) < 1e-14)
+            {
+                throw new InvalidOperationException("Singular matrix cannot be inverted.");
+            }
+
+            rInverse[col, col] = 1.0 / diagonal;
+
+            for (int row = col - 1; row >= 0; row--)
+            {
+                double sum = 0;
+                for (int k = row + 1; k <= col; k++)
+                    sum += r.values[row, k] * rInverse[k, col];
+
+                rInverse[row, col] = -sum / r.values[row, row];
+            }
+        }
+
+        // (XᵀX)⁻¹ = R⁻¹ · R⁻ᵀ, symmetric by construction.
+        var gramInverse = new double[p, p];
+
+        for (int i = 0; i < p; i++)
+        {
+            for (int j = i; j < p; j++)
+            {
+                double sum = 0;
+                for (int k = 0; k < p; k++)
+                    sum += rInverse[i, k] * rInverse[j, k];
+
+                gramInverse[i, j] = sum;
+                gramInverse[j, i] = sum;
+            }
+        }
+
+        return gramInverse;
     }
 
     /// <summary>Inverts a matrix using Gauss-Jordan elimination with partial pivoting.</summary>
