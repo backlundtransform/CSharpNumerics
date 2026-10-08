@@ -240,11 +240,17 @@ Punkter som stod i v4.1-scopet och ännu inte är gjorda:
   normaliserade egenvektorer, vilket är en API-ändring med omvalidering av `OdeSolver`, inte en
   refaktorering bakom befintligt API. Kräver ett eget beslut.
 
-### Phase 4 — Städning
-- [ ] `NaiveBayes.NumClasses` sätts i `Fit`
-- [ ] Ta bort tempfilsreferensen i csproj
-- [ ] Ta bort dubblerade roadmaps ur `docs/` respektive `docs/completed/`
-- [ ] Ta bort `SARSA._pendingNextAction`
+### Phase 4 — Städning ✔ klar
+- [x] `NaiveBayes.NumClasses` sätts i `Fit` — plus en testsvit, modellen hade ingen
+- [x] Ta bort tempfilsreferensen i csproj
+- [x] Ta bort dubblerade roadmaps ur `docs/` respektive `docs/completed/`
+- [x] Ta bort `SARSA._pendingNextAction`
+
+> **Noterat:** `docs/`-kopian av `AdvancedGameEngineRoadMap` hade blivit helt obockad medan
+> `completed/`-kopian var bockad — den senare stämmer med koden, så dubbletten i `docs/` ströks.
+> `Multiphysics`-paret var omvänt: `docs/`-kopian var den aktuella och fick ersätta den i
+> `completed/`. Två CS0219-varningar återstår i testprojektet (oanvända lokala variabler i
+> `FiniteElementTests` och `SignalProcessingFilterTests`) — de stod inte i scopet och lämnades.
 
 ### Phase 5 — Verifiering & release
 - [ ] Kör om benchmarks och jämför mot baseline från Phase 2
