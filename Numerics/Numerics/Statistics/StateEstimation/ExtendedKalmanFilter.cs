@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using CSharpNumerics.Numerics.LinearAlgebra;
 using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Statistics.StateEstimation;
@@ -87,7 +88,8 @@ public class ExtendedKalmanFilter
 
         VectorN innovation = z - h(_state);
         Matrix S = H * _covariance * Ht + R;
-        Matrix K = _covariance * Ht * S.Inverse();
+        // K = P·Hᵀ·S⁻¹, solved as S·Kᵀ = (P·Hᵀ)ᵀ — see KalmanFilter.Update.
+        Matrix K = S.SolveSymmetricPositiveDefinite((_covariance * Ht).Transpose()).Transpose();
 
         _state = _state + K * innovation;
         _covariance = (KalmanFilter.Identity(Dimension) - K * H) * _covariance;

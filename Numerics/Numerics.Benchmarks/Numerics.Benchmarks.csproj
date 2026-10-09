@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Measurement only: never packaged, never published. BenchmarkDotNet is an
+         external dependency and must stay out of the core library. -->
+    <IsPackable>false</IsPackable>
+
+    <!-- BenchmarkDotNet refuses to run a Debug build, and a Debug measurement would
+         be meaningless anyway. -->
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Numerics\CSharpNumerics.csproj" />
+  </ItemGroup>
+
+</Project>

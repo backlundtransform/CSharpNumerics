@@ -1,4 +1,5 @@
 using System;
+using CSharpNumerics.Numerics.RootFinding;
 using CSharpNumerics.Physics.Constants;
 
 namespace CSharpNumerics.Physics.Astro;
@@ -19,15 +20,14 @@ public static class KeplerOrbit
         if (eccentricity < 0 || eccentricity >= 1)
             throw new ArgumentOutOfRangeException(nameof(eccentricity), "Eccentricity must be in [0, 1).");
 
-        // Solve Kepler's equation: M = E - e·sin(E)
-        double E = meanAnomaly; // initial guess
-        for (int i = 0; i < maxIterations; i++)
-        {
-            double dE = (E - eccentricity * Math.Sin(E) - meanAnomaly) / (1.0 - eccentricity * Math.Cos(E));
-            E -= dE;
-            if (Math.Abs(dE) < tolerance)
-                break;
-        }
+        // Solve Kepler's equation M = E - e·sin(E) by Newton's method. The derivative
+        // 1 - e·cos(E) is bounded below by 1 - e > 0, so no step can stall.
+        double E = RootFinder.Newton(
+            eccentric => eccentric - eccentricity * Math.Sin(eccentric) - meanAnomaly,
+            eccentric => 1.0 - eccentricity * Math.Cos(eccentric),
+            meanAnomaly,
+            tolerance,
+            maxIterations).Value;
 
         // Convert eccentric anomaly to true anomaly
         double sinNu = Math.Sqrt(1.0 - eccentricity * eccentricity) * Math.Sin(E) / (1.0 - eccentricity * Math.Cos(E));

@@ -15,7 +15,12 @@ namespace CSharpNumerics.ML.Models.Classification
         private int _numFeatures;
         private bool _fitted;
        
-        public int NumClasses => throw new NotImplementedException();
+        /// <summary>
+        /// Number of classes, taken as the highest label seen during <see cref="Fit"/> plus one,
+        /// matching the other <see cref="IClassificationModel"/> implementations so callers can
+        /// use it to size label-indexed arrays.
+        /// </summary>
+        public int NumClasses { get; private set; }
 
         public void Fit(Matrix X, VectorN y)
         {
@@ -25,6 +30,7 @@ namespace CSharpNumerics.ML.Models.Classification
             _priors = new();
 
             var classes = y.Values.Distinct().Select(v => (int)v).ToArray();
+            NumClasses = (int)y.Values.Max() + 1;
 
             foreach (var cls in classes)
             {

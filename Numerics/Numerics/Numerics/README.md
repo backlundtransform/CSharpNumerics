@@ -14,6 +14,9 @@ Func<double, double> func = x => Math.Pow(x, 2) - 4;
 double root = func.NewtonRaphson(); // 2
 ```
 
+See [Root Finding](#-root-finding) for Brent, bisection and the secant method, and for
+checking whether a solve actually converged.
+
 **Number Theory**
 
 ```csharp
@@ -1050,6 +1053,62 @@ var dominant = A.DominantEigenVector();
 ```csharp
 var solution = matrix.GaussElimination(vector);
 ```
+
+---
+
+## 🎯 Root Finding
+
+Solvers for `f(x) = 0`, in `CSharpNumerics.Numerics.RootFinding`. Every method returns a
+`RootResult` that says whether it actually converged — a failed run gives back its best
+estimate, never a silent `NaN`.
+
+```csharp
+using CSharpNumerics.Numerics.RootFinding;
+
+Func<double, double> f = x => Math.Cos(x) - x;
+
+// Brent's method — the default when you can bracket the root.
+// Always converges, and nearly as fast as Newton.
+var result = f.FindRoot(0, 1);
+if (result.Converged)
+{
+    double root = result.Value;       // 0.7390851332151607
+    int iterations = result.Iterations;
+    double residual = result.Residual; // |f(root)|
+}
+
+// Or throw instead of branching:
+double x = f.FindRoot(0, 1).EnsureConverged();
+```
+
+Pick the method to match what you know about the function:
+
+| Method | Needs | Converges | Use when |
+|--------|-------|-----------|----------|
+| `RootFinder.Brent` | A bracket | Always | The default choice |
+| `RootFinder.Bisection` | A bracket | Always, linearly | The function is nasty and speed does not matter |
+| `RootFinder.Secant` | Two starting points | May diverge | No bracket, no derivative |
+| `RootFinder.Newton` | One starting point | May diverge | A good guess, ideally with an analytic derivative |
+
+```csharp
+var bisection = RootFinder.Bisection(f, 0, 1);
+var secant    = RootFinder.Secant(f, 0, 1);
+var newton    = RootFinder.Newton(f, initialGuess: 0.5);
+
+// An analytic derivative is both faster and more accurate than the
+// finite-difference default.
+var exact = RootFinder.Newton(f, x => -Math.Sin(x) - 1, 0.5);
+
+// Tolerance and iteration budget are configurable on every method.
+var tight = RootFinder.Brent(f, 0, 1, tolerance: 1e-15, maxIterations: 200);
+```
+
+Newton's method stops and reports failure where the derivative vanishes or the iterate stops
+being finite, rather than dividing into an infinity and iterating on `NaN`. Bracketed methods
+throw if the interval does not contain a sign change.
+
+The older `func.NewtonRaphson()` extension still works unchanged and now delegates here, so it
+exits as soon as it converges instead of always running its full iteration budget.
 
 ---
 ##  ✨ Interpolation
