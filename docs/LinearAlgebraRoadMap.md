@@ -1,6 +1,6 @@
 # Linjär algebra — Dekompositioner, glesa lösare & rotfinnare
 
-> **Status (2026-09-29):** Phase 1–2 **klara och mergade** till `master` (LU, Cholesky, QR, egendekomposition
+> **Status (2026-10-08):** Phase 1–2 **klara och mergade** till `master` (LU, Cholesky, QR, egendekomposition
 > + fasaden `matrix.Lu()/.Cholesky()/.Qr()/.Eigen()`, `Matrix.Inverse`/`LinearSystemSolver` refaktorerade till LU,
 > kvantmodulens `SymmetricEigenSolver` ersatt).
 >
@@ -8,12 +8,13 @@
 > (konjugerad gradient med diagonal/Jacobi-preconditionering) som driver `FiniteElement/Assembler2D`.
 > BiCGSTAB, GMRES, ILU(0)/IC(0) och en gles väg för `Assembler1D` återstår.
 >
-> Phase 3 (SVD), Phase 5 (rotfinnare) och Phase 6 (integration) är **ej påbörjade**.
+> **Phase 5 (rotfinnare) är klar** så nära som `PolynomialRoots` — se v4.3. Phase 3 (SVD) och
+> Phase 6 (integration) är **ej påbörjade**.
 >
-> **Viktig kvarvarande skuld:** dekompositionerna byggdes men anropsställena migrerades aldrig — åtta filer
-> löser fortfarande täta system med handskriven gausselimination, och `CoupledOscillators`
-> (`Physics/Mechanics/Oscillations/`) har kvar sin egen privata Jacobi-egenlösare. Den migreringen är
-> kärnan i [Roadmap-v4.3](Roadmap-v4.3.md), tillsammans med Phase 5 (rotfinnare). SVD ligger i v4.4.
+> **Skulden är betald:** anropsställena är migrerade i v4.3 — dense-lösningarna går via
+> `LuDecomposition`, fitting-vägen via QR, Kalman-filtren via Cholesky, och `CoupledOscillators`
+> och `PCA` via `EigenDecomposition`. Kvar står `PanelMethod`, som lämnades med motivering i
+> [Roadmap-v4.3](Roadmap-v4.3.md). SVD ligger i v4.4.
 
 ## Mål
 
@@ -150,10 +151,14 @@ Placeras i `Numerics/RootFinding/`. Direkt användbart i: `KeplerOrbit` (Keplers
 - [x] Enhetstester + konvergenstester på FEM-genererade system
 
 ### Phase 5 — Rotfinnare
-- [ ] Implementera `Bisection`, `Secant`, `Brent`
+- [x] Implementera `Bisection`, `Secant`, `Brent` — i `Numerics/RootFinding/`, plus en riktig
+      `Newton` med tolerans, iterationsbudget och skydd mot försvinnande derivata, alla med
+      `RootResult` som rapporterar konvergens
 - [ ] Implementera `PolynomialRoots` via companion-matris
-- [ ] Migrera `KeplerOrbit`s ekvationslösning till `Brent`/`NewtonRaphson`-fasaden
-- [ ] Enhetstester: Wilkinson-polynom, patologiska funktioner
+- [x] Migrera `KeplerOrbit`s ekvationslösning till fasaden — även
+      `Gravitation/LagrangePoints`, som hade en egen Newton-loop
+- [x] Enhetstester: patologiska funktioner (kubikrot, trippelrot), platta derivator,
+      ingen teckenväxling, konvergensrapportering
 
 ### Phase 6 — Integration & dokumentation
 - [ ] Uppdatera README med dekompositions-exempel
