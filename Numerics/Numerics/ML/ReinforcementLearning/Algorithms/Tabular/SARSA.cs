@@ -1,4 +1,4 @@
-using CSharpNumerics.ML.ReinforcementLearning.Core;
+﻿using CSharpNumerics.ML.ReinforcementLearning.Core;
 using CSharpNumerics.ML.ReinforcementLearning.Interfaces;
 using CSharpNumerics.Numerics.Objects;
 using System;
@@ -18,7 +18,6 @@ public class SARSA : TabularAgent
     public override string Name => "SARSA";
 
     private Transition _pending;
-    private int _pendingNextAction;
     private bool _hasPending;
 
     public SARSA(int numStates, int numActions, Func<VectorN, int> stateMapper)

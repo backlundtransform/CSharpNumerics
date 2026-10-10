@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using CSharpNumerics.Numerics.LinearAlgebra;
 using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Statistics.StateEstimation;
@@ -90,7 +91,8 @@ public class KalmanSmoother
             // Update
             VectorN innovation = measurements[k] - H * xPred;
             Matrix S = H * pPred * Ht + R;
-            Matrix K = pPred * Ht * S.Inverse();
+            // K = P_pred·Hᵀ·S⁻¹, solved as S·Kᵀ = (P_pred·Hᵀ)ᵀ.
+            Matrix K = S.SolveSymmetricPositiveDefinite((pPred * Ht).Transpose()).Transpose();
 
             VectorN xFilt = xPred + K * innovation;
             Matrix pFilt = (identity - K * H) * pPred;
@@ -112,7 +114,11 @@ public class KalmanSmoother
         for (int k = n - 2; k >= 0; k--)
         {
             // Smoother gain: C = P_f[k] Fᵀ (P_pred[k+1])⁻¹
-            Matrix C = filteredCovariances[k] * Ft * predictedCovariances[k + 1].Inverse();
+            // C = P_f[k]·Fᵀ·P_pred[k+1]⁻¹, solved as P_pred[k+1]·Cᵀ = (P_f[k]·Fᵀ)ᵀ.
+            // A predicted covariance is symmetric positive definite for the same reason S is.
+            Matrix C = predictedCovariances[k + 1]
+                .SolveSymmetricPositiveDefinite((filteredCovariances[k] * Ft).Transpose())
+                .Transpose();
 
             smoothedStates[k] = filteredStates[k]
                 + C * (smoothedStates[k + 1] - predictedStates[k + 1]);

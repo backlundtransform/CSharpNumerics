@@ -1,3 +1,4 @@
+﻿using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
@@ -165,8 +166,12 @@ public static class NonlinearLeastSquaresFitter
             }
             double s2 = (n > p) ? ssRes / (n - p) : 0.0;
 
-            double[,] JtJ = FittingSolver.MultiplyATA(J, n, p);
-            double[,] cov = FittingSolver.Invert(JtJ, p);
+            // (JᵀJ)⁻¹ from the triangular factor of J, without forming JᵀJ. The
+            // Levenberg-Marquardt iteration above still works on the damped normal equations:
+            // Marquardt damping is applied to JᵀJ's diagonal, which has no design-matrix
+            // equivalent short of the augmented formulation [J; √(λD)] — a change to the
+            // algorithm rather than to the solver.
+            double[,] cov = FittingSolver.GramInverseFromR(new QrDecomposition(new Matrix(J)).R, p);
             return FittingSolver.ComputeStandardErrors(cov, s2, p);
         }
         catch (InvalidOperationException)

@@ -1,4 +1,5 @@
-using CSharpNumerics.Numerics;
+﻿using CSharpNumerics.Numerics;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
 using CSharpNumerics.Numerics.Objects;
 using CSharpNumerics.Statistics.Data;
 using System;
@@ -16,7 +17,7 @@ namespace CSharpNumerics.Physics.Mechanics.Oscillations
     /// damping matrix.
     /// </para>
     /// <para>
-    /// Normal modes are computed via the Jacobi eigenvalue algorithm on the
+    /// Normal modes are computed with EigenDecomposition on the
     /// symmetrised dynamical matrix D = L⁻¹KL⁻¹ where L = diag(√m_i),
     /// giving eigenvalues ω² and orthonormal mode shapes.
     /// </para>
@@ -248,7 +249,7 @@ namespace CSharpNumerics.Physics.Mechanics.Oscillations
 
         #endregion
 
-        #region Eigen-decomposition (Jacobi)
+        #region Eigen-decomposition
 
         /// <summary>
         /// Builds the symmetrised dynamical matrix D = L⁻¹ K L⁻¹
@@ -266,110 +267,6 @@ namespace CSharpNumerics.Physics.Mechanics.Oscillations
         }
 
         /// <summary>
-        /// Jacobi eigenvalue algorithm for real symmetric matrices.
-        /// Returns eigenvalues in ascending order and orthonormal eigenvectors
-        /// as columns of the eigenvectors matrix.
-        /// </summary>
-        private void JacobiEigen(double[,] A, int n, out double[] eigenvalues, out double[,] eigenvectors)
-        {
-            // Work on a copy
-            var S = new double[n, n];
-            Array.Copy(A, S, A.Length);
-
-            // Eigenvector accumulator (starts as identity)
-            var V = new double[n, n];
-            for (int i = 0; i < n; i++)
-                V[i, i] = 1.0;
-
-            int maxIterations = 100 * n * n;
-            double tol = 1e-12;
-
-            for (int iter = 0; iter < maxIterations; iter++)
-            {
-                // Find largest off-diagonal element
-                int p = 0, q = 1;
-                double maxVal = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    for (int j = i + 1; j < n; j++)
-                    {
-                        double absVal = Math.Abs(S[i, j]);
-                        if (absVal > maxVal)
-                        {
-                            maxVal = absVal;
-                            p = i;
-                            q = j;
-                        }
-                    }
-                }
-
-                if (maxVal < tol) break;
-
-                // Compute rotation angle
-                double theta;
-                if (Math.Abs(S[p, p] - S[q, q]) < 1e-15)
-                {
-                    theta = Math.PI / 4.0;
-                }
-                else
-                {
-                    theta = 0.5 * Math.Atan2(2.0 * S[p, q], S[p, p] - S[q, q]);
-                }
-
-                double c = Math.Cos(theta);
-                double s = Math.Sin(theta);
-
-                // Apply Jacobi rotation: S' = G^T S G
-                // Update rows/columns p and q
-                var Sp = new double[n];
-                var Sq = new double[n];
-                for (int i = 0; i < n; i++)
-                {
-                    Sp[i] = c * S[p, i] + s * S[q, i];
-                    Sq[i] = -s * S[p, i] + c * S[q, i];
-                }
-                for (int i = 0; i < n; i++)
-                {
-                    S[p, i] = Sp[i];
-                    S[q, i] = Sq[i];
-                    S[i, p] = Sp[i];
-                    S[i, q] = Sq[i];
-                }
-                // Fix the 2x2 block
-                double Spp = c * Sp[p] + s * Sp[q];
-                double Sqq = -s * Sq[p] + c * Sq[q];
-                double Spq = -s * Sp[p] + c * Sp[q];
-                S[p, p] = Spp;
-                S[q, q] = Sqq;
-                S[p, q] = 0;
-                S[q, p] = 0;
-
-                // Accumulate eigenvectors: V = V * G
-                for (int i = 0; i < n; i++)
-                {
-                    double vip = V[i, p];
-                    double viq = V[i, q];
-                    V[i, p] = c * vip + s * viq;
-                    V[i, q] = -s * vip + c * viq;
-                }
-            }
-
-            // Extract eigenvalues and sort by ascending order
-            var indices = Enumerable.Range(0, n)
-                .OrderBy(i => S[i, i])
-                .ToArray();
-
-            eigenvalues = new double[n];
-            eigenvectors = new double[n, n];
-            for (int k = 0; k < n; k++)
-            {
-                eigenvalues[k] = S[indices[k], indices[k]];
-                for (int i = 0; i < n; i++)
-                    eigenvectors[i, k] = V[i, indices[k]];
-            }
-        }
-
-        /// <summary>
         /// Ensures the eigendecomposition is computed and cached.
         /// </summary>
         private void EnsureEigendecomposition()
@@ -377,7 +274,13 @@ namespace CSharpNumerics.Physics.Mechanics.Oscillations
             if (_cachedEigenvalues != null) return;
 
             var D = SymmetricDynamicalMatrix();
-            JacobiEigen(D, _n, out var rawEigenvalues, out var rawEigenvectors);
+
+            // D is symmetric by construction, so EigenDecomposition takes its symmetric path:
+            // real eigenvalues in ascending order with orthonormal eigenvectors as columns —
+            // the same contract the private Jacobi solver provided.
+            var eigen = new EigenDecomposition(new Matrix(D));
+            var rawEigenvalues = eigen.RealEigenvalues;
+            var rawEigenvectors = eigen.EigenVectors.values;
 
             // rawEigenvectors are for the symmetrised problem D.
             // Physical mode shapes: φ_i = v_i / √m_i

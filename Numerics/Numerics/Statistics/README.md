@@ -241,7 +241,17 @@ The `CSharpNumerics.Statistics.Fitting` namespace provides a comprehensive curve
 
 ### Least Squares (OLS)
 
-Polynomial and multiple-regression fitting via the normal equations.
+Polynomial and multiple-regression fitting, solved by QR decomposition of the design matrix.
+
+> Ordinary, weighted and robust fitting all solve the design matrix directly rather than forming
+> the normal equations XᵀX, which square its condition number. On a degree-5 polynomial fit over
+> [1, 2] that is worth close to six decimal digits: the normal equations recover the coefficients
+> to 5.6e-5, QR to 7.2e-11. Standard errors come from the triangular factor as R⁻¹R⁻ᵀ, so the Gram
+> matrix is never formed or inverted.
+>
+> The Levenberg–Marquardt iteration in `NonlinearLeastSquaresFitter` is the exception: its damping
+> is applied to JᵀJ's diagonal, so it still works on the damped normal equations. Only its
+> covariance estimate uses QR.
 
 ```csharp
 using CSharpNumerics.Statistics.Fitting;

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net8.0;netstandard2.1</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
@@ -20,10 +20,6 @@
 		<None Include="logo.png" Pack="true" PackagePath="" />
 	</ItemGroup>
 
-	<!-- Exkludera tempfil -->
-	<ItemGroup>
-		<None Remove="Numerics\NumericExtensions.cs~RF43b9e4.TMP" />
-	</ItemGroup>
 
 	<!-- LICENSE filen -->
 	<ItemGroup>

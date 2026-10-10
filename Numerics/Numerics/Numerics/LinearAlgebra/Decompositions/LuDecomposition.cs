@@ -79,18 +79,34 @@ public sealed class LuDecomposition
     /// <summary>
     /// True if the matrix is singular (a zero pivot was encountered) and cannot be solved.
     /// </summary>
-    public bool IsSingular
+    public bool IsSingular => SmallestPivotMagnitude == 0.0;
+
+    /// <summary>
+    /// Magnitude of the smallest pivot on the diagonal of U.
+    /// </summary>
+    /// <remarks>
+    /// Exactly zero means the matrix is singular. A very small but non-zero value means it is
+    /// near-singular: a solve will succeed but divide by that pivot, amplifying any error in the
+    /// right-hand side accordingly. Callers working with matrices that are ill-conditioned by
+    /// nature — radial basis function interpolation, for instance — can test this and refuse
+    /// rather than return a meaningless answer.
+    /// </remarks>
+    public double SmallestPivotMagnitude
     {
         get
         {
+            var smallest = double.PositiveInfinity;
+
             for (var j = 0; j < n; j++)
             {
-                if (lu[j, j] == 0.0)
+                var magnitude = Math.Abs(lu[j, j]);
+                if (magnitude < smallest)
                 {
-                    return true;
+                    smallest = magnitude;
                 }
             }
-            return false;
+
+            return smallest;
         }
     }
 

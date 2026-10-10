@@ -1,4 +1,4 @@
-using CSharpNumerics.Numerics.Objects;
+﻿using CSharpNumerics.Numerics.Objects;
 using System;
 
 namespace CSharpNumerics.Statistics.Fitting;
@@ -47,9 +47,8 @@ public static class LeastSquaresFitter
 
     private static FittingResult FitDesignMatrix(double[,] X, double[] y, int n, int p)
     {
-        double[,] XtX = FittingSolver.MultiplyATA(X, n, p);
-        double[] Xty = FittingSolver.MultiplyATb(X, y, n, p);
-        double[] beta = FittingSolver.Solve(XtX, Xty);
+        // QR on the design matrix, rather than forming and solving the normal equations.
+        var (beta, XtXInv) = FittingSolver.SolveLeastSquares(X, y, p);
         double[] fitted = FittingSolver.ComputeFitted(X, beta, n, p);
 
         double ssRes = 0;
@@ -60,7 +59,6 @@ public static class LeastSquaresFitter
         }
         double s2 = (n > p) ? ssRes / (n - p) : 0.0;
 
-        double[,] XtXInv = FittingSolver.Invert(XtX, p);
         double[] se = FittingSolver.ComputeStandardErrors(XtXInv, s2, p);
 
         return new FittingResult(

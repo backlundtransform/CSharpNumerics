@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using CSharpNumerics.Numerics.RootFinding;
 
 
 namespace CSharpNumerics.Numerics;
@@ -153,18 +154,14 @@ public static class NumericExtensions
     /// <param name="func">Function for which to find a root.</param>
     /// <param name="xZero">Initial guess.</param>
     /// <returns>An approximation of x such that func(x) is near zero.</returns>
-    public static double NewtonRaphson(this Func<double, double> func, double xZero = 1.0)
-    {
-        var value = xZero;
-
-        for (var j = 0; j < 100; j++)
-        {
-            var y = func(value);
-            var yPrime = func.Derivate(value);
-
-            value -= y / yPrime;
-        }
-
-        return value;
-    }
+    /// <remarks>
+    /// Delegates to <see cref="RootFinder.Newton(Func{double, double}, double, double, int)"/>, which
+    /// stops as soon as it converges instead of always running the full iteration budget, and gives up
+    /// where the derivative vanishes instead of iterating on NaN. The returned value is the method's
+    /// best estimate whether or not it converged — use <see cref="RootFinder.Newton(Func{double, double}, double, double, int)"/>
+    /// directly, or <see cref="RootFindingExtensions.FindRoot"/> for a bracketed search, when you need
+    /// to know which.
+    /// </remarks>
+    public static double NewtonRaphson(this Func<double, double> func, double xZero = 1.0) =>
+        RootFinder.Newton(func, xZero).Value;
 }

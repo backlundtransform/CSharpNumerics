@@ -1,5 +1,7 @@
-using System;
+﻿using System;
 using System.Linq;
+using CSharpNumerics.Numerics.LinearAlgebra.Decompositions;
+using CSharpNumerics.Numerics.Objects;
 
 namespace CSharpNumerics.Numerics.Interpolation;
 
@@ -244,38 +246,13 @@ public class CubicSplineInterpolation
         A[m, m - 2] = h[m - 1]; A[m, m - 1] = -(h[m - 2] + h[m - 1]); A[m, m] = h[m - 2];
         b[m] = 0;
 
-        // Gaussian elimination with partial pivoting
-        for (int col = 0; col < n; col++)
-        {
-            // Pivoting
-            int maxRow = col;
-            for (int row = col + 1; row < n; row++)
-                if (Math.Abs(A[row, col]) > Math.Abs(A[maxRow, col]))
-                    maxRow = row;
-            if (maxRow != col)
-            {
-                for (int j = 0; j < n; j++)
-                    (A[col, j], A[maxRow, j]) = (A[maxRow, j], A[col, j]);
-                (b[col], b[maxRow]) = (b[maxRow], b[col]);
-            }
+        // The not-a-knot rows break the tridiagonal structure, so this system is solved
+        // densely. The tridiagonal branch above keeps the Thomas algorithm, which is O(n)
+        // against LU's O(n^3) and must not be replaced by it.
+        var solution = new LuDecomposition(new Matrix(A)).Solve(new VectorN(b));
 
-            for (int row = col + 1; row < n; row++)
-            {
-                double factor = A[row, col] / A[col, col];
-                for (int j = col; j < n; j++)
-                    A[row, j] -= factor * A[col, j];
-                b[row] -= factor * b[col];
-            }
-        }
-
-        // Back substitution
-        for (int i = n - 1; i >= 0; i--)
-        {
-            double sum = b[i];
-            for (int j = i + 1; j < n; j++)
-                sum -= A[i, j] * M[j];
-            M[i] = sum / A[i, i];
-        }
+        for (int i = 0; i < n; i++)
+            M[i] = solution[i];
     }
 
     private static void SolveTridiagonal(double[] lower, double[] diag, double[] upper, double[] rhs, double[] result, int n)
