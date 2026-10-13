@@ -410,6 +410,141 @@ namespace NumericTest
             Assert.IsTrue(esi >= 0.0 && esi <= 1.0);
         }
 
+        [TestMethod]
+        public void CalculateEsiFromFlux_Earth_ReturnsOne()
+        {
+            Assert.AreEqual(1.0, AstronomyExtensions.CalculateEsiFromFlux(1.0, 1.0), 1e-12);
+        }
+
+        [TestMethod]
+        public void CalculateEsiFromFlux_Kepler189b_MatchesPhlCatalog()
+        {
+            // PHL catalogue: R = 1.21 R⊕, S = 46.02933 S⊕ → ESI = 0.31963816
+            double esi = AstronomyExtensions.CalculateEsiFromFlux(1.21, 46.02933);
+            Assert.AreEqual(0.31963816, esi, 1e-6);
+        }
+
+        #endregion
+
+        #region Insolation & Equilibrium Temperature
+
+        [TestMethod]
+        public void StellarLuminosity_Sun_ReturnsOne()
+        {
+            Assert.AreEqual(1.0, AstronomyExtensions.StellarLuminosity(1.0, 5772), 1e-12);
+        }
+
+        [TestMethod]
+        public void StellarLuminosity_ScalesWithRadiusSquaredAndTemperatureToTheFourth()
+        {
+            // 2 R☉ and 2 T☉ → 4 · 16 = 64 L☉
+            Assert.AreEqual(64.0, AstronomyExtensions.StellarLuminosity(2.0, 2 * 5772), 1e-9);
+        }
+
+        [TestMethod]
+        public void InsolationFlux_EarthAtOneAU_ReturnsOne()
+        {
+            Assert.AreEqual(1.0, AstronomyExtensions.InsolationFlux(1.0, 1.0), 1e-12);
+        }
+
+        [TestMethod]
+        public void InsolationFlux_FollowsInverseSquareLaw()
+        {
+            Assert.AreEqual(0.25, AstronomyExtensions.InsolationFlux(1.0, 2.0), 1e-12);
+        }
+
+        [TestMethod]
+        public void InsolationFluxRange_CircularOrbit_AllEqual()
+        {
+            var (min, avg, max) = AstronomyExtensions.InsolationFluxRange(1.0, 1.0, 0.0);
+            Assert.AreEqual(1.0, min, 1e-12);
+            Assert.AreEqual(1.0, avg, 1e-12);
+            Assert.AreEqual(1.0, max, 1e-12);
+        }
+
+        [TestMethod]
+        public void InsolationFluxRange_EccentricOrbit_PeriastronAndApastron()
+        {
+            var (min, avg, max) = AstronomyExtensions.InsolationFluxRange(1.0, 1.0, 0.5);
+            Assert.AreEqual(1.0 / (1.5 * 1.5), min, 1e-12);
+            Assert.AreEqual(1.0 / (0.5 * 0.5), max, 1e-12);
+            Assert.AreEqual(1.0 / Math.Sqrt(0.75), avg, 1e-12);
+        }
+
+        [TestMethod]
+        public void InsolationFluxRange_UnboundOrbit_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => AstronomyExtensions.InsolationFluxRange(1.0, 1.0, 1.0));
+        }
+
+        [TestMethod]
+        public void EquilibriumTemperature_Earth_About255K()
+        {
+            double t = AstronomyExtensions.EquilibriumTemperature(1.0, 0.3);
+            Assert.AreEqual(254.6, t, 0.1);
+        }
+
+        [TestMethod]
+        public void EquilibriumTemperature_ScalesWithQuarterPowerOfFlux()
+        {
+            double t1 = AstronomyExtensions.EquilibriumTemperature(1.0, 0.3);
+            double t16 = AstronomyExtensions.EquilibriumTemperature(16.0, 0.3);
+            Assert.AreEqual(2.0, t16 / t1, 1e-12);
+        }
+
+        #endregion
+
+        #region Habitable Zone (Kopparapu et al. 2014)
+
+        [TestMethod]
+        public void HabitableZoneFlux_SolarTemperature_ReturnsSolarCoefficients()
+        {
+            Assert.AreEqual(1.776, AstronomyExtensions.HabitableZoneFlux(5780, HabitableZoneLimit.RecentVenus), 1e-12);
+            Assert.AreEqual(1.107, AstronomyExtensions.HabitableZoneFlux(5780, HabitableZoneLimit.RunawayGreenhouse), 1e-12);
+            Assert.AreEqual(0.356, AstronomyExtensions.HabitableZoneFlux(5780, HabitableZoneLimit.MaximumGreenhouse), 1e-12);
+            Assert.AreEqual(0.320, AstronomyExtensions.HabitableZoneFlux(5780, HabitableZoneLimit.EarlyMars), 1e-12);
+        }
+
+        [TestMethod]
+        public void HabitableZoneFlux_LimitsAreOrderedInnerToOuter()
+        {
+            foreach (double teff in new[] { 2600.0, 3500.0, 5780.0, 7200.0 })
+            {
+                double rv = AstronomyExtensions.HabitableZoneFlux(teff, HabitableZoneLimit.RecentVenus);
+                double rg = AstronomyExtensions.HabitableZoneFlux(teff, HabitableZoneLimit.RunawayGreenhouse);
+                double mg = AstronomyExtensions.HabitableZoneFlux(teff, HabitableZoneLimit.MaximumGreenhouse);
+                double em = AstronomyExtensions.HabitableZoneFlux(teff, HabitableZoneLimit.EarlyMars);
+                Assert.IsTrue(rv > rg && rg > mg && mg > em, $"Teff={teff}");
+            }
+        }
+
+        [TestMethod]
+        public void CalculateGoldilocksZone_Conservative_Sun()
+        {
+            var (inner, outer) = AstronomyExtensions.CalculateGoldilocksZone(1.0, 5780, HabitableZoneModel.Conservative);
+            Assert.AreEqual(1.0 / Math.Sqrt(1.107), inner, 1e-12);  // ≈ 0.95 AU
+            Assert.AreEqual(1.0 / Math.Sqrt(0.356), outer, 1e-12);  // ≈ 1.68 AU
+        }
+
+        [TestMethod]
+        public void CalculateGoldilocksZone_Optimistic_WiderThanConservative()
+        {
+            var (ci, co) = AstronomyExtensions.CalculateGoldilocksZone(0.5, 4500, HabitableZoneModel.Conservative);
+            var (oi, oo) = AstronomyExtensions.CalculateGoldilocksZone(0.5, 4500, HabitableZoneModel.Optimistic);
+            Assert.IsTrue(oi < ci);
+            Assert.IsTrue(oo > co);
+        }
+
+        [TestMethod]
+        public void CalculateGoldilocksZone_Optimistic_Kepler1556_MatchesPhlCatalog()
+        {
+            // PHL catalogue: L = 0.7997751 L☉, Teff = 5608 K → HZ 0.67795352–1.6048713 AU
+            var (inner, outer) = AstronomyExtensions.CalculateGoldilocksZone(0.7997751, 5608, HabitableZoneModel.Optimistic);
+            Assert.AreEqual(0.67795352, inner, 1e-6);
+            Assert.AreEqual(1.6048713, outer, 1e-6);
+        }
+
         #endregion
     }
 }

@@ -452,5 +452,133 @@ namespace CSharpNumerics.Physics.Astro
         }
 
         #endregion
+
+        #region Insolation & Habitable Zone (Kopparapu et al. 2014)
+
+        // Kopparapu et al. (2014), ApJL 787, L29 — HZ_coefficients.dat, 1 Earth mass.
+        // Rows indexed by HabitableZoneLimit: { S_eff,☉, a, b, c, d }.
+        private static readonly double[][] HabitableZoneCoefficients =
+        {
+            new[] { 1.776, 2.136e-4, 2.533e-8, -1.332e-11, -3.097e-15 },
+            new[] { 1.107, 1.332e-4, 1.580e-8, -8.308e-12, -1.931e-15 },
+            new[] { 0.356, 6.171e-5, 1.698e-9, -3.198e-12, -5.575e-16 },
+            new[] { 0.320, 5.547e-5, 1.526e-9, -2.874e-12, -5.011e-16 },
+        };
+
+        /// <summary>
+        /// Stellar luminosity from radius and effective temperature via the Stefan–Boltzmann law:
+        /// L/L☉ = (R/R☉)² · (T/T☉)⁴, with the IAU 2015 nominal T☉ = 5772 K.
+        /// </summary>
+        /// <param name="stellarRadiusSolar">Stellar radius in solar radii.</param>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin.</param>
+        public static double StellarLuminosity(double stellarRadiusSolar, double effectiveTemperatureK)
+        {
+            double t = effectiveTemperatureK / PhysicsConstants.SolarEffectiveTemperature;
+            return stellarRadiusSolar * stellarRadiusSolar * t * t * t * t;
+        }
+
+        /// <summary>
+        /// Stellar flux received at a given distance, relative to the flux Earth receives
+        /// from the Sun: S/S⊕ = (L/L☉) / (d/AU)².
+        /// </summary>
+        /// <param name="stellarLuminositySolar">Stellar luminosity in solar luminosities.</param>
+        /// <param name="distanceAU">Distance from the star in AU.</param>
+        public static double InsolationFlux(double stellarLuminositySolar, double distanceAU)
+        {
+            return stellarLuminositySolar / (distanceAU * distanceAU);
+        }
+
+        /// <summary>
+        /// Range of stellar flux over an eccentric orbit, relative to Earth's insolation.
+        /// Minimum is at apastron a(1+e), maximum at periastron a(1−e), and the orbit average
+        /// is L / (a²·√(1−e²)).
+        /// </summary>
+        /// <param name="stellarLuminositySolar">Stellar luminosity in solar luminosities.</param>
+        /// <param name="semiMajorAxisAU">Orbital semi-major axis in AU.</param>
+        /// <param name="eccentricity">Orbital eccentricity, 0 ≤ e &lt; 1.</param>
+        public static (double Minimum, double OrbitAveraged, double Maximum) InsolationFluxRange(
+            double stellarLuminositySolar,
+            double semiMajorAxisAU,
+            double eccentricity)
+        {
+            if (eccentricity < 0 || eccentricity >= 1)
+                throw new ArgumentOutOfRangeException(nameof(eccentricity), "Eccentricity must be in [0, 1).");
+
+            double minimum = InsolationFlux(stellarLuminositySolar, semiMajorAxisAU * (1 + eccentricity));
+            double maximum = InsolationFlux(stellarLuminositySolar, semiMajorAxisAU * (1 - eccentricity));
+            double average = InsolationFlux(stellarLuminositySolar, semiMajorAxisAU)
+                           / Math.Sqrt(1 - eccentricity * eccentricity);
+
+            return (minimum, average, maximum);
+        }
+
+        /// <summary>
+        /// Planetary equilibrium temperature assuming full heat redistribution:
+        /// T = [S·S⊕·(1 − A) / (4σ)]^¼, where S⊕ = L☉ / (4π·AU²) ≈ 1361 W/m².
+        /// Earth (S = 1, A = 0.3) gives ≈ 255 K.
+        /// </summary>
+        /// <param name="insolationFluxEarth">Stellar flux relative to Earth's insolation.</param>
+        /// <param name="bondAlbedo">Bond albedo, 0 ≤ A ≤ 1 (Earth ≈ 0.3).</param>
+        public static double EquilibriumTemperature(double insolationFluxEarth, double bondAlbedo)
+        {
+            double solarConstant = PhysicsConstants.SolarLuminosity
+                / (4 * Math.PI * PhysicsConstants.AstronomicalUnit * PhysicsConstants.AstronomicalUnit);
+
+            return Math.Pow(insolationFluxEarth * solarConstant * (1 - bondAlbedo)
+                / (4 * PhysicsConstants.StefanBoltzmannConstant), 0.25);
+        }
+
+        /// <summary>
+        /// Earth Similarity Index from radius and stellar flux, as used by the PHL Habitable
+        /// Worlds Catalog: ESI = 1 − √(½·[((S−1)/(S+1))² + ((R−1)/(R+1))²]).
+        /// Useful when density and surface temperature are unknown.
+        /// </summary>
+        /// <param name="radiusEarth">Planet radius in Earth radii.</param>
+        /// <param name="insolationFluxEarth">Stellar flux relative to Earth's insolation.</param>
+        public static double CalculateEsiFromFlux(double radiusEarth, double insolationFluxEarth)
+        {
+            double flux = (insolationFluxEarth - 1) / (insolationFluxEarth + 1);
+            double radius = (radiusEarth - 1) / (radiusEarth + 1);
+            return 1 - Math.Sqrt(0.5 * (flux * flux + radius * radius));
+        }
+
+        /// <summary>
+        /// Effective stellar flux S_eff (relative to Earth's insolation) at a habitable zone
+        /// boundary, from the Kopparapu et al. (2014) fit:
+        /// S_eff = S_eff,☉ + a·T + b·T² + c·T³ + d·T⁴ with T = Teff − 5780 K.
+        /// The fit is valid for 2600 K ≤ Teff ≤ 7200 K.
+        /// </summary>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin.</param>
+        /// <param name="limit">Which habitable zone boundary to evaluate.</param>
+        public static double HabitableZoneFlux(double effectiveTemperatureK, HabitableZoneLimit limit)
+        {
+            double[] k = HabitableZoneCoefficients[(int)limit];
+            double t = effectiveTemperatureK - 5780.0;
+            return k[0] + t * (k[1] + t * (k[2] + t * (k[3] + t * k[4])));
+        }
+
+        /// <summary>
+        /// Habitable zone boundaries in AU using the Kopparapu et al. (2014) limits,
+        /// d = √(L / S_eff). Returns (innerEdgeAU, outerEdgeAU).
+        /// </summary>
+        /// <param name="stellarLuminositySolar">Stellar luminosity in solar luminosities.</param>
+        /// <param name="effectiveTemperatureK">Stellar effective temperature in Kelvin (2600–7200 K).</param>
+        /// <param name="model">Conservative (Runaway–Maximum Greenhouse) or Optimistic (Recent Venus–Early Mars).</param>
+        public static (double InnerEdgeAU, double OuterEdgeAU) CalculateGoldilocksZone(
+            double stellarLuminositySolar,
+            double effectiveTemperatureK,
+            HabitableZoneModel model)
+        {
+            var (innerLimit, outerLimit) = model == HabitableZoneModel.Optimistic
+                ? (HabitableZoneLimit.RecentVenus, HabitableZoneLimit.EarlyMars)
+                : (HabitableZoneLimit.RunawayGreenhouse, HabitableZoneLimit.MaximumGreenhouse);
+
+            double inner = Math.Sqrt(stellarLuminositySolar / HabitableZoneFlux(effectiveTemperatureK, innerLimit));
+            double outer = Math.Sqrt(stellarLuminositySolar / HabitableZoneFlux(effectiveTemperatureK, outerLimit));
+
+            return (inner, outer);
+        }
+
+        #endregion
     }
 }
