@@ -16,7 +16,7 @@ All results were cross-checked against PHL values.
 - [x] `CalculateEsiFromFlux`
 - [x] `HabitableZoneFlux` and `CalculateGoldilocksZone(L, Teff, HabitableZoneModel)`
 - [x] Unit tests in `AstronomyTests`
-- [ ] Tests pass in CI (local test runs are blocked by Windows App Control on the dev machine)
+- [x] Tests pass in CI (local test runs are blocked by Windows App Control on the dev machine)
 
 ## Phase 3 — Docs
 - [x] Update Physics README (Exoplanet Classification section)
