@@ -59,6 +59,7 @@ public static class PhysicsConstants
     public const double EarthRadius = 6.371e6; // meters
     public const double MoonRadius = 1.7371e6; // meters
     public const double SolarLuminosity = 3.828e26; // Watts
+    public const double SolarEffectiveTemperature = 5772.0; // Kelvin (IAU 2015 nominal)
     public const double HubbleConstant = 2.2e-18; // 1/s
     public const double CmbTemperature = 2.72548; // Kelvin (cosmic microwave background)
 

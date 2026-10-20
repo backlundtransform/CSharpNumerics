@@ -717,6 +717,55 @@ double esiVenus = AstronomyExtensions.CalculateEsi(0.95, 0.95, 0.93, 737); // �
 | Escape velocity | 1.0 v⊕ | 0.70 |
 | Surface temperature | 288 K | 5.58 |
 
+When density and surface temperature are unknown — which is the case for most exoplanets — use the two-parameter form from radius and stellar flux, as in the PHL Habitable Worlds Catalog:
+
+```csharp
+// Kepler-189 b: R = 1.21 R⊕, S = 46.03 S⊕
+double esi = AstronomyExtensions.CalculateEsiFromFlux(radiusEarth: 1.21, insolationFluxEarth: 46.03); // ≈ 0.32
+```
+
+**Insolation & Equilibrium Temperature**
+
+Derive stellar luminosity, the flux a planet receives, and its equilibrium temperature. Fluxes are relative to Earth's insolation (S⊕ ≈ 1361 W/m²):
+
+```csharp
+// Stefan–Boltzmann: L/L☉ = (R/R☉)² · (T/5772 K)⁴
+double lum = AstronomyExtensions.StellarLuminosity(stellarRadiusSolar: 0.95, effectiveTemperatureK: 5608); // ≈ 0.80
+
+double flux = AstronomyExtensions.InsolationFlux(lum, distanceAU: 1.2);   // S = L / d²
+
+// Over an eccentric orbit: apastron, orbit average, periastron
+var (min, avg, max) = AstronomyExtensions.InsolationFluxRange(lum, semiMajorAxisAU: 1.2, eccentricity: 0.1);
+
+// Full heat redistribution: T = [S·S⊕·(1 − A) / 4σ]^¼
+double teq = AstronomyExtensions.EquilibriumTemperature(insolationFluxEarth: 1.0, bondAlbedo: 0.3); // ≈ 255 K
+```
+
+**Habitable Zone limits (Kopparapu et al. 2014)**
+
+The updated Kopparapu et al. (2014) limits give the effective flux at each boundary, `S_eff = S_eff,☉ + aT + bT² + cT³ + dT⁴` with `T = Teff − 5780 K` (valid 2600–7200 K). Select the conservative or optimistic zone with `HabitableZoneModel`:
+
+```csharp
+double seff = AstronomyExtensions.HabitableZoneFlux(5608, HabitableZoneLimit.RecentVenus);  // ≈ 1.74
+
+var (inner, outer) = AstronomyExtensions.CalculateGoldilocksZone(
+    stellarLuminositySolar: 0.7997751,
+    effectiveTemperatureK: 5608,
+    model: HabitableZoneModel.Optimistic);
+// inner ≈ 0.678 AU, outer ≈ 1.605 AU
+
+// A planet is in the zone when its flux lies between the two limits
+bool inZone = flux <= AstronomyExtensions.HabitableZoneFlux(5608, HabitableZoneLimit.RecentVenus)
+           && flux >= AstronomyExtensions.HabitableZoneFlux(5608, HabitableZoneLimit.EarlyMars);
+```
+
+| `HabitableZoneLimit` | S_eff,☉ | Edge | Model |
+|----------------------|---------|------|-------|
+| `RecentVenus` | 1.776 | inner | Optimistic |
+| `RunawayGreenhouse` | 1.107 | inner | Conservative |
+| `MaximumGreenhouse` | 0.356 | outer | Conservative |
+| `EarlyMars` | 0.320 | outer | Optimistic |
+
 ---
 
 ## 🌌 Cosmology
