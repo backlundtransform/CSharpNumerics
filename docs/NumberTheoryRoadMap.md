@@ -24,15 +24,15 @@ documented as not suitable for cryptographic purposes.
 See [Design decisions](#design-decisions) below.
 
 ## Phase 2 — Euclidean Algorithm & Modular Arithmetic
-- [ ] `EuclideanAlgorithm`: `Gcd`, `Lcm`, `ExtendedGcd` (returns g, x, y), binary GCD, GCD/LCM of sequences
-- [ ] `ModularArithmetic`: `Mod` (always non-negative), `AddMod`, `MulMod` (overflow-safe), `Pow`
+- [x] `EuclideanAlgorithm`: `Gcd`, `Lcm`, `ExtendedGcd` (returns g, x, y), binary GCD, GCD/LCM of sequences
+- [x] `ModularArithmetic`: `Mod` (always non-negative), `AddMod`, `MulMod` (overflow-safe), `Pow`
       (square-and-multiply), `Inverse` (throws when gcd ≠ 1), `TryInverse`
-- [ ] `ModularArithmetic`: Euler's totient φ(n), Carmichael λ(n), multiplicative order, primitive root
-- [ ] `ModularArithmetic`: Legendre and Jacobi symbols, modular square root (Tonelli–Shanks)
-- [ ] `ChineseRemainderTheorem`: solve for pairwise coprime moduli, plus the general (non-coprime)
+- [x] `ModularArithmetic`: Euler's totient φ(n), Carmichael λ(n), multiplicative order, primitive root
+- [x] `ModularArithmetic`: Legendre and Jacobi symbols, modular square root (Tonelli–Shanks)
+- [x] `ChineseRemainderTheorem`: solve for pairwise coprime moduli, plus the general (non-coprime)
       case that reports when no solution exists
-- [ ] Replace the private `GCD` in `Physics/Quantum/ModularMultiplyGate.cs` with `EuclideanAlgorithm.Gcd`
-- [ ] Unit tests in `NumberTheoryTests` (identities: Bézout, Fermat's little theorem, CRT round-trip)
+- [x] Replace the private `GCD` in `Physics/Quantum/ModularMultiplyGate.cs` with `EuclideanAlgorithm.Gcd`
+- [x] Unit tests in `NumberTheoryTests` (identities: Bézout, Fermat's little theorem, CRT round-trip)
 
 ## Phase 3 — Primality Testing & Factorisation
 - [ ] `PrimalityTesting`: deterministic Miller–Rabin for `long` (fixed witness set valid below 2⁶⁴)
@@ -42,6 +42,8 @@ See [Design decisions](#design-decisions) below.
 - [ ] `IntegerFactorization`: trial division for small factors + Pollard's rho (Brent variant),
       result as `(prime, exponent)` pairs
 - [ ] Divisor functions: divisor list, σ(n), τ(n), Möbius μ(n)
+- [ ] Switch `Totient`, `CarmichaelLambda`, `MultiplicativeOrder` and `PrimitiveRoot` from the interim
+      private trial-division `Factor` in `ModularArithmetic` to `IntegerFactorization`
 - [ ] Make `NumericExtensions.IsPrime` / `GetPrimeFactors` delegate to the new code
       (existing tests in `NumericsTests` must keep passing)
 - [ ] Unit tests (Carmichael numbers, strong pseudoprimes, large semiprimes, 2⁶¹−1)
@@ -189,11 +191,18 @@ the static classes.
 - `GetPrimeFactors` keeps its exact output format: ascending primes listed with repetition
   (78 → `[2, 3, 13]`, 12 → `[2, 2, 3]`). An empty list for n < 2 is the current behaviour and stays.
   The existing tests `TestIsPrime` and `TestGetPrimeFactors` must pass unchanged.
-- `IsPrime(this long)` is added in `NumberTheoryExtensions`. `79.IsPrime()` still resolves to the
-  `int` overload (exact match), so existing code is unaffected. This needs to be verified with a test
-  in Phase 3.
+- `IsPrime(this long)` is added in `NumberTheoryExtensions`. It cannot change what `79.IsPrime()` binds
+  to: C# does not apply numeric conversions to the receiver of an extension method, so an `int`
+  receiver only ever matches the `int` overload. The flip side is that the `long` extensions need an
+  `L` suffix or a cast (`84L.Gcd(36)`), which the README must show.
 
 ## Notes
+- Phase 2: the multiplicative-group functions (`Totient`, `CarmichaelLambda`, `MultiplicativeOrder`,
+  `PrimitiveRoot`) factor by trial division until Phase 3. They are slow when the argument has a prime
+  factor above about 10¹², so the tests use moduli well below that.
+- The test project only targets net10.0, so the netstandard2.1 double-and-add branch of `MulMod`
+  is not exercised by the tests. The same algorithm was checked against `BigInteger` in the
+  Phase 1 spike.
 - Placement follows the boundary rules: this is pure math with no domain semantics, so it lives in
   Numerics. Physics (Quantum) and Statistics (random generators) consume it.
 - `EuclideanAlgorithm` and `ChineseRemainderTheorem` are small. They are kept as separate static

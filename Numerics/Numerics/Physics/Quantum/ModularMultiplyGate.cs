@@ -1,3 +1,4 @@
+using CSharpNumerics.Numerics.NumberTheory;
 using CSharpNumerics.Numerics.Objects;
 using System;
 
@@ -35,7 +36,7 @@ public class ModularMultiplyGate : QuantumGate
             throw new ArgumentException("Modulus must be > 1.", nameof(N));
         if (a <= 0 || a >= N)
             throw new ArgumentException($"Multiplier must be in range (0, {N}).", nameof(a));
-        if (GCD(a, N) != 1)
+        if (EuclideanAlgorithm.Gcd(a, N) != 1)
             throw new ArgumentException($"gcd({a}, {N}) ≠ 1 — multiplier must be coprime to modulus.", nameof(a));
 
         int minQubits = (int)Math.Ceiling(Math.Log(N, 2));
@@ -77,16 +78,5 @@ public class ModularMultiplyGate : QuantumGate
         }
 
         return new ComplexMatrix(m);
-    }
-
-    private static long GCD(long a, long b)
-    {
-        while (b != 0)
-        {
-            long t = b;
-            b = a % b;
-            a = t;
-        }
-        return a;
     }
 }
