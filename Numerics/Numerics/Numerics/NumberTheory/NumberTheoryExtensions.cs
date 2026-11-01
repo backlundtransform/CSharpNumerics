@@ -21,4 +21,7 @@ public static class NumberTheoryExtensions
 
     /// <inheritdoc cref="ModularArithmetic.Inverse(long, long)"/>
     public static long ModInverse(this long a, long m) => ModularArithmetic.Inverse(a, m);
+
+    /// <inheritdoc cref="PrimalityTesting.IsPrime(long)"/>
+    public static bool IsPrime(this long n) => PrimalityTesting.IsPrime(n);
 }

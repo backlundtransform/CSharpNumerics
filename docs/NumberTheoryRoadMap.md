@@ -35,18 +35,18 @@ See [Design decisions](#design-decisions) below.
 - [x] Unit tests in `NumberTheoryTests` (identities: Bézout, Fermat's little theorem, CRT round-trip)
 
 ## Phase 3 — Primality Testing & Factorisation
-- [ ] `PrimalityTesting`: deterministic Miller–Rabin for `long` (fixed witness set valid below 2⁶⁴)
-- [ ] `PrimalityTesting`: probabilistic Miller–Rabin for `BigInteger` with configurable rounds/seed
-- [ ] `PrimeSieve`: sieve of Eratosthenes (`PrimesUpTo(n)`), segmented sieve for ranges
-- [ ] `NextPrime` / `PreviousPrime`
-- [ ] `IntegerFactorization`: trial division for small factors + Pollard's rho (Brent variant),
+- [x] `PrimalityTesting`: deterministic Miller–Rabin for `long` (fixed witness set valid below 2⁶⁴)
+- [x] `PrimalityTesting`: probabilistic Miller–Rabin for `BigInteger` with configurable rounds/seed
+- [x] `PrimeSieve`: sieve of Eratosthenes (`PrimesUpTo(n)`), segmented sieve for ranges
+- [x] `NextPrime` / `PreviousPrime`
+- [x] `IntegerFactorization`: trial division for small factors + Pollard's rho (Brent variant),
       result as `(prime, exponent)` pairs
-- [ ] Divisor functions: divisor list, σ(n), τ(n), Möbius μ(n)
-- [ ] Switch `Totient`, `CarmichaelLambda`, `MultiplicativeOrder` and `PrimitiveRoot` from the interim
+- [x] Divisor functions: divisor list, σ(n), τ(n), Möbius μ(n)
+- [x] Switch `Totient`, `CarmichaelLambda`, `MultiplicativeOrder` and `PrimitiveRoot` from the interim
       private trial-division `Factor` in `ModularArithmetic` to `IntegerFactorization`
-- [ ] Make `NumericExtensions.IsPrime` / `GetPrimeFactors` delegate to the new code
+- [x] Make `NumericExtensions.IsPrime` / `GetPrimeFactors` delegate to the new code
       (existing tests in `NumericsTests` must keep passing)
-- [ ] Unit tests (Carmichael numbers, strong pseudoprimes, large semiprimes, 2⁶¹−1)
+- [x] Unit tests (Carmichael numbers, strong pseudoprimes, large semiprimes, 2⁶¹−1)
 
 ## Phase 4 — Continued Fractions & Shor Integration
 - [ ] `ContinuedFractions`: expansion of a rational / double, convergents, best rational approximation
@@ -87,7 +87,7 @@ Namespace `CSharpNumerics.Numerics.NumberTheory`, folder `Numerics/Numerics/Nume
 | `ChineseRemainderTheorem.cs` | static class | 2 |
 | `ModInt.cs` | `readonly struct` | 2 |
 | `NumberTheoryExtensions.cs` | static extension class | 2 (grows in 3) |
-| `PrimalityTesting.cs`, `PrimeSieve.cs`, `IntegerFactorization.cs` | static classes | 3 |
+| `PrimalityTesting.cs`, `PrimeSieve.cs`, `IntegerFactorization.cs` (incl. divisor functions) | static classes | 3 |
 | `ContinuedFractions.cs` | static class | 4 |
 | `PrimeField.cs`, `Polynomial` over GF(p), `ExtensionField.cs`, `ExtensionFieldElement.cs` | classes / struct | 5 |
 | `Interfaces/IFiniteField.cs` | interface | 5 |
@@ -197,9 +197,14 @@ the static classes.
   `L` suffix or a cast (`84L.Gcd(36)`), which the README must show.
 
 ## Notes
-- Phase 2: the multiplicative-group functions (`Totient`, `CarmichaelLambda`, `MultiplicativeOrder`,
-  `PrimitiveRoot`) factor by trial division until Phase 3. They are slow when the argument has a prime
-  factor above about 10¹², so the tests use moduli well below that.
+- Phase 3: the multiplicative-group functions now factor with `IntegerFactorization` (trial division
+  below 1000, then Pollard–Brent rho), so they are fast for any `long`. The slowest `Factor` input is
+  a product of two ~31-bit primes.
+- Phase 3: `PrimeSieve.PrimesInRange` streams the base primes up to √high block by block instead of
+  storing them, so it works up to `long.MaxValue`. When the range is shorter than about √high / 512
+  it tests each odd candidate with Miller–Rabin instead. The range length is capped at 2³¹.
+- Phase 3: the divisor functions (`Divisors`, `DivisorCount`, `DivisorSum`, `Mobius`) live in
+  `IntegerFactorization` rather than a class of their own, since each is a fold over `Factor`.
 - The test project only targets net10.0, so the netstandard2.1 double-and-add branch of `MulMod`
   is not exercised by the tests. The same algorithm was checked against `BigInteger` in the
   Phase 1 spike.

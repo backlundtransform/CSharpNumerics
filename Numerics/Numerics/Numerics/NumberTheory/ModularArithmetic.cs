@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 
 namespace CSharpNumerics.Numerics.NumberTheory;
@@ -20,8 +19,7 @@ namespace CSharpNumerics.Numerics.NumberTheory;
 /// </para>
 /// <para>
 /// <see cref="Totient"/>, <see cref="CarmichaelLambda"/>, <see cref="MultiplicativeOrder"/> and
-/// <see cref="PrimitiveRoot"/> factor their argument by trial division, which is slow when it
-/// has a prime factor above about 10¹².
+/// <see cref="PrimitiveRoot"/> factor their argument with <see cref="IntegerFactorization.Factor"/>.
 /// </para>
 /// <para>
 /// Not constant-time: do not use for cryptographic purposes.
@@ -197,7 +195,7 @@ public static class ModularArithmetic
         if (n <= 0) throw new ArgumentOutOfRangeException(nameof(n), n, "n must be positive.");
 
         long result = n;
-        foreach (var (p, _) in Factor(n))
+        foreach (var (p, _) in IntegerFactorization.Factor(n))
             result = result / p * (p - 1);
         return result;
     }
@@ -212,7 +210,7 @@ public static class ModularArithmetic
         if (n <= 0) throw new ArgumentOutOfRangeException(nameof(n), n, "n must be positive.");
 
         long result = 1;
-        foreach (var (p, k) in Factor(n))
+        foreach (var (p, k) in IntegerFactorization.Factor(n))
         {
             long pk1 = 1;
             for (int i = 1; i < k; i++) pk1 *= p;
@@ -243,7 +241,7 @@ public static class ModularArithmetic
 
         // The order divides λ(m). Strip prime factors from λ(m) while the power stays 1.
         long order = CarmichaelLambda(m);
-        foreach (var (q, _) in Factor(order))
+        foreach (var (q, _) in IntegerFactorization.Factor(order))
         {
             while (order % q == 0 && PowReduced(r, (ulong)(order / q), m) == 1)
                 order /= q;
@@ -279,7 +277,7 @@ public static class ModularArithmetic
         long phi = Totient(m);
         if (CarmichaelLambda(m) != phi) return false;
 
-        var primeFactors = Factor(phi);
+        var primeFactors = IntegerFactorization.Factor(phi);
         for (long g = 1; g < m; g++)
         {
             if (EuclideanAlgorithm.Gcd(g, m) != 1) continue;
@@ -460,7 +458,7 @@ public static class ModularArithmetic
     }
 
     /// <summary>(a + b) mod m for a, b already in [0, m). The sum is formed in a ulong, so it cannot overflow.</summary>
-    private static long AddReduced(long a, long b, long m)
+    internal static long AddReduced(long a, long b, long m)
     {
         ulong sum = (ulong)a + (ulong)b;
         return (long)(sum >= (ulong)m ? sum - (ulong)m : sum);
@@ -502,28 +500,6 @@ public static class ModularArithmetic
             if (e != 0) b = MulReduced(b, b, m);
         }
         return result;
-    }
-
-    /// <summary>
-    /// Prime factorisation of n ≥ 1 by trial division, as (prime, exponent) pairs in ascending order.
-    /// To be replaced by <c>IntegerFactorization</c> (Pollard's rho) in phase 3 of the roadmap.
-    /// </summary>
-    private static List<(long Prime, int Exponent)> Factor(long n)
-    {
-        var factors = new List<(long, int)>();
-        for (long p = 2; p <= n / p; p += p == 2 ? 1 : 2)
-        {
-            if (n % p != 0) continue;
-            int k = 0;
-            while (n % p == 0)
-            {
-                n /= p;
-                k++;
-            }
-            factors.Add((p, k));
-        }
-        if (n > 1) factors.Add((n, 1));
-        return factors;
     }
 
     #endregion

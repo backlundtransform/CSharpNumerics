@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using CSharpNumerics.Numerics;
 using CSharpNumerics.Numerics.NumberTheory;
 
 namespace NumericsTests;
@@ -533,6 +534,251 @@ public class NumberTheoryTests
         Assert.AreEqual(36, 12L.Lcm(18));
         Assert.AreEqual(445, 4L.ModPow(13, 497));
         Assert.AreEqual(4, 3L.ModInverse(11));
+        Assert.IsTrue(Mersenne61.IsPrime());
+    }
+
+    #endregion
+
+    #region PrimalityTesting
+
+    [TestMethod]
+    public void IsPrime_MatchesSieveBelow200000()
+    {
+        var primes = PrimeSieve.PrimesUpTo(200_000).Select(p => (long)p).ToHashSet();
+        for (long n = -5; n <= 200_000; n++)
+            Assert.AreEqual(primes.Contains(n), PrimalityTesting.IsPrime(n), $"n = {n}");
+    }
+
+    [TestMethod]
+    public void IsPrime_RejectsCarmichaelNumbersAndStrongPseudoprimes()
+    {
+        long[] carmichael = { 561, 1105, 1729, 2465, 2821, 6601, 8911, 41041, 825265, 321197185, 5394826801 };
+        foreach (long n in carmichael)
+            Assert.IsFalse(PrimalityTesting.IsPrime(n), $"Carmichael {n}");
+
+        // Strong pseudoprimes to base 2: fool a single Miller–Rabin round, not the full test.
+        foreach (long n in new long[] { 2047, 3277, 4033, 4681, 8321 })
+        {
+            Assert.IsTrue(PrimalityTesting.IsStrongProbablePrime(n, 2), $"spsp(2) {n}");
+            Assert.IsFalse(PrimalityTesting.IsPrime(n), $"{n}");
+        }
+
+        // 149491 · 747451 · 34233211 is a strong pseudoprime to every prime base up to 23.
+        const long spspTo23 = 3825123056546413051;
+        foreach (long a in new long[] { 2, 3, 5, 7, 11, 13, 17, 19, 23 })
+            Assert.IsTrue(PrimalityTesting.IsStrongProbablePrime(spspTo23, a));
+        Assert.IsFalse(PrimalityTesting.IsPrime(spspTo23));
+
+        Assert.ThrowsException<ArgumentException>(() => PrimalityTesting.IsStrongProbablePrime(10, 2));
+    }
+
+    [TestMethod]
+    public void IsPrime_LargeKnownValues()
+    {
+        Assert.IsTrue(PrimalityTesting.IsPrime(Mersenne61));
+        Assert.IsTrue(PrimalityTesting.IsPrime(PLarge));
+        Assert.IsTrue(PrimalityTesting.IsPrime(P998));
+        Assert.IsTrue(PrimalityTesting.IsPrime(PrimalityTesting.LargestLongPrime));
+        Assert.IsFalse(PrimalityTesting.IsPrime(long.MaxValue));                    // 7²·73·127·337·92737·649657
+        Assert.IsFalse(PrimalityTesting.IsPrime(2147483647L * 2147483629L));        // two 31-bit primes
+        Assert.IsFalse(PrimalityTesting.IsPrime(1000000007L * 1000000007L));       // prime square
+    }
+
+    [TestMethod]
+    public void IsProbablePrime_BigInteger()
+    {
+        Assert.IsTrue(PrimalityTesting.IsProbablePrime(BigInteger.Pow(2, 127) - 1, seed: 1));
+        Assert.IsTrue(PrimalityTesting.IsProbablePrime(BigInteger.Pow(2, 521) - 1, rounds: 10, seed: 2));
+        Assert.IsFalse(PrimalityTesting.IsProbablePrime(BigInteger.Pow(2, 128) + 1, seed: 3)); // Fermat F7
+        Assert.IsFalse(PrimalityTesting.IsProbablePrime((BigInteger.Pow(2, 61) - 1) * (BigInteger.Pow(2, 89) - 1), seed: 4));
+        Assert.IsFalse(PrimalityTesting.IsProbablePrime(BigInteger.Pow(2, 127) + 1));
+
+        // Values that fit in a long use the deterministic test.
+        Assert.IsTrue(PrimalityTesting.IsProbablePrime(Mersenne61));
+        Assert.IsFalse(PrimalityTesting.IsProbablePrime(new BigInteger(3825123056546413051)));
+        Assert.IsFalse(PrimalityTesting.IsProbablePrime(BigInteger.MinusOne));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => PrimalityTesting.IsProbablePrime(7, rounds: 0));
+    }
+
+    [TestMethod]
+    public void NextAndPreviousPrime()
+    {
+        Assert.AreEqual(2, PrimalityTesting.NextPrime(-10));
+        Assert.AreEqual(3, PrimalityTesting.NextPrime(2));
+        Assert.AreEqual(17, PrimalityTesting.NextPrime(13));
+        Assert.AreEqual(1000000000039, PrimalityTesting.NextPrime(1_000_000_000_000));
+        Assert.AreEqual(PrimalityTesting.LargestLongPrime, PrimalityTesting.NextPrime(PrimalityTesting.LargestLongPrime - 1));
+        Assert.ThrowsException<OverflowException>(() => PrimalityTesting.NextPrime(PrimalityTesting.LargestLongPrime));
+
+        Assert.AreEqual(2, PrimalityTesting.PreviousPrime(3));
+        Assert.AreEqual(13, PrimalityTesting.PreviousPrime(17));
+        Assert.AreEqual(PrimalityTesting.LargestLongPrime, PrimalityTesting.PreviousPrime(long.MaxValue));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => PrimalityTesting.PreviousPrime(2));
+    }
+
+    #endregion
+
+    #region PrimeSieve
+
+    [TestMethod]
+    public void PrimesUpTo_KnownCounts()
+    {
+        Assert.AreEqual(0, PrimeSieve.PrimesUpTo(1).Length);
+        CollectionAssert.AreEqual(new[] { 2 }, PrimeSieve.PrimesUpTo(2));
+        CollectionAssert.AreEqual(new[] { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 }, PrimeSieve.PrimesUpTo(30));
+        Assert.AreEqual(25, PrimeSieve.PrimesUpTo(100).Length);
+        Assert.AreEqual(78498, PrimeSieve.PrimesUpTo(1_000_000).Length);
+        Assert.AreEqual(664579, PrimeSieve.PrimesUpTo(10_000_000).Length);
+    }
+
+    [TestMethod]
+    public void PrimesInRange_SmallRangesMatchSieve()
+    {
+        var all = PrimeSieve.PrimesUpTo(10_000).Select(p => (long)p).ToArray();
+        var rng = new Random(8);
+        for (int i = 0; i < 500; i++)
+        {
+            long low = rng.Next(-20, 9000), high = low + rng.Next(0, 1000);
+            var expected = all.Where(p => p >= low && p <= high).ToArray();
+            CollectionAssert.AreEqual(expected, PrimeSieve.PrimesInRange(low, high), $"[{low}, {high}]");
+        }
+        CollectionAssert.AreEqual(Array.Empty<long>(), PrimeSieve.PrimesInRange(-10, 1));
+        CollectionAssert.AreEqual(new long[] { 2 }, PrimeSieve.PrimesInRange(2, 2));
+    }
+
+    [TestMethod]
+    public void PrimesInRange_SegmentedSieveFarFromZero()
+    {
+        // √high ≈ 10⁸, so the base primes are streamed block by block.
+        const long low = 10_000_000_000_000_000, high = low + 200_000;
+        var primes = PrimeSieve.PrimesInRange(low, high);
+        Assert.AreEqual(5412, primes.Length);
+        foreach (long p in primes) Assert.IsTrue(PrimalityTesting.IsPrime(p), $"{p}");
+        Assert.AreEqual(primes[0], PrimalityTesting.NextPrime(low - 1));
+        Assert.AreEqual(primes[^1], PrimalityTesting.PreviousPrime(high + 1));
+    }
+
+    [TestMethod]
+    public void PrimesInRange_NearLongMaxValue()
+    {
+        var primes = PrimeSieve.PrimesInRange(long.MaxValue - 1000, long.MaxValue);
+        var expected = Enumerable.Range(0, 1001).Select(i => long.MaxValue - 1000 + i).Where(PrimalityTesting.IsPrime).ToArray();
+        CollectionAssert.AreEqual(expected, primes);
+        Assert.AreEqual(PrimalityTesting.LargestLongPrime, primes[^1]);
+    }
+
+    [TestMethod]
+    public void PrimesInRange_InvalidInput()
+    {
+        Assert.ThrowsException<ArgumentException>(() => PrimeSieve.PrimesInRange(10, 9));
+        Assert.ThrowsException<ArgumentException>(() => PrimeSieve.PrimesInRange(0, PrimeSieve.MaxRangeLength + 1));
+        Assert.ThrowsException<ArgumentException>(() => PrimeSieve.PrimesInRange(long.MinValue, long.MaxValue));
+    }
+
+    #endregion
+
+    #region IntegerFactorization
+
+    [TestMethod]
+    public void Factor_KnownValues()
+    {
+        CollectionAssert.AreEqual(new (long, int)[] { (2, 3), (3, 2), (5, 1) }, IntegerFactorization.Factor(360).ToArray());
+        Assert.AreEqual(0, IntegerFactorization.Factor(1).Count);
+        CollectionAssert.AreEqual(new (long, int)[] { (2, 62) }, IntegerFactorization.Factor(1L << 62).ToArray());
+        CollectionAssert.AreEqual(new long[] { 71, 839, 1471, 6857 }, IntegerFactorization.PrimeFactors(600851475143));
+        CollectionAssert.AreEqual(new (long, int)[] { (7, 2), (73, 1), (127, 1), (337, 1), (92737, 1), (649657, 1) },
+            IntegerFactorization.Factor(long.MaxValue).ToArray());
+        CollectionAssert.AreEqual(new long[] { 2, 3, 715827883, 2147483647 }, IntegerFactorization.PrimeFactors(long.MaxValue - 1));
+        CollectionAssert.AreEqual(new long[] { 2147483629, 2147483647 }, IntegerFactorization.PrimeFactors(2147483647L * 2147483629L));
+        CollectionAssert.AreEqual(new long[] { 1000000007, 1000000007 }, IntegerFactorization.PrimeFactors(1000000007L * 1000000007L));
+        CollectionAssert.AreEqual(new long[] { 149491, 747451, 34233211 }, IntegerFactorization.PrimeFactors(3825123056546413051));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => IntegerFactorization.Factor(0));
+    }
+
+    [TestMethod]
+    public void Factor_RandomValuesMultiplyBack()
+    {
+        var rng = new Random(9);
+        for (int i = 0; i < 1000; i++)
+        {
+            long n = rng.NextInt64(1, long.MaxValue);
+            var factors = IntegerFactorization.Factor(n);
+
+            BigInteger product = BigInteger.One;
+            long previous = 1;
+            foreach (var (p, k) in factors)
+            {
+                Assert.IsTrue(p > previous, $"ascending for {n}");
+                Assert.IsTrue(PrimalityTesting.IsPrime(p), $"{p} | {n}");
+                product *= BigInteger.Pow(p, k);
+                previous = p;
+            }
+            Assert.AreEqual(new BigInteger(n), product, $"n = {n}");
+        }
+    }
+
+    [TestMethod]
+    public void DivisorFunctions_MatchBruteForce()
+    {
+        for (long n = 1; n <= 500; n++)
+        {
+            var divisors = Enumerable.Range(1, (int)n).Where(d => n % d == 0).Select(d => (long)d).ToArray();
+            CollectionAssert.AreEqual(divisors, IntegerFactorization.Divisors(n), $"divisors({n})");
+            Assert.AreEqual(divisors.Length, IntegerFactorization.DivisorCount(n), $"τ({n})");
+            Assert.AreEqual(divisors.Sum(), IntegerFactorization.DivisorSum(n), $"σ({n})");
+
+            var factors = IntegerFactorization.Factor(n);
+            int expectedMu = factors.Any(f => f.Exponent > 1) ? 0 : (factors.Count % 2 == 0 ? 1 : -1);
+            Assert.AreEqual(expectedMu, IntegerFactorization.Mobius(n), $"μ({n})");
+        }
+    }
+
+    [TestMethod]
+    public void DivisorFunctions_LargeValues()
+    {
+        Assert.AreEqual(long.MaxValue, IntegerFactorization.DivisorSum(1L << 62)); // 2⁶³ − 1
+        Assert.ThrowsException<OverflowException>(() => IntegerFactorization.DivisorSum(3L << 61));
+        Assert.AreEqual(63, IntegerFactorization.DivisorCount(1L << 62));
+        Assert.AreEqual(96, IntegerFactorization.DivisorCount(long.MaxValue)); // 3·2⁵
+        Assert.AreEqual(0, IntegerFactorization.Mobius(long.MaxValue));      // 7² divides it
+        Assert.AreEqual(-1, IntegerFactorization.Mobius(Mersenne61));
+        Assert.AreEqual(1, IntegerFactorization.Mobius(1));
+
+        var divisors = IntegerFactorization.Divisors(long.MaxValue);
+        Assert.AreEqual(96, divisors.Length);
+        Assert.AreEqual(long.MaxValue, divisors[^1]);
+        Assert.IsTrue(divisors.All(d => long.MaxValue % d == 0));
+    }
+
+    [TestMethod]
+    public void MultiplicativeGroup_UsesFastFactorization()
+    {
+        Assert.AreEqual(Mersenne61 - 1, ModularArithmetic.Totient(Mersenne61));
+        Assert.AreEqual(37, ModularArithmetic.PrimitiveRoot(Mersenne61));
+        Assert.AreEqual(Mersenne61 - 1, ModularArithmetic.MultiplicativeOrder(37, Mersenne61));
+        Assert.AreEqual(2147483646L * 2147483628L, ModularArithmetic.Totient(2147483647L * 2147483629L));
+    }
+
+    #endregion
+
+    #region Backward compatibility
+
+    [TestMethod]
+    public void NumericExtensions_PrimeHelpersKeepTheirBehaviour()
+    {
+        // Both namespaces are in scope here: an int receiver still binds to the int overload.
+        Assert.IsTrue(CSharpNumerics.Numerics.NumericExtensions.IsPrime(79));
+        Assert.IsTrue(79.IsPrime());
+        Assert.IsTrue(int.MaxValue.IsPrime());
+        Assert.IsFalse(1.IsPrime());
+        Assert.IsFalse((-7).IsPrime());
+
+        CollectionAssert.AreEqual(new[] { 2, 3, 13 }, 78.GetPrimeFactors());
+        CollectionAssert.AreEqual(new[] { 2, 2, 3 }, 12.GetPrimeFactors());
+        CollectionAssert.AreEqual(new[] { int.MaxValue }, int.MaxValue.GetPrimeFactors());
+        Assert.AreEqual(0, 1.GetPrimeFactors().Count);
+        Assert.AreEqual(0, 0.GetPrimeFactors().Count);
+        Assert.AreEqual(0, (-12).GetPrimeFactors().Count);
     }
 
     #endregion
