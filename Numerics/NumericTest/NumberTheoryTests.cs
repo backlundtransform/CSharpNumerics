@@ -783,6 +783,123 @@ public class NumberTheoryTests
 
     #endregion
 
+    #region ContinuedFractions
+
+    [TestMethod]
+    public void ContinuedFraction_ExpandRationals()
+    {
+        CollectionAssert.AreEqual(new long[] { 4, 2, 6, 7 }, ContinuedFractions.Expand(415, 93));
+        CollectionAssert.AreEqual(new long[] { -5, 1, 1, 6, 7 }, ContinuedFractions.Expand(-415, 93));
+        CollectionAssert.AreEqual(new long[] { -5, 1, 1, 6, 7 }, ContinuedFractions.Expand(415, -93));
+        CollectionAssert.AreEqual(new long[] { 0, 2 }, ContinuedFractions.Expand(1, 2));
+        CollectionAssert.AreEqual(new long[] { 0 }, ContinuedFractions.Expand(0, 7));
+        CollectionAssert.AreEqual(new long[] { 3 }, ContinuedFractions.Expand(6, 2));
+        // Consecutive Fibonacci numbers F₉₂/F₉₁ give the longest expansion for their size: [1; 1, …, 1, 2].
+        var fib = ContinuedFractions.Expand(7540113804746346429, 4660046610375530309);
+        Assert.AreEqual(90, fib.Length);
+        Assert.IsTrue(fib.Take(89).All(a => a == 1));
+        Assert.AreEqual(2, fib[^1]);
+        Assert.ThrowsException<DivideByZeroException>(() => ContinuedFractions.Expand(1, 0));
+        Assert.ThrowsException<OverflowException>(() => ContinuedFractions.Expand(long.MinValue, -1));
+    }
+
+    [TestMethod]
+    public void ContinuedFraction_ExpandDoubles()
+    {
+        // Math.PI agrees with π for 13 terms; after that the expansion is of the double itself.
+        long[] pi = { 3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14 };
+        CollectionAssert.AreEqual(pi, ContinuedFractions.Expand(Math.PI, 13));
+        CollectionAssert.AreEqual(new long[] { 3, 7, 15, 1, 292 }, ContinuedFractions.Expand(Math.PI, 5));
+
+        var sqrt2 = ContinuedFractions.Expand(Math.Sqrt(2), 20);
+        Assert.AreEqual(1, sqrt2[0]);
+        Assert.IsTrue(sqrt2.Skip(1).All(a => a == 2));
+
+        CollectionAssert.AreEqual(new long[] { -4, 1, 3 }, ContinuedFractions.Expand(-3.25));
+        CollectionAssert.AreEqual(new long[] { 0, 1024 }, ContinuedFractions.Expand(1.0 / 1024));
+        CollectionAssert.AreEqual(new long[] { long.MinValue }, ContinuedFractions.Expand(-9.2233720368547758E+18));
+
+        // The exact expansion of the double reproduces its value.
+        foreach (double x in new[] { Math.E, -Math.PI, 0.1, 1e-3, 123456.789 })
+        {
+            var (p, q) = ContinuedFractions.Convergents(ContinuedFractions.Expand(x))[^1];
+            Assert.AreEqual(x, (double)p / q, Math.Abs(x) * 1e-15, $"x = {x}");
+        }
+
+        Assert.ThrowsException<ArgumentException>(() => ContinuedFractions.Expand(double.NaN));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => ContinuedFractions.Expand(1e19));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => ContinuedFractions.Expand(1.5, 0));
+    }
+
+    [TestMethod]
+    public void ContinuedFraction_Convergents()
+    {
+        var c = ContinuedFractions.Convergents(new long[] { 3, 7, 15, 1, 292 });
+        CollectionAssert.AreEqual(new (long, long)[] { (3, 1), (22, 7), (333, 106), (355, 113), (103993, 33102) }, c);
+
+        // The last convergent is the fraction in lowest terms.
+        Assert.AreEqual((415L, 93L), ContinuedFractions.Convergents(ContinuedFractions.Expand(830, 186))[^1]);
+        Assert.AreEqual((-415L, 93L), ContinuedFractions.Convergents(ContinuedFractions.Expand(-415, 93))[^1]);
+
+        // Consecutive convergents satisfy hₙkₙ₋₁ − hₙ₋₁kₙ = (−1)ⁿ⁻¹.
+        var e = ContinuedFractions.Convergents(ContinuedFractions.Expand(Math.E, 20));
+        for (int i = 1; i < e.Length; i++)
+            Assert.AreEqual(i % 2 == 1 ? 1 : -1, e[i].Numerator * e[i - 1].Denominator - e[i - 1].Numerator * e[i].Denominator);
+
+        Assert.AreEqual(0, ContinuedFractions.Convergents(Array.Empty<long>()).Length);
+        Assert.ThrowsException<ArgumentException>(() => ContinuedFractions.Convergents(new long[] { 1, 0 }));
+        Assert.ThrowsException<OverflowException>(() => ContinuedFractions.Convergents(new long[] { 1, long.MaxValue, 2 }));
+    }
+
+    [TestMethod]
+    public void BestRationalApproximation_KnownValues()
+    {
+        Assert.AreEqual((355L, 113L), ContinuedFractions.BestRationalApproximation(Math.PI, 1000));
+        Assert.AreEqual((355L, 113L), ContinuedFractions.BestRationalApproximation(314159, 100000, 1000));
+        Assert.AreEqual((1084483L, 398959L), ContinuedFractions.BestRationalApproximation(Math.E, 1_000_000));
+        Assert.AreEqual((-311L, 99L), ContinuedFractions.BestRationalApproximation(-Math.PI, 100));
+        Assert.AreEqual((1L, 2L), ContinuedFractions.BestRationalApproximation(1, 3, 2));  // semiconvergent
+        Assert.AreEqual((1L, 3L), ContinuedFractions.BestRationalApproximation(2, 5, 4));
+        Assert.AreEqual((3L, 7L), ContinuedFractions.BestRationalApproximation(3, 7, 100)); // exact
+        Assert.AreEqual((4L, 1L), ContinuedFractions.BestRationalApproximation(4.4, 1));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => ContinuedFractions.BestRationalApproximation(0.5, 0));
+    }
+
+    [TestMethod]
+    public void BestRationalApproximation_MatchesBruteForce()
+    {
+        var rng = new Random(10);
+        for (int trial = 0; trial < 1000; trial++)
+        {
+            long den = rng.Next(1, 5000);
+            long num = rng.Next(-20000, 20000);
+            long maxDen = rng.Next(1, 60);
+
+            // Brute force: for each q, the nearest p; keep strictly better errors so ties go to the smaller q.
+            long bestP = 0, bestQ = 0;
+            BigInteger bestErrNum = 0, bestErrDen = 1;
+            for (long q = 1; q <= maxDen; q++)
+            {
+                long floor = (long)Math.Floor((double)num * q / den);
+                for (long p = floor - 1; p <= floor + 2; p++)
+                {
+                    BigInteger errNum = BigInteger.Abs((BigInteger)num * q - (BigInteger)p * den);
+                    BigInteger errDen = q;
+                    if (bestQ == 0 || errNum * bestErrDen < bestErrNum * errDen)
+                    {
+                        (bestP, bestQ, bestErrNum, bestErrDen) = (p, q, errNum, errDen);
+                    }
+                }
+            }
+
+            var (rp, rq) = ContinuedFractions.BestRationalApproximation(num, den, maxDen);
+            // Compare by value: the brute force may find p/q not in lowest terms only when a smaller q ties, which it skips.
+            Assert.AreEqual((bestP, bestQ), (rp, rq), $"{num}/{den}, q ≤ {maxDen}");
+        }
+    }
+
+    #endregion
+
     #region Helpers
 
     private static BigInteger Ref(BigInteger a, BigInteger m)

@@ -49,13 +49,13 @@ See [Design decisions](#design-decisions) below.
 - [x] Unit tests (Carmichael numbers, strong pseudoprimes, large semiprimes, 2⁶¹−1)
 
 ## Phase 4 — Continued Fractions & Shor Integration
-- [ ] `ContinuedFractions`: expansion of a rational / double, convergents, best rational approximation
+- [x] `ContinuedFractions`: expansion of a rational / double, convergents, best rational approximation
       with bounded denominator
-- [ ] Shor classical post-processing: from a measured phase, recover the period r via convergents,
+- [x] Shor classical post-processing: from a measured phase, recover the period r via convergents,
       then factor N from gcd(a^(r/2) ± 1, N)
-- [ ] End-to-end test: factor N = 15 and N = 21 using the existing `ModularMultiplyGate` and the
+- [x] End-to-end test: factor N = 15 and N = 21 using the existing `ModularMultiplyGate` and the
       quantum phase-estimation building blocks
-- [ ] Unit tests for continued fractions (√2, π, known convergents)
+- [x] Unit tests for continued fractions (√2, π, known convergents)
 
 ## Phase 5 — Finite Fields
 - [ ] `PrimeField` GF(p) and `ModInt` element type with field operators, inverse and power
@@ -70,6 +70,8 @@ See [Design decisions](#design-decisions) below.
 - [ ] Evaluate a classical Reed–Solomon or BCH code over GF(2⁸) as a follow-up; note it in the
       roadmap backlog if out of scope
 - [ ] Update `Numerics/Numerics/Numerics/README.md` with a Number Theory section (example-driven)
+- [ ] Update `Numerics/Numerics/Physics/README.md` (Quantum section): `QuantumFourierTransform`,
+      `ShorAlgorithm`, `ShorResult`
 - [ ] Add the "not cryptographically secure" note to the README and XML docs
 
 ## Design decisions
@@ -89,6 +91,7 @@ Namespace `CSharpNumerics.Numerics.NumberTheory`, folder `Numerics/Numerics/Nume
 | `NumberTheoryExtensions.cs` | static extension class | 2 (grows in 3) |
 | `PrimalityTesting.cs`, `PrimeSieve.cs`, `IntegerFactorization.cs` (incl. divisor functions) | static classes | 3 |
 | `ContinuedFractions.cs` | static class | 4 |
+| `Physics/Quantum/QuantumFourierTransform.cs`, `ShorAlgorithm.cs`, `ShorResult.cs` | gate / static class / class | 4 |
 | `PrimeField.cs`, `Polynomial` over GF(p), `ExtensionField.cs`, `ExtensionFieldElement.cs` | classes / struct | 5 |
 | `Interfaces/IFiniteField.cs` | interface | 5 |
 
@@ -197,6 +200,17 @@ the static classes.
   `L` suffix or a cast (`84L.Gcd(36)`), which the README must show.
 
 ## Notes
+- Phase 4: Shor's algorithm lives in `Physics.Quantum`, next to the gates it uses, and not in
+  `NumberTheory`. Only the continued fractions are pure math. No QFT or phase-estimation building
+  blocks existed, so Phase 4 added `QuantumFourierTransform`. It is a gate with a dense matrix, plus
+  `ApplyAsCircuit`, which uses the H/CPhase/SWAP decomposition (verified against the matrix).
+- Phase 4: the counting register uses the smallest t with 2ᵗ ≥ N² (8 qubits for N = 15, 9 for
+  N = 21, so 12 and 14 qubits in total). `ShorAlgorithm.MaxSimulatedQubits = 18` covers N ≤ 64.
+- Phase 4: `TryRecoverPeriod` skips the convergent with denominator 1 and tries at most ⌈log₂ N⌉
+  multiples of each denominator. Without that limit, the multiple search from 0/1 tries every r < N.
+  That finds the period classically and makes the measurement irrelevant.
+- Phase 4: `ContinuedFractions.Expand(double, long maxTerms)` takes a `long` so that
+  `Expand(415, 93)` with int literals is not ambiguous with `Expand(long, long)`.
 - Phase 3: the multiplicative-group functions now factor with `IntegerFactorization` (trial division
   below 1000, then Pollard–Brent rho), so they are fast for any `long`. The slowest `Factor` input is
   a product of two ~31-bit primes.
