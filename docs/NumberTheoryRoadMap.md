@@ -58,11 +58,11 @@ See [Design decisions](#design-decisions) below.
 - [x] Unit tests for continued fractions (√2, π, known convergents)
 
 ## Phase 5 — Finite Fields
-- [ ] `PrimeField` GF(p) and `ModInt` element type with field operators, inverse and power
-- [ ] Polynomial arithmetic over GF(p): add, multiply, divmod, gcd, evaluation
-- [ ] Irreducibility test (Rabin) and search for irreducible / primitive polynomials
-- [ ] `ExtensionField` GF(pⁿ) with element type; table-based fast path for GF(2⁸)
-- [ ] Unit tests (field axioms, multiplicative group order pⁿ−1, AES GF(2⁸) known products)
+- [x] `PrimeField` GF(p) and `ModInt` element type with field operators, inverse and power
+- [x] Polynomial arithmetic over GF(p): add, multiply, divmod, gcd, evaluation
+- [x] Irreducibility test (Rabin) and search for irreducible / primitive polynomials
+- [x] `ExtensionField` GF(pⁿ) with element type; table-based fast path for GF(2⁸)
+- [x] Unit tests (field axioms, multiplicative group order pⁿ−1, AES GF(2⁸) known products)
 
 ## Phase 6 — Integration & Docs
 - [ ] Number Theoretic Transform (NTT) and exact integer convolution, next to the existing FFT in
@@ -92,10 +92,11 @@ Namespace `CSharpNumerics.Numerics.NumberTheory`, folder `Numerics/Numerics/Nume
 | `PrimalityTesting.cs`, `PrimeSieve.cs`, `IntegerFactorization.cs` (incl. divisor functions) | static classes | 3 |
 | `ContinuedFractions.cs` | static class | 4 |
 | `Physics/Quantum/QuantumFourierTransform.cs`, `ShorAlgorithm.cs`, `ShorResult.cs` | gate / static class / class | 4 |
-| `PrimeField.cs`, `Polynomial` over GF(p), `ExtensionField.cs`, `ExtensionFieldElement.cs` | classes / struct | 5 |
-| `Interfaces/IFiniteField.cs` | interface | 5 |
+| `PrimeField.cs`, `PrimeFieldPolynomial.cs`, `ExtensionField.cs`, `ExtensionFieldElement.cs` | classes / struct | 5 |
+| `NumberTheory/Interfaces/IFiniteField.cs` | interface | 5 |
 
-Tests go in `NumericTest/NumberTheoryTests.cs`.
+Tests go in `NumericTest/NumberTheoryTests.cs`. Phase 4 and 5 tests have their own files
+(`ShorAlgorithmTests.cs`, `FiniteFieldTests.cs`) to keep the main file manageable.
 
 ### Integer types
 
@@ -175,8 +176,10 @@ the static classes.
 
 ### Finite fields (Phase 5)
 
-- `IFiniteField<TElement>` in `Numerics/Interfaces/`: `Characteristic`, `Order`, `Zero`, `One`,
-  `Add`, `Subtract`, `Multiply`, `Inverse`, `Pow`, `Elements()`.
+- `IFiniteField<TElement>` in `NumberTheory/Interfaces/` (namespace
+  `CSharpNumerics.Numerics.NumberTheory.Interfaces`): `Characteristic`, `Degree`, `Order`
+  (`BigInteger`), `Zero`, `One`, `PrimitiveElement`, `Add`, `Subtract`, `Negate`, `Multiply`,
+  `Divide`, `Inverse`, `Pow`, `Elements()`.
 - `PrimeField : IFiniteField<ModInt>` wraps a prime p, validated with `PrimalityTesting`.
   `field.Element(3)` creates a `ModInt`.
 - `ExtensionField : IFiniteField<ExtensionFieldElement>` for GF(pⁿ), defined by p and an irreducible
@@ -200,6 +203,24 @@ the static classes.
   `L` suffix or a cast (`84L.Gcd(36)`), which the README must show.
 
 ## Notes
+- Phase 5: `IFiniteField` lives in `NumberTheory/Interfaces/`, not `Numerics/Interfaces/` as first
+  planned, following the existing sub-section convention (`Optimization/Interfaces/`,
+  `FiniteElement/Interfaces/`).
+- Phase 5: the polynomial type is `PrimeFieldPolynomial` (immutable class, coefficients constant
+  term first, zero polynomial has degree −1). The name avoids a clash with polynomial interpolation
+  and makes the coefficient field explicit. It also has `ExtendedGcd`, `PowMod`, `Derivative`,
+  `FromInteger` / `ToInteger` (base-p digits, the usual 0x11B notation over GF(2)).
+- Phase 5: `FindIrreducible` / `FindPrimitive` enumerate the lower coefficients as a base-p counter,
+  so the result is deterministic: 0x11B (the AES polynomial) and 0x11D for degree 8 over GF(2).
+  Primitivity needs pⁿ − 1 factored, so it requires pⁿ − 1 to fit in a `long`.
+- Phase 5: `new ExtensionField(p, n)` picks the first primitive polynomial, so `Root` (α = x mod f)
+  generates the group. If pⁿ − 1 overflows it falls back to the first irreducible polynomial, and
+  `PrimitiveElement` / `MultiplicativeOrder` throw `OverflowException`.
+- Phase 5: log/antilog tables are used for every field with at most 2¹⁶ elements, not only p = 2,
+  built from `PrimitiveElement`. Elements still store a coefficient array, so the table path costs
+  an index conversion per operation. That keeps one element representation for all fields.
+- Phase 5: division by zero and the inverse of zero throw `DivideByZeroException` in both field
+  classes. `ModInt`'s own `/` keeps `ArgumentException`, since it is a ring operation.
 - Phase 4: Shor's algorithm lives in `Physics.Quantum`, next to the gates it uses, and not in
   `NumberTheory`. Only the continued fractions are pure math. No QFT or phase-estimation building
   blocks existed, so Phase 4 added `QuantumFourierTransform`. It is a gate with a dense matrix, plus
