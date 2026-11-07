@@ -9,9 +9,14 @@ namespace CSharpNumerics.Numerics.NumberTheory;
 /// The prime field GF(p) = ℤ/pℤ, with <see cref="ModInt"/> elements of modulus p.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <see cref="ModInt"/> already has the arithmetic operators. This class adds the field view:
 /// it checks that elements belong to GF(p), reports division by zero as
 /// <see cref="DivideByZeroException"/>, and implements <see cref="IFiniteField{TElement}"/>.
+/// </para>
+/// <para>
+/// Not constant-time: do not use for cryptographic purposes.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

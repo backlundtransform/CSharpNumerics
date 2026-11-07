@@ -16,6 +16,9 @@ namespace CSharpNumerics.Numerics.NumberTheory;
 /// Division multiplies by the inverse, which exists only when the divisor is coprime to the
 /// modulus. <c>default(ModInt)</c> has modulus 0 and is not a valid value.
 /// </para>
+/// <para>
+/// Not constant-time: do not use for cryptographic purposes.
+/// </para>
 /// </remarks>
 public readonly struct ModInt : IEquatable<ModInt>
 {

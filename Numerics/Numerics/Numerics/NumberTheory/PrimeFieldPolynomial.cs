@@ -18,6 +18,9 @@ namespace CSharpNumerics.Numerics.NumberTheory;
 /// irreducibility (Rabin's test) and primitivity, and searches for irreducible and primitive
 /// polynomials. These define the extension fields GF(pⁿ) in <see cref="ExtensionField"/>.
 /// </para>
+/// <para>
+/// Not constant-time: do not use for cryptographic purposes.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

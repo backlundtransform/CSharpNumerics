@@ -65,14 +65,26 @@ See [Design decisions](#design-decisions) below.
 - [x] Unit tests (field axioms, multiplicative group order pⁿ−1, AES GF(2⁸) known products)
 
 ## Phase 6 — Integration & Docs
-- [ ] Number Theoretic Transform (NTT) and exact integer convolution, next to the existing FFT in
+- [x] Number Theoretic Transform (NTT) and exact integer convolution, next to the existing FFT in
       `TransformExtensions`
-- [ ] Evaluate a classical Reed–Solomon or BCH code over GF(2⁸) as a follow-up; note it in the
+- [x] Evaluate a classical Reed–Solomon or BCH code over GF(2⁸) as a follow-up; note it in the
       roadmap backlog if out of scope
-- [ ] Update `Numerics/Numerics/Numerics/README.md` with a Number Theory section (example-driven)
-- [ ] Update `Numerics/Numerics/Physics/README.md` (Quantum section): `QuantumFourierTransform`,
+- [x] Update `Numerics/Numerics/Numerics/README.md` with a Number Theory section (example-driven)
+- [x] Update `Numerics/Numerics/Physics/README.md` (Quantum section): `QuantumFourierTransform`,
       `ShorAlgorithm`, `ShorResult`
-- [ ] Add the "not cryptographically secure" note to the README and XML docs
+- [x] Add the "not cryptographically secure" note to the README and XML docs
+
+## Backlog
+
+- **Reed–Solomon codes over GF(2⁸)** — evaluated in Phase 6 and left out of scope. The building
+  blocks are in place (`ExtensionField` with log/antilog tables, `PrimeFieldPolynomial`), but a
+  useful implementation needs polynomials over GF(pⁿ) (not just GF(p)), systematic encoding, and a
+  decoder (syndromes, Berlekamp–Massey, Chien search, Forney) with erasure handling. That is a
+  feature of its own: a separate `ReedSolomonRoadMap.md`, likely with a generic
+  `Polynomial<TElement>` over `IFiniteField<TElement>` as its first phase. A classical BCH code would
+  follow from the same pieces.
+- **NTT for arbitrary lengths** (Bluestein) and a `BigInteger` multiplication built on
+  `ExactConvolution`, if a consumer needs them.
 
 ## Design decisions
 
@@ -94,6 +106,7 @@ Namespace `CSharpNumerics.Numerics.NumberTheory`, folder `Numerics/Numerics/Nume
 | `Physics/Quantum/QuantumFourierTransform.cs`, `ShorAlgorithm.cs`, `ShorResult.cs` | gate / static class / class | 4 |
 | `PrimeField.cs`, `PrimeFieldPolynomial.cs`, `ExtensionField.cs`, `ExtensionFieldElement.cs` | classes / struct | 5 |
 | `NumberTheory/Interfaces/IFiniteField.cs` | interface | 5 |
+| `NumberTheoreticTransform.cs` (+ extensions in `TransformExtensions`) | static class | 6 |
 
 Tests go in `NumericTest/NumberTheoryTests.cs`. Phase 4 and 5 tests have their own files
 (`ShorAlgorithmTests.cs`, `FiniteFieldTests.cs`) to keep the main file manageable.
@@ -203,6 +216,15 @@ the static classes.
   `L` suffix or a cast (`84L.Gcd(36)`), which the README must show.
 
 ## Notes
+- Phase 6: the NTT lives in `NumberTheory/NumberTheoreticTransform.cs`, with thin extension methods
+  (`NumberTheoreticTransform`, `InverseNumberTheoreticTransform`, `ExactConvolution`) in
+  `TransformExtensions` next to the FFT. `ExactConvolution` uses eight NTT primes below 2³¹ (so
+  `MulMod` always multiplies directly) and only as many as the bound min(|a|, |b|)·max|a|·max|b|
+  requires, joined by Garner's algorithm. Result length is limited by the smallest 2-adicity among
+  the primes used: 2²⁷ for small values, 2²¹ when all eight are needed.
+- Phase 6: the crypto note is in the Numerics README and in the XML remarks of every class where
+  cryptographic use is plausible (`ModularArithmetic`, `EuclideanAlgorithm`, `PrimalityTesting`,
+  `ChineseRemainderTheorem`, `ModInt`, `PrimeField`, `PrimeFieldPolynomial`, `ExtensionField`).
 - Phase 5: `IFiniteField` lives in `NumberTheory/Interfaces/`, not `Numerics/Interfaces/` as first
   planned, following the existing sub-section convention (`Optimization/Interfaces/`,
   `FiniteElement/Interfaces/`).

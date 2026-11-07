@@ -18,6 +18,9 @@ namespace CSharpNumerics.Numerics.NumberTheory;
 /// <see cref="TrySolve(IReadOnlyList{long}, IReadOnlyList{long}, out long, out long)"/> handles
 /// any moduli and reports when the system has no solution.
 /// </para>
+/// <para>
+/// Not constant-time: do not use for cryptographic purposes.
+/// </para>
 /// </remarks>
 public static class ChineseRemainderTheorem
 {

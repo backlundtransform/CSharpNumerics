@@ -262,6 +262,26 @@ public static class TransformExtensions
     }
 
     /// <summary>
+    /// The number theoretic transform: the exact Fourier transform over GF(p). The length must be a
+    /// power of two dividing p − 1. See <see cref="NumberTheory.NumberTheoreticTransform.Forward"/>.
+    /// </summary>
+    /// <param name="values">Input values, reduced modulo p.</param>
+    /// <param name="modulus">An NTT-friendly prime, by default 998244353 = 119·2²³ + 1.</param>
+    public static long[] NumberTheoreticTransform(this IReadOnlyList<long> values, long modulus = NumberTheory.NumberTheoreticTransform.DefaultModulus) =>
+        NumberTheory.NumberTheoreticTransform.Forward(values, modulus);
+
+    /// <summary>The inverse number theoretic transform. See <see cref="NumberTheory.NumberTheoreticTransform.Inverse"/>.</summary>
+    public static long[] InverseNumberTheoreticTransform(this IReadOnlyList<long> values, long modulus = NumberTheory.NumberTheoreticTransform.DefaultModulus) =>
+        NumberTheory.NumberTheoreticTransform.Inverse(values, modulus);
+
+    /// <summary>
+    /// The exact linear convolution of two integer sequences, computed with the NTT and the Chinese
+    /// remainder theorem, so there is no rounding error. See <see cref="NumberTheory.NumberTheoreticTransform.ExactConvolution"/>.
+    /// </summary>
+    public static long[] ExactConvolution(this IReadOnlyList<long> a, IReadOnlyList<long> b) =>
+        NumberTheory.NumberTheoreticTransform.ExactConvolution(a, b);
+
+    /// <summary>
     /// Computes the Laplace transform of a real function at s.
     /// This implementation uses the substitution u = exp(-t), mapping the integral to u in [0,1].
     /// </summary>

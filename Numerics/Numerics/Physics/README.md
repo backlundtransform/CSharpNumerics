@@ -3261,6 +3261,7 @@ All gates extend the abstract `QuantumGate` base class:
 | `PhaseOracle(n, states)` | n | 2ⁿ×2ⁿ diagonal | Flips phase of marked basis states: \|w⟩ → −\|w⟩ |
 | `ControlledGate(U)` | n+1 | 2ⁿ⁺¹×2ⁿ⁺¹ block | Applies U when control qubit is \|1⟩ |
 | `ModularMultiplyGate(a,N,n)` | n | 2ⁿ×2ⁿ permutation | \|y⟩ → \|ay mod N⟩, used in Shor's algorithm |
+| `QuantumFourierTransform(n, inverse)` | n | 2ⁿ×2ⁿ dense | \|x⟩ → 2^(−n/2) Σ e^(2πi·xy/2ⁿ)\|y⟩, also as an H/CPhase/SWAP circuit |
 
 ### QuantumGate (abstract)
 
@@ -3410,6 +3411,56 @@ public interface INoiseChannel
 }
 ```
 
+### Quantum Fourier Transform
+
+`QuantumFourierTransform(n, inverse: false)` is the discrete Fourier transform on the amplitudes of an n-qubit register (little-endian: `qubitIndices[0]` is the least significant bit):
+
+$$\text{QFT}\,|x\rangle = \frac{1}{\sqrt{2^n}} \sum_{y=0}^{2^n-1} e^{2\pi i\,xy/2^n}\,|y\rangle$$
+
+`Apply` uses the dense 2ⁿ×2ⁿ matrix. `ApplyAsCircuit` applies the textbook decomposition instead — n Hadamards, n(n−1)/2 controlled phases `CPhase(π/2ᵏ)` and ⌊n/2⌋ swaps — which gives the same result and scales to larger registers.
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+
+var qft = new QuantumFourierTransform(3);
+var amplitudes = qft.ApplyAsCircuit(state, new[] { 0, 1, 2 }, totalQubits: 3);
+var back = new QuantumFourierTransform(3, inverse: true).ApplyAsCircuit(amplitudes, new[] { 0, 1, 2 }, 3);
+```
+
+### Shor's Algorithm
+
+`ShorAlgorithm` factors a composite N on a simulated state vector. Quantum phase estimation finds the period r of aˣ mod N; the classical post-processing then turns r into factors:
+
+1. **Classical shortcuts** — N even, N a perfect power, or gcd(a, N) > 1 for the random base a.
+2. **Period finding** — a counting register of t qubits (2ᵗ ≥ N²) in uniform superposition controls `ModularMultiplyGate(a^(2ʲ), N)` on a work register in \|1⟩, followed by the inverse QFT.
+3. **Measurement** — the counting register gives m ≈ s·2ᵗ/r.
+4. **Continued fractions** — the convergents of m/2ᵗ (`ContinuedFractions` in Numerics) recover r.
+5. **Factors** — if r is even and a^(r/2) ≢ −1, then gcd(a^(r/2) ± 1, N) are nontrivial factors.
+
+```csharp
+using CSharpNumerics.Physics.Quantum;
+
+ShorResult result = ShorAlgorithm.Factor(15, new Random(1));
+Console.WriteLine(result);                 // 15 = 3 × 5
+// result.UsedQuantumPeriodFinding, result.Base, result.Period, result.Measurement, result.Attempts
+
+// The steps are also available on their own:
+QuantumState state = ShorAlgorithm.PeriodFindingState(a: 7, n: 15);   // 12 qubits: t = 8, work = 4
+ShorAlgorithm.TryRecoverPeriod(measurement: 192, countingQubits: 8, a: 7, n: 15, out long r);   // r = 4
+ShorAlgorithm.TryFactorFromPeriod(7, r, 15, out long f1, out long f2);                           // 3, 5
+```
+
+| Member | Description |
+|---|---|
+| `Factor(n, random, maxAttempts = 20)` | Full algorithm; throws for N < 4, prime N, or N needing more than `MaxSimulatedQubits` |
+| `PeriodFindingState(a, n)` | The state just before measurement (counting qubits 0 … t−1, work qubits t …) |
+| `TryRecoverPeriod(m, t, a, n, out r)` | Convergents of m/2ᵗ; tries at most ⌈log₂ N⌉ multiples of each denominator, so the period comes from the measurement and not from a classical search |
+| `TryFactorFromPeriod(a, r, n, out f1, out f2)` | gcd(a^(r/2) ± 1, N) |
+| `CountingQubitCount(n)`, `WorkQubitCount(n)` | Register sizes t and n |
+| `MaxSimulatedQubits` | 18 — enough for N ≤ 64 (N = 15 needs 12 qubits, N = 21 needs 14) |
+
+The state vector has 2^(t+n) amplitudes, so the simulation is meant for teaching and testing, not for factoring large numbers.
+
 ### Module Structure
 
 ```
@@ -3417,6 +3468,9 @@ Physics/Quantum/
 ├── QuantumGate.cs       Abstract base with Apply logic
 ├── QuantumFidelity.cs   State fidelity metrics
 ├── BlochVector.cs       Bloch sphere representation
+├── QuantumFourierTransform.cs  QFT gate (dense matrix + H/CPhase/SWAP circuit)
+├── ShorAlgorithm.cs     Shor's factoring: period finding + classical post-processing
+├── ShorResult.cs        Factors and diagnostics of a Shor run
 ├── Interfaces/
 │   └── INoiseChannel.cs Noise channel contract
 ├── NoiseModels/
