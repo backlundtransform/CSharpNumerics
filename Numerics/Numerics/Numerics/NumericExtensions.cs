@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using CSharpNumerics.Numerics.NumberTheory;
 using CSharpNumerics.Numerics.RootFinding;
 
 
@@ -7,39 +8,20 @@ namespace CSharpNumerics.Numerics;
 
 public static class NumericExtensions
 {
-    public static bool IsPrime(this int n)
-    {
-        if (n <= 1)
-        {
-            return false;
-        }
+    /// <summary>True when n is prime. See <see cref="PrimalityTesting.IsPrime(long)"/>.</summary>
+    public static bool IsPrime(this int n) => PrimalityTesting.IsPrime(n);
 
-        for (int i = 2; i < n; i++)
-        {
-            if (n % i == 0)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
+    /// <summary>
+    /// The prime factors of n with repetition in ascending order: 12 → [2, 2, 3].
+    /// Empty when n &lt; 2. See <see cref="IntegerFactorization.Factor"/>.
+    /// </summary>
     public static List<int> GetPrimeFactors(this int n)
     {
         var factors = new List<int>();
-        for (int i = 2; i <= n / i; i++)
-        {
-            while (n % i == 0)
-            {
-                factors.Add(i);
-                n /= i;
-            }
-        }
-        if (n > 1)
-        {
-            factors.Add(n);
-        }
+        if (n < 2) return factors;
+
+        foreach (long p in IntegerFactorization.PrimeFactors(n))
+            factors.Add((int)p);
         return factors;
     }
 
