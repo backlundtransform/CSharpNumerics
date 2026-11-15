@@ -1,9 +1,17 @@
 name: Publish NuGet Package
 
+# Authentication uses nuget.org Trusted Publishing (OIDC): GitHub issues a token
+# for this run, NuGet/login exchanges it for a short-lived API key, and no key is
+# stored as a secret that can expire. It requires the trusted publishing policy
+# on nuget.org for backlundtransform/CSharpNumerics with workflow publish.yml.
 on:
   push:
     tags:
       - 'v*'   # Trigger på taggar som v1.0.3, v1.0.4 etc.
+
+permissions:
+  id-token: write   # required for OIDC / Trusted Publishing
+  contents: read
 
 jobs:
   publish:
@@ -27,5 +35,12 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-build -o out
 
+      # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: backlundtransform
+
       - name: Publish to NuGet.org
-        run: dotnet nuget push "out/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "out/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
