@@ -5,7 +5,7 @@ It provides a clean, modular architecture with robust building blocks for scient
 
 ### 🔢 Numerical Analysis
 
-Linear algebra, transforms, ordinary differential equations (ODEs), vector fields, numerical integration, optimization and advanced computational methods.
+Linear algebra, transforms, ordinary differential equations (ODEs), vector fields, numerical integration, optimization, number theory and advanced computational methods.
 
 ### 📊 Statistics
 
