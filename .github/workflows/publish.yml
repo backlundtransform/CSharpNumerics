@@ -4,10 +4,15 @@ name: Publish NuGet Package
 # for this run, NuGet/login exchanges it for a short-lived API key, and no key is
 # stored as a secret that can expire. It requires the trusted publishing policy
 # on nuget.org for backlundtransform/CSharpNumerics with workflow publish.yml.
+#
+# The package version comes from the tag: v4.5.0 publishes 4.5.0, and
+# v4.5.0-preview.1 publishes the prerelease 4.5.0-preview.1, which NuGet lists as
+# a preview and stable users do not get. <Version> in the csproj is only the
+# default for local builds.
 on:
   push:
     tags:
-      - 'v*'   # Trigger på taggar som v1.0.3, v1.0.4 etc.
+      - 'v*'   # Trigger på taggar som v4.5.0 eller v4.5.0-preview.1
 
 permissions:
   id-token: write   # required for OIDC / Trusted Publishing
@@ -26,14 +31,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Derive version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Restore dependencies
         run: dotnet restore "Numerics/Numerics/CSharpNumerics.csproj"
 
       - name: Build
-        run: dotnet build "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-restore
+        run: dotnet build "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Pack NuGet package
-        run: dotnet pack "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-build -o out
+        run: dotnet pack "Numerics/Numerics/CSharpNumerics.csproj" -c Release --no-build -o out -p:Version=${{ steps.version.outputs.version }}
 
       # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
       - name: NuGet login (Trusted Publishing)
