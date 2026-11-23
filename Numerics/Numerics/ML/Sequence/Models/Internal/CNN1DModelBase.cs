@@ -91,19 +91,28 @@ public abstract class CNN1DModelBase : ISequenceModel, IHasHyperparameters
 
     public VectorN Predict(Matrix X)
     {
+        var outputs = ForwardRows(X);
+        var predictions = new double[outputs.Length];
+
+        for (int row = 0; row < outputs.Length; row++)
+            predictions[row] = MapPrediction(outputs[row]);
+
+        return new VectorN(predictions);
+    }
+
+    /// <summary>The network's raw output (before softmax or other mapping) for each row of <paramref name="X"/>.</summary>
+    protected VectorN[] ForwardRows(Matrix X)
+    {
         if (_network == null)
             throw new InvalidOperationException("Model has not been fitted.");
 
         ResolveSequenceDimensions(X.columnLength);
-        var predictions = new double[X.rowLength];
+        var outputs = new VectorN[X.rowLength];
 
         for (int row = 0; row < X.rowLength; row++)
-        {
-            var output = _network.ForwardSingle(ToSequence(X.RowSlice(row)), training: false);
-            predictions[row] = MapPrediction(output);
-        }
+            outputs[row] = _network.ForwardSingle(ToSequence(X.RowSlice(row)), training: false);
 
-        return new VectorN(predictions);
+        return outputs;
     }
 
     public virtual void SetHyperParameters(Dictionary<string, object> parameters)

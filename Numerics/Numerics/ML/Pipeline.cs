@@ -59,8 +59,19 @@ public class Pipeline
 
 
 
-    public void Fit(Matrix X, VectorN y)
+    public void Fit(Matrix X, VectorN y) => Fit(X, y, (VectorN?)null);
+
+    /// <summary>
+    /// Fits the pipeline, training the model with a weight per row. The selector, reducer and
+    /// scaler are fitted without weights. Null weights is the same as <see cref="Fit(Matrix, VectorN)"/>;
+    /// otherwise the model must implement <see cref="ISampleWeightedModel"/>.
+    /// </summary>
+    public void Fit(Matrix X, VectorN y, VectorN? sampleWeights)
     {
+        if (sampleWeights.HasValue && Model is not ISampleWeightedModel)
+            throw new InvalidOperationException(
+                $"{Model.GetType().Name} cannot be trained with sample weights (it does not implement ISampleWeightedModel).");
+
         // Apply selector
         if (Selector != null)
             X = Selector.FitTransform(X, y);
@@ -76,7 +87,10 @@ public class Pipeline
         // Apply model hyperparameters
         ApplyHyperparameters(Model, ModelParams);
 
-        Model.Fit(X, y);
+        if (sampleWeights.HasValue)
+            ((ISampleWeightedModel)Model).Fit(X, y, sampleWeights.Value);
+        else
+            Model.Fit(X, y);
         _isFitted = true;
     }
 
@@ -95,6 +109,36 @@ public class Pipeline
             X = Scaler.Transform(X);
 
         return Model.Predict(X);
+    }
+
+    /// <summary>
+    /// Class probabilities from the model (one column per class), after the same selector, reducer
+    /// and scaler as <see cref="Predict"/>. The model must implement <see cref="IProbabilisticClassifier"/>.
+    /// </summary>
+    public Matrix PredictProbabilities(Matrix X)
+    {
+        if (Model is not IProbabilisticClassifier probabilistic)
+            throw new InvalidOperationException(
+                $"{Model.GetType().Name} does not give probabilities (it does not implement IProbabilisticClassifier).");
+
+        return probabilistic.PredictProbabilities(Transform(X));
+    }
+
+    private Matrix Transform(Matrix X)
+    {
+        if (!_isFitted)
+            throw new InvalidOperationException("Pipeline has not been fitted.");
+
+        if (Selector != null)
+            X = Selector.Transform(X);
+
+        if (Reducer != null)
+            X = Reducer.Transform(X);
+
+        if (Scaler != null)
+            X = Scaler.Transform(X);
+
+        return X;
     }
     public Pipeline Clone()
     {

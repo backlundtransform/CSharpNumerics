@@ -1,5 +1,7 @@
 using CSharpNumerics.ML.CrossValidators;
 using CSharpNumerics.ML.CrossValidators.Interfaces;
+using CSharpNumerics.ML.Enums;
+using CSharpNumerics.Numerics.Objects;
 using System;
 using System.Collections.Generic;
 
@@ -16,6 +18,7 @@ namespace CSharpNumerics.ML.Experiment;
 /// CrossValidatorConfig.StratifiedKFold(folds: 10)
 /// CrossValidatorConfig.ShuffleSplit(nSplits: 20, testSize: 0.25)
 /// CrossValidatorConfig.LeaveOneOut()
+/// CrossValidatorConfig.StratifiedGroupKFold(starIds, folds: 5, scoring: ClassificationScoring.RocAuc)
 /// CrossValidatorConfig.MonteCarlo(iterations: 200, testSize: 0.2, seed: 42)
 /// </code>
 /// </example>
@@ -47,6 +50,22 @@ public class CrossValidatorConfig
     /// <summary>Stratified K-fold (preserves class distribution per fold). Classification only.</summary>
     public static CrossValidatorConfig StratifiedKFold(int folds = 5)
         => new("StratifiedKFold", p => new StratifiedKFoldCrossValidator(p, folds));
+
+    /// <summary>
+    /// Group K-fold: all rows with the same group id (one per row of the experiment's data) stay
+    /// in the same fold. Optional sample weights are used for training and scoring.
+    /// </summary>
+    public static CrossValidatorConfig GroupKFold(IReadOnlyList<long> groups, int folds = 5,
+        VectorN? sampleWeights = null, ClassificationScoring scoring = ClassificationScoring.Accuracy)
+        => new("GroupKFold", p => new GroupKFoldCrossValidator(p, groups, folds, sampleWeights, scoring));
+
+    /// <summary>
+    /// Stratified group K-fold: groups stay together and each fold keeps about the overall class
+    /// proportions. Classification only.
+    /// </summary>
+    public static CrossValidatorConfig StratifiedGroupKFold(IReadOnlyList<long> groups, int folds = 5,
+        VectorN? sampleWeights = null, ClassificationScoring scoring = ClassificationScoring.Accuracy)
+        => new("StratifiedGroupKFold", p => new StratifiedGroupKFoldCrossValidator(p, groups, folds, sampleWeights, scoring));
 
     /// <summary>Random shuffle-split cross-validation.</summary>
     public static CrossValidatorConfig ShuffleSplit(

@@ -9,7 +9,7 @@ using NN = CSharpNumerics.ML.NeuralNetwork.NeuralNetwork;
 
 namespace CSharpNumerics.ML.Models.Classification;
 
-    public class MLPClassifier : IClassificationModel, IHasHyperparameters
+    public class MLPClassifier : IProbabilisticClassifier, ISampleWeightedModel, IHasHyperparameters
     {
         public int[] HiddenLayers { get; set; } = new[] { 32, 16 };
         public double LearningRate { get; set; } = 0.01;
@@ -25,8 +25,20 @@ namespace CSharpNumerics.ML.Models.Classification;
 
         private NN _network;
 
-        public void Fit(Matrix X, VectorN y)
+        public void Fit(Matrix X, VectorN y) => FitWeighted(X, y, null);
+
+        /// <summary>
+        /// Trains with a weight per row: each row's loss (and gradient) is scaled by its weight.
+        /// The weights are rescaled to average 1, so the learning rate keeps its meaning.
+        /// </summary>
+        public void Fit(Matrix X, VectorN y, VectorN sampleWeights) => FitWeighted(X, y, sampleWeights);
+
+        private void FitWeighted(Matrix X, VectorN y, VectorN? sampleWeights)
         {
+            double[] weights = ClassWeights.Validate(sampleWeights, y.Length);
+            double mean = weights.Average();
+            for (int i = 0; i < weights.Length; i++) weights[i] /= mean;
+
             var numClasses = (int)y.Values.Max() + 1;
             NumClasses = numClasses;
             _network = new NN(X.columnLength, HiddenLayers, numClasses,
@@ -64,6 +76,14 @@ namespace CSharpNumerics.ML.Models.Classification;
 
                         var yhat = _network.Forward(xi, out var acts);
                         _network.ComputeGradients(target, acts, out var dw, out var db);
+                        if (weights[idx] != 1.0)
+                        {
+                            for (int l = 0; l < dw.Count; l++)
+                            {
+                                dw[l] = weights[idx] * dw[l];
+                                db[l] = weights[idx] * db[l];
+                            }
+                        }
                         _network.AccumulateGradients(weightGrads, biasGrads, dw, db);
                     }
 
@@ -72,7 +92,7 @@ namespace CSharpNumerics.ML.Models.Classification;
 
                 if (valSize > 0)
                 {
-                    double currentValLoss = CalculateValidationLoss(X, y, indices, trainSize);
+                    double currentValLoss = CalculateValidationLoss(X, y, weights, indices, trainSize);
 
                     if (!earlyStopping.ShouldStop && currentValLoss < earlyStopping.BestValue - MinDelta)
                         (bestWeights, bestBiases) = _network.SnapshotWeights();
@@ -87,6 +107,22 @@ namespace CSharpNumerics.ML.Models.Classification;
             if (valSize > 0) { _network.RestoreWeights(bestWeights, bestBiases); }
         }
 
+        /// <summary>Softmax output: one probability per class for each row.</summary>
+        public Matrix PredictProbabilities(Matrix X)
+        {
+            if (_network == null)
+                throw new InvalidOperationException("Model has not been fitted.");
+
+            var result = new Matrix(X.rowLength, NumClasses);
+            for (int i = 0; i < X.rowLength; i++)
+            {
+                var probs = _network.Forward(X.RowSlice(i));
+                for (int c = 0; c < NumClasses; c++)
+                    result.values[i, c] = probs[c];
+            }
+            return result;
+        }
+
         public VectorN Predict(Matrix X)
         {
             double[] result = new double[X.rowLength];
@@ -98,17 +134,17 @@ namespace CSharpNumerics.ML.Models.Classification;
             return new VectorN(result);
         }
 
-        private double CalculateValidationLoss(Matrix X, VectorN y, int[] indices, int trainSize)
+        private double CalculateValidationLoss(Matrix X, VectorN y, double[] weights, int[] indices, int trainSize)
         {
-            double totalLoss = 0;
-            int valCount = indices.Length - trainSize;
+            double totalLoss = 0, totalWeight = 0;
             for (int i = trainSize; i < indices.Length; i++)
             {
                 int idx = indices[i];
                 var probs = _network.Forward(X.RowSlice(idx));
-                totalLoss -= Math.Log(probs.Values[(int)y[idx]] + 1e-15);
+                totalLoss -= weights[idx] * Math.Log(probs.Values[(int)y[idx]] + 1e-15);
+                totalWeight += weights[idx];
             }
-            return totalLoss / valCount;
+            return totalWeight > 0 ? totalLoss / totalWeight : 0.0;
         }
 
         public void SetHyperParameters(Dictionary<string, object> p)

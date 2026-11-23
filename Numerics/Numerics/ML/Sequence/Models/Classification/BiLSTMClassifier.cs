@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CSharpNumerics.ML.Sequence.Models.Classification;
 
-public class BiLSTMClassifier : BiLSTMModelBase, IClassificationModel
+public class BiLSTMClassifier : BiLSTMModelBase, IProbabilisticClassifier
 {
     public int NumClasses { get; private set; } = 2;
 
@@ -37,6 +37,20 @@ public class BiLSTMClassifier : BiLSTMModelBase, IClassificationModel
     {
         var probabilities = Activations.Softmax(output);
         return -Math.Log(probabilities[(int)target] + 1e-15);
+    }
+
+    /// <summary>Softmax of the network output: one probability per class for each row.</summary>
+    public Matrix PredictProbabilities(Matrix X)
+    {
+        var outputs = ForwardRows(X);
+        var result = new Matrix(outputs.Length, NumClasses);
+        for (int row = 0; row < outputs.Length; row++)
+        {
+            var probabilities = Activations.Softmax(outputs[row]);
+            for (int c = 0; c < NumClasses; c++)
+                result.values[row, c] = probabilities[c];
+        }
+        return result;
     }
 
     protected override double MapPrediction(VectorN output)

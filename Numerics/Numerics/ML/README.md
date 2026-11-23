@@ -327,6 +327,34 @@ var result = cv.Run(ts, "Target", new DailyGrouping());
 | `ShuffleSplitCrossValidator`    | ❌             | ❌                  | Random train/test splits; multiple iterations; not all rows guaranteed to be tested.  |
 | `MonteCarloCrossValidator`      | ❌             | ❌                  | Like ShuffleSplit but returns full score distribution with CI, histogram & convergence. |
 | `StratifiedKFoldCrossValidator` | ❌             | ❌                  | Maintains class proportions; only for classification; useful for imbalanced datasets. |
+| `GroupKFoldCrossValidator`      | ✅ (required)  | ❌                  | K folds that never split a group; folds of about equal size.                          |
+| `StratifiedGroupKFoldCrossValidator` | ✅ (required) | ❌               | As GroupKFold, and keeps class proportions about equal in every fold. Classification. |
+
+### 🧩 Group K-Fold
+
+Leave-one-group-out needs one fold per group, which is too many when there are thousands of groups
+(patients, customers, stars). **Group K-fold** puts every group in exactly one of K folds, so a model
+is never tested on a group it trained on. Pass one group id per row:
+
+```csharp
+long[] starIds = ...;                      // one per row of X
+var cv = new StratifiedGroupKFoldCrossValidator(
+    pipelineGrid, starIds, folds: 5,
+    sampleWeights: ClassWeights.Balanced(y),          // optional, models must support weights
+    scoring: ClassificationScoring.RocAuc);           // default Accuracy
+
+var result = cv.Run(X, y);
+Matrix? oof = result.PredictedProbabilities;          // out-of-fold probabilities, row order of X
+int[] folds = cv.FoldOfEachRow(y);                    // reuse the same folds elsewhere
+```
+
+* `GroupKFoldCrossValidator` deals groups out largest first, each to the smallest fold.
+* `StratifiedGroupKFoldCrossValidator` places each group where the per-class shares across folds
+  stay most even (as scikit-learn's `StratifiedGroupKFold` without shuffling).
+* Both are deterministic. Every row is tested exactly once, so `ActualValues`, `PredictedValues`
+  and `PredictedProbabilities` are in the row order of `X` (`RowIndices` is 0 … n − 1).
+* `ClassificationScoring`: `Accuracy`, `RocAuc`, `AveragePrecision`, `NegativeLogLoss`,
+  `NegativeBrierScore`. All but accuracy need a binary `IProbabilisticClassifier`.
 
 
 ---
@@ -439,6 +467,8 @@ var result = SupervisedExperiment
 | `CrossValidatorConfig.ShuffleSplit(nSplits, testSize, ...)` | Shuffle-Split | Random train/test splits |
 | `CrossValidatorConfig.LeaveOneOut()` | Leave-One-Out | K = n, expensive |
 | `CrossValidatorConfig.MonteCarlo(iterations, testSize, seed, ...)` | Monte Carlo CV | Full score distributions with CI |
+| `CrossValidatorConfig.GroupKFold(groups, folds, sampleWeights, scoring)` | Group K-Fold | Groups never split between train and test |
+| `CrossValidatorConfig.StratifiedGroupKFold(groups, folds, sampleWeights, scoring)` | Stratified Group K-Fold | Classification; groups kept together, class ratios kept |
 | `CrossValidatorConfig.Custom(name, factory)` | Any `ICrossValidator` | Wrap your own implementation |
 
 ### 📐 Result Properties
@@ -448,7 +478,7 @@ var result = SupervisedExperiment
 | `Rankings` | All pipelines ranked by primary CV score (descending) |
 | `Best` / `BestPipeline` / `BestModelName` / `BestScore` | Convenience accessors for the top-ranked pipeline |
 | `BestBy(cvName)` | Best pipeline according to a specific cross-validator |
-| `CVResults[cvName]` | Raw `CrossValidationResult` per CV (confusion matrix, R², actual/predicted) |
+| `CVResults[cvName]` | Raw `CrossValidationResult` per CV (confusion matrix, R², actual/predicted; out-of-fold `PredictedProbabilities` and `RowIndices` from the group validators) |
 | `BestConfusionMatrix` | Confusion matrix from the best pipeline's primary CV (classification) |
 | `BestR2` | Coefficient of determination from the best pipeline's primary CV (regression) |
 | `BestActualValues` / `BestPredictedValues` | Actual vs predicted from the best pipeline |
@@ -561,23 +591,35 @@ Hyperparameters:
 
 **Decision Tree (Classifier)**
 
-Class: `DecisionTree`
+Class: `DecisionTree` — probabilities and sample weights (see below)
 
 Hyperparameters:
 
 * `MaxDepth`
 * `MinSamplesSplit`
+* `MinSamplesLeaf` (default 1; larger gives smoother probabilities)
+* `MaxFeatures` (features tried per split, at random; 0 = all)
+* `Seed`
+
+Splits are found by sorting each feature once per node (O(p · m log m) for a node of m rows).
 
 
 **Random Forest**
 
-Class: `RandomForest`
+Class: `RandomForest` — probabilities and sample weights (see below)
 
 Hyperparameters:
 
 * `NumTrees`
 * `MaxDepth`
 * `MinSamplesSplit`
+* `MinSamplesLeaf`
+* `MaxFeatures` (commonly √features; 0 = all)
+* `Seed` (bootstrap and feature choice; results are repeatable)
+
+Trees are trained in parallel on bootstrap samples drawn as row counts (no data copies).
+Probabilities are the mean of the trees' leaf class distributions, and `Predict` returns the most
+probable class.
 
 
 
@@ -647,6 +689,57 @@ See **Sequence Models** below for sequence-specific hyperparameters and layer co
 Class: `BiLSTMClassifier` (`CSharpNumerics.ML.Sequence.Models.Classification`)
 
 See **Sequence Models** below for sequence-specific hyperparameters and layer composition.
+
+### 🎯 Probabilities & Sample Weights
+
+Classifiers that implement `IProbabilisticClassifier` return one probability per class:
+
+```csharp
+var forest = new RandomForest();
+forest.SetHyperParameters(new() { ["NumTrees"] = 200, ["MaxFeatures"] = 4, ["MinSamplesLeaf"] = 3 });
+forest.Fit(X, y, ClassWeights.Balanced(y));   // ISampleWeightedModel: rare classes weigh as much
+
+Matrix p = forest.PredictProbabilities(Xtest);              // n × NumClasses, rows sum to 1
+VectorN pPlanet = ClassificationMetrics.ProbabilityOf(p);   // column 1
+
+// Through a pipeline (scaler etc. applied first)
+pipeline.Fit(X, y, ClassWeights.Balanced(y));
+Matrix pp = pipeline.PredictProbabilities(Xtest);
+```
+
+| Model | `IProbabilisticClassifier` | `ISampleWeightedModel` |
+|---|---|---|
+| `DecisionTree`, `RandomForest` | ✅ leaf class distribution | ✅ weighted Gini, weighted bootstrap |
+| `Logistic` | ✅ sigmoid (binary) | ✅ weighted gradient |
+| `MLPClassifier` | ✅ softmax | ✅ weighted loss |
+| `CNN1DClassifier`, `LSTMClassifier`, `BiLSTMClassifier`, `TCNClassifier` | ✅ softmax | ❌ |
+
+`ClassWeights.Balanced(y)` gives each row n / (classes × n_class), so every class carries the
+same total weight. A weight of 2 counts a row as if it appeared twice.
+
+### 📏 Classification Metrics
+
+`CSharpNumerics.ML.Evaluation.ClassificationMetrics` scores binary classifiers (labels 0/1) from
+scores or probabilities, all with optional sample weights:
+
+```csharp
+RocCurve roc = ClassificationMetrics.Roc(yTest, pPlanet);          // FPR, TPR, thresholds, Auc
+PrecisionRecallCurve pr = ClassificationMetrics.PrecisionRecall(yTest, pPlanet);
+double ap = pr.AveragePrecision;
+var (precision, threshold) = ClassificationMetrics.PrecisionAtRecall(yTest, pPlanet, minRecall: 0.9);
+double brier = ClassificationMetrics.BrierScore(yTest, pPlanet);
+double logLoss = ClassificationMetrics.LogLoss(yTest, pPlanet);
+CalibrationCurve cal = ClassificationMetrics.Calibration(yTest, pPlanet, bins: 10);
+```
+
+| Metric | Meaning |
+|---|---|
+| `RocAuc` | Probability that a random positive scores above a random negative (ties count half) |
+| `AveragePrecision` | Σ (Rₖ − Rₖ₋₁) Pₖ; area under the precision–recall curve without interpolation |
+| `PrecisionAtRecall` | Best precision among thresholds that reach a given recall, and that threshold |
+| `BrierScore` | Mean squared error of the probabilities (0 perfect, 0.25 for a constant 0.5) |
+| `LogLoss` | Mean negative log-likelihood; probabilities clipped to [1e−15, 1 − 1e−15] |
+| `Calibration` | Mean predicted probability vs. observed positive share per bin |
 
 ---
 

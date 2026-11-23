@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace CSharpNumerics.ML.Models.Classification;
 
 
-public class Logistic : IClassificationModel, IHasHyperparameters
+public class Logistic : IProbabilisticClassifier, ISampleWeightedModel, IHasHyperparameters
 {
     private VectorN _weights;
     private bool _fitted = false;
@@ -40,10 +40,21 @@ public class Logistic : IClassificationModel, IHasHyperparameters
             Tolerance = Convert.ToDouble(parameters["Tolerance"]);
     }
 
-    public void Fit(Matrix X, VectorN y)
+    public void Fit(Matrix X, VectorN y) => FitWeighted(X, y, null);
+
+    /// <summary>
+    /// Trains with a weight per row: the gradient is the weighted mean of the per-row gradients.
+    /// </summary>
+    public void Fit(Matrix X, VectorN y, VectorN sampleWeights) => FitWeighted(X, y, sampleWeights);
+
+    private void FitWeighted(Matrix X, VectorN y, VectorN? sampleWeights)
     {
         if (X.rowLength != y.Length)
             throw new ArgumentException("X.Rows must match y.Length.");
+
+        double[] weights = ClassWeights.Validate(sampleWeights, y.Length);
+        double weightTotal = 0;
+        foreach (double w in weights) weightTotal += w;
 
         Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
 
@@ -58,8 +69,10 @@ public class Logistic : IClassificationModel, IHasHyperparameters
         {
             VectorN predictions = Sigmoid(Xdesign * _weights);
             VectorN errors = predictions - y;
+            for (int i = 0; i < errors.Length; i++)
+                errors[i] *= weights[i];
 
-            VectorN gradient = (Xdesign.Transpose() * errors) / nSamples;
+            VectorN gradient = (Xdesign.Transpose() * errors) / weightTotal;
 
             if (convergence.HasConverged(iter, 0, gradient.Norm()))
                 break;
@@ -72,17 +85,35 @@ public class Logistic : IClassificationModel, IHasHyperparameters
 
     public VectorN Predict(Matrix X)
     {
-        if (!_fitted)
-            throw new InvalidOperationException("Model has not been fitted.");
-
-        Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
-        VectorN probabilities = Sigmoid(Xdesign * _weights);
+        VectorN probabilities = PositiveProbability(X);
 
         var labels = new double[probabilities.Length];
         for (int i = 0; i < probabilities.Length; i++)
             labels[i] = probabilities[i] >= 0.5 ? 1.0 : 0.0;
 
         return new VectorN(labels);
+    }
+
+    /// <summary>Column 0: probability of class 0; column 1: probability of class 1.</summary>
+    public Matrix PredictProbabilities(Matrix X)
+    {
+        VectorN p = PositiveProbability(X);
+        var result = new Matrix(p.Length, 2);
+        for (int i = 0; i < p.Length; i++)
+        {
+            result.values[i, 0] = 1.0 - p[i];
+            result.values[i, 1] = p[i];
+        }
+        return result;
+    }
+
+    private VectorN PositiveProbability(Matrix X)
+    {
+        if (!_fitted)
+            throw new InvalidOperationException("Model has not been fitted.");
+
+        Matrix Xdesign = FitIntercept ? AddInterceptColumn(X) : X;
+        return Sigmoid(Xdesign * _weights);
     }
 
     private VectorN Sigmoid(VectorN z)

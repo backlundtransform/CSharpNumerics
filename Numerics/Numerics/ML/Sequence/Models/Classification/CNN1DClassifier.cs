@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CSharpNumerics.ML.Sequence.Models.Classification;
 
-public class CNN1DClassifier : CNN1DModelBase, IClassificationModel
+public class CNN1DClassifier : CNN1DModelBase, IProbabilisticClassifier
 {
     public int NumClasses { get; private set; } = 2;
 
@@ -37,6 +37,20 @@ public class CNN1DClassifier : CNN1DModelBase, IClassificationModel
     {
         var probabilities = Activations.Softmax(output);
         return -Math.Log(probabilities[(int)target] + 1e-15);
+    }
+
+    /// <summary>Softmax of the network output: one probability per class for each row.</summary>
+    public Matrix PredictProbabilities(Matrix X)
+    {
+        var outputs = ForwardRows(X);
+        var result = new Matrix(outputs.Length, NumClasses);
+        for (int row = 0; row < outputs.Length; row++)
+        {
+            var probabilities = Activations.Softmax(outputs[row]);
+            for (int c = 0; c < NumClasses; c++)
+                result.values[row, c] = probabilities[c];
+        }
+        return result;
     }
 
     protected override double MapPrediction(VectorN output)
